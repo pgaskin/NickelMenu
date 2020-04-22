@@ -29,11 +29,11 @@ nmi_failsafe_t *nmi_failsafe_create(char **err_out) {
     NMI_ASSERT((fs->orig = realpath(info.dli_fname, NULL)), "could not resolve %s", info.dli_fname);
     NMI_ASSERT(asprintf(&fs->tmp, "%s.failsafe", fs->orig) != -1, "could not generate temp filename");
 
+    NMI_LOG("failsafe: ensuring own lib remains in memory even if it is dlclosed after being loaded with a dlopen");
+    NMI_ASSERT(dlopen(fs->orig, RTLD_LAZY|RTLD_NODELETE), "could not dlopen self");
+
     NMI_LOG("failsafe: renaming %s to %s", fs->orig, fs->tmp);
     NMI_ASSERT(!rename(fs->orig, fs->tmp), "could not rename lib");
-
-    NMI_LOG("failsafe: ensuring own lib remains in memory even if it is dlclosed after being loaded with a dlopen");
-    NMI_ASSERT(!dlopen(fs->orig, RTLD_LAZY|RTLD_NODELETE), "could not dlopen self");
 
     NMI_RETURN_OK(fs);
     #undef NMI_ERR_RET
