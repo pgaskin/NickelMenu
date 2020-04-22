@@ -55,6 +55,7 @@ extern "C" int nmi_menu_hook(void *libnickel, nmi_menu_entry_t *entries, size_t 
     _entries = entries;
     _entries_n = entries_n;
 
+    NMI_RETURN_OK(0);
     #undef NMI_ERR_RET
 }
 
@@ -93,7 +94,7 @@ extern "C" MenuTextItem* _nmi_menu_hook(void* _this, QMenu* menu, QString const&
                 free(err);
                 return;
             }
-            NMI_LOG("Success!", err);
+            NMI_LOG("Success!");
         }));
     }
 

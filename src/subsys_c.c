@@ -18,6 +18,6 @@ int nmi_subsys_dbgerror(const char *arg, char **err_out) {
 
 int nmi_subsys_kfmon(const char *arg, char **err_out) {
     #define NMI_ERR_RET 1
-    NMI_RETURN_ERR("not implemented yet"); // TODO
+    NMI_RETURN_ERR("not implemented yet (arg=%s)", arg); // TODO
     #undef NMI_ERR_RET
 }

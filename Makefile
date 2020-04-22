@@ -32,6 +32,10 @@ endef
 $(call pkgconf,QT5CORE,Qt5Core)
 $(call pkgconf,QT5WIDGETS,Qt5Widgets)
 
+CFLAGS   ?= -Wall -Wextra
+CXXFLAGS ?= -Wall -Wextra
+LDFLAGS  ?=
+
 # temporary workaround for broken cflags in kobo-toolchain Docker image:
 QT5CORE_CFLAGS    := $(shell echo "$(QT5CORE_CFLAGS)"    | sed 's:/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/:/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/:g')
 QT5WIDGETS_CFLAGS := $(shell echo "$(QT5WIDGETS_CFLAGS)" | sed 's:/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/:/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/:g')
