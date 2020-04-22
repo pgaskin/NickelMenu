@@ -34,7 +34,30 @@ static void (*ConfirmationDialogFactory_showOKDialog)(QString const&, QString co
 static nmi_menu_entry_t *_entries;
 static size_t _entries_n;
 
-extern "C" MenuTextItem* AbstractNickelMenuController_createMenuTextItem_hook(void* _this, QMenu* menu, QString const& label, bool checkable, bool checked, QString const& thingy) {
+extern "C" int nmi_menu_hook(void *libnickel, nmi_menu_entry_t *entries, size_t entries_n, char **err_out) {
+    #define NMI_ERR_RET 1
+    reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem) = dlsym(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_");
+    reinterpret_cast<void*&>(AbstractNickelMenuController_createAction) = dlsym(libnickel, "_ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb");
+    reinterpret_cast<void*&>(ConfirmationDialogFactory_showOKDialog) = dlsym(libnickel, "_ZN25ConfirmationDialogFactory12showOKDialogERK7QStringS2_");
+
+    NMI_ASSERT(AbstractNickelMenuController_createMenuTextItem, "unsupported firmware: could not find AbstractNickelMenuController::createMenuTextItem(void* _this, QMenu*, QString, bool, bool, QString const&)");
+    NMI_ASSERT(AbstractNickelMenuController_createAction, "unsupported firmware: could not find AbstractNickelMenuController::createAction(void* _this, QMenu*, QWidget*, bool, bool, bool)");
+    NMI_ASSERT(AbstractNickelMenuController_createAction, "unsupported firmware: could not find ConfirmationDialogFactory::showOKDialog(QString const&, QString const&)");
+
+    void* nmh = dlsym(RTLD_DEFAULT, "_nmi_menu_hook");
+    NMI_ASSERT(nmh, "internal error: could not dlsym _nmi_menu_hook");
+
+    char *err;
+    reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem_orig) = nmi_dlhook(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", nmh, &err);
+    NMI_ASSERT(AbstractNickelMenuController_createMenuTextItem_orig, "failed to hook _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_: %s", err);
+
+    _entries = entries;
+    _entries_n = entries_n;
+
+    #undef NMI_ERR_RET
+}
+
+extern "C" MenuTextItem* _nmi_menu_hook(void* _this, QMenu* menu, QString const& label, bool checkable, bool checked, QString const& thingy) {
     NMI_LOG("AbstractNickelMenuController::createMenuTextItem(%p, `%s`, %d, %d, `%s`)", menu, qPrintable(label), checkable, checked, qPrintable(thingy));
 
     // TODO: test on other locales
@@ -82,24 +105,4 @@ extern "C" MenuTextItem* AbstractNickelMenuController_createMenuTextItem_hook(vo
     }
 
     return AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, label, checkable, checked, thingy);
-}
-
-extern "C" int nmi_menu_hook(void *libnickel, nmi_menu_entry_t *entries, size_t entries_n, char **err_out) {
-    #define NMI_ERR_RET 1
-    reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem) = dlsym(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_");
-    reinterpret_cast<void*&>(AbstractNickelMenuController_createAction) = dlsym(libnickel, "_ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb");
-    reinterpret_cast<void*&>(ConfirmationDialogFactory_showOKDialog) = dlsym(libnickel, "_ZN25ConfirmationDialogFactory12showOKDialogERK7QStringS2_");
-
-    NMI_ASSERT(AbstractNickelMenuController_createMenuTextItem, "unsupported firmware: could not find AbstractNickelMenuController::createMenuTextItem(void* _this, QMenu*, QString, bool, bool, QString const&)");
-    NMI_ASSERT(AbstractNickelMenuController_createAction, "unsupported firmware: could not find AbstractNickelMenuController::createAction(void* _this, QMenu*, QWidget*, bool, bool, bool)");
-    NMI_ASSERT(AbstractNickelMenuController_createAction, "unsupported firmware: could not find ConfirmationDialogFactory::showOKDialog(QString const&, QString const&)");
-
-    char *err;
-    reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem_orig) = nmi_dlhook(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem_hook), &err);
-    NMI_ASSERT(AbstractNickelMenuController_createMenuTextItem_orig, "failed to hook _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_: %s", err);
-
-    _entries = entries;
-    _entries_n = entries_n;
-
-    #undef NMI_ERR_RET
 }
