@@ -63,11 +63,10 @@ install:
 	install -Dm644 res/doc $(DESTDIR)/mnt/onboard/.adds/nmi/doc
 
 koboroot:
-	make install DESTDIR=KoboRoot
-	tar czf KoboRoot.tgz -C KoboRoot .; rm -rf KoboRoot
+	tar cvzf KoboRoot.tgz --show-transformed --owner=root --group=root --mode="u=rwX,go=rX" --transform="s,src/libnmi.so,./usr/local/Kobo/imageformats/libnmi.so," --transform="s,res/doc,./mnt/onboard/.adds/nmi/doc," src/libnmi.so res/doc
 
 .PHONY: all clean gitignore install koboroot
-override GENERATED += KoboRoot KoboRoot.tgz
+override GENERATED += KoboRoot.tgz
 
 src/libnmi.so: override CFLAGS   += $(PTHREAD_CFLAGS) -fPIC
 src/libnmi.so: override CXXFLAGS += $(PTHREAD_CFLAGS) $(QT5CORE_CFLAGS) $(QT5WIDGETS_CFLAGS) -fPIC
