@@ -25,6 +25,9 @@
 #endif
 #endif
 
+// prevent GCC from giving us warnings everywhere about the format specifiers for the ELF typedefs
+#pragma GCC diagnostic ignored "-Wformat"
+
 void *nmi_dlhook(void *handle, const char *symname, void *target, char **err_out) {
     #define NMI_ERR_RET NULL
 

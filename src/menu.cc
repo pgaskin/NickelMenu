@@ -86,7 +86,7 @@ extern "C" MenuTextItem* _nmi_menu_hook(void* _this, QMenu* menu, QString const&
         QAction* action = AbstractNickelMenuController_createAction(_this, menu, item, true, true, true);
 
         // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
-        QObject::connect(action, &QAction::triggered, std::function<void(bool)>([it](bool checked){
+        QObject::connect(action, &QAction::triggered, std::function<void(bool)>([it](bool){
             NMI_LOG("Item '%s' pressed...", it->lbl);
             char *err;
             if (it->act(it->arg, &err) && err) {

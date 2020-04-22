@@ -32,8 +32,8 @@ endef
 $(call pkgconf,QT5CORE,Qt5Core)
 $(call pkgconf,QT5WIDGETS,Qt5Widgets)
 
-CFLAGS   ?= -Wall -Wextra
-CXXFLAGS ?= -Wall -Wextra
+CFLAGS   ?= -Wall -Wextra -Werror
+CXXFLAGS ?= -Wall -Wextra -Werror
 LDFLAGS  ?=
 
 # temporary workaround for broken cflags in kobo-toolchain Docker image:
