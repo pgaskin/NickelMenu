@@ -89,7 +89,7 @@ extern "C" MenuTextItem* _nmi_menu_hook(void* _this, QMenu* menu, QString const&
         QObject::connect(action, &QAction::triggered, std::function<void(bool)>([it](bool checked){
             NMI_LOG("Item '%s' pressed...", it->lbl);
             char *err;
-            if (it->execute(it->arg, &err) && err) {
+            if (it->act(it->arg, &err) && err) {
                 NMI_LOG("Got error %s, displaying...", err);
                 ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
                 free(err);

@@ -11,25 +11,25 @@
 # They can be named anything, and should consist of multiple lines either
 # starting with # for a comment, or in the the following format:
 #
-#   menu_item:<location>:<label>:<subsystem>:<arg>
+#   menu_item:<location>:<label>:<action>:<arg>
 #     Adds a menu item (spaces around fields are ignored).
 #
-#     <location>   the menu to add the item to, one of:
-#                    main   - the menu in the top-left corner of the home screen
-#                    reader - the overflow menu in the reader
-#     <label>      the label to show on the menu item (must not contain :)
-#     <subsystem>  the type of action to run, one of:
-#                    dbg_syslog     - writes a message to syslog (for testing)
-#                    dbg_error      - always returns an error (for testing)
-#                    kfmon          - triggers a kfmon action (coming soon)
-#                    nickel_setting - toggles a boolean setting (coming soon)
-#     <arg>        the argument passed to the subsystem:
-#                    dbg_syslog     - the text to write
-#                    dbg_error      - the error message
-#                    kfmon          - TODO
-#                    nickel_setting - one of:
-#                                       invert      - toggles FeatureSettings.InvertScreen (all versions)
-#                                       screenshots - toggles FeatureSettings.Screenshots (all versions)
+#     <location>  the menu to add the item to, one of:
+#                   main   - the menu in the top-left corner of the home screen
+#                   reader - the overflow menu in the reader
+#     <label>     the label to show on the menu item (must not contain :)
+#     <action>    the type of action to run, one of:
+#                   dbg_syslog     - writes a message to syslog (for testing)
+#                   dbg_error      - always returns an error (for testing)
+#                   kfmon          - triggers a kfmon action (coming soon)
+#                   nickel_setting - toggles a boolean setting (coming soon)
+#     <arg>       the argument passed to the action:
+#                   dbg_syslog     - the text to write
+#                   dbg_error      - the error message
+#                   kfmon          - TODO
+#                   nickel_setting - one of:
+#                                      invert      - toggles FeatureSettings.InvertScreen (all versions)
+#                                      screenshots - toggles FeatureSettings.Screenshots (all versions)
 #
 # For example, you might have a configuration file in KOBOeReader/.adds/nmi/mystuff like:
 #

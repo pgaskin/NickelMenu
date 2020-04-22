@@ -4,13 +4,13 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "subsys_cc.h"
+#include "action_cc.h"
 #include "util.h"
 
 typedef void Device;
 typedef void Settings;
 
-extern "C" int nmi_subsys_nickelsetting(const char *arg, char **err_out) {
+extern "C" int nmi_action_nickelsetting(const char *arg, char **err_out) {
     #define NMI_ERR_RET 1
 
     Device *(*Device_getCurrentDevice)();

@@ -7,10 +7,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "action_c.h"
 #include "config.h"
 #include "failsafe.h"
 #include "menu.h"
-#include "subsys_c.h"
 #include "util.h"
 
 __attribute__((constructor)) void nmi_init() {
@@ -48,10 +48,10 @@ __attribute__((constructor)) void nmi_init() {
         items   = calloc(items_n, sizeof(nmi_menu_item_t*));
         *items  = calloc(items_n, sizeof(nmi_menu_item_t));
     
-        items[0]->loc     = NMI_MENU_LOCATION_MAIN_MENU;
-        items[0]->lbl     = strdup("Config Error");
-        items[0]->arg     = strdup(err);
-        items[0]->execute = nmi_subsys_dbgerror;
+        items[0]->loc = NMI_MENU_LOCATION_MAIN_MENU;
+        items[0]->lbl = strdup("Config Error");
+        items[0]->arg = strdup(err);
+        items[0]->act = nmi_action_dbgerror;
 
         free(err);
     } else if (!(items = nmi_config_get_menu(cfg, &items_n))) {

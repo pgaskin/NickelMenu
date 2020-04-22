@@ -15,7 +15,7 @@ typedef struct {
     nmi_menu_location_t loc;
     char *lbl;
     char *arg;
-    int (*execute)(const char *arg, char **out_err); // can block, must return 0 on success, nonzero with out_err set to the malloc'd error message on error
+    int (*act)(const char *arg, char **out_err); // can block, must return 0 on success, nonzero with out_err set to the malloc'd error message on error
 } nmi_menu_item_t;
 
 // nmi_menu_hook hooks a dlopen'd libnickel handle to add the specified menus,

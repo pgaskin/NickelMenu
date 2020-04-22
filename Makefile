@@ -72,7 +72,7 @@ override GENERATED += KoboRoot KoboRoot.tgz
 src/libnmi.so: override CFLAGS   += $(PTHREAD_CFLAGS) -fPIC
 src/libnmi.so: override CXXFLAGS += $(PTHREAD_CFLAGS) $(QT5CORE_CFLAGS) $(QT5WIDGETS_CFLAGS) -fPIC
 src/libnmi.so: override LDFLAGS  += $(PTHREAD_LIBS) $(QT5CORE_LIBS) $(QT5WIDGETS_LIBS) -ldl -Wl,-soname,libnmi.so
-src/libnmi.so: src/qtplugin.o src/init.o src/config.o src/dlhook.o src/failsafe.o src/menu.o src/subsys_c.o src/subsys_cc.o
+src/libnmi.so: src/qtplugin.o src/init.o src/config.o src/dlhook.o src/failsafe.o src/menu.o src/action_c.o src/action_cc.o
 
 override LIBRARIES += src/libnmi.so
 override MOCS      += src/qtplugin.moc

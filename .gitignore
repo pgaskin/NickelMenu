@@ -8,9 +8,9 @@
 
 /src/failsafe.o
 /src/init.o
-/src/subsys_c.o
 /src/config.o
 /src/dlhook.o
+/src/action_c.o
 
 /src/menu.o
-/src/subsys_cc.o
+/src/action_cc.o

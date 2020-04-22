@@ -5,11 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "action_c.h"
+#include "action_cc.h"
 #include "config.h"
 #include "menu.h"
 #include "util.h"
-#include "subsys_c.h"
-#include "subsys_cc.h"
 
 typedef enum {
     NMI_CONFIG_TYPE_MENU_ITEM = 1,

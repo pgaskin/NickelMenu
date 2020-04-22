@@ -11,7 +11,7 @@ typedef struct nmi_config_t nmi_config_t;
 
 // nmi_config_parse parses the configuration files in /mnt/onboard/.adds/nmi.
 // An error is returned if there are syntax errors, file access errors, or
-// invalid subsystem names for menu_item.
+// invalid action names for menu_item.
 nmi_config_t *nmi_config_parse(char **err_out);
 
 // nmi_config_get_menu gets a malloc'd array of pointers to the menu items
