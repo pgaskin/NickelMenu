@@ -80,8 +80,7 @@ extern "C" MenuTextItem* _nmi_menu_hook(void* _this, QMenu* menu, QString const&
 
         NMI_LOG("Adding item '%s'...", ent->lbl);
 
-        QString lbl(ent->lbl);
-        MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, lbl, false, false, "");
+        MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, QString::fromUtf8(ent->lbl), false, false, "");
         QAction* action = AbstractNickelMenuController_createAction(_this, menu, item, true, true, false);
 
         // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
@@ -90,9 +89,7 @@ extern "C" MenuTextItem* _nmi_menu_hook(void* _this, QMenu* menu, QString const&
             char *err;
             if (ent->execute(ent->arg, &err) && err) {
                 NMI_LOG("Got error %s, displaying...", err);
-                QString title("nickel-menu-inject");
-                QString text(err);
-                ConfirmationDialogFactory_showOKDialog(title, text);
+                ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(ent->lbl), QString::fromUtf8(err));
                 free(err);
                 return;
             }
