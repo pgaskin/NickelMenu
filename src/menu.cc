@@ -23,8 +23,9 @@ static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem_orig)(voi
 static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem)(void*, QMenu*, QString const&, bool, bool, QString const&);
 
 // AbstractNickelMenuController::createAction finishes adding the action to the
-// menu. IDK what the bool params are for, but thing1 and thing2 always seem to
-// be true (I know one or the other is for if it is greyed out).
+// menu. IDK what the bool params are for, but the first and second always seem
+// to be true (I know one or the other is for if it is greyed out), and the
+// third is whether to add a separator after it.
 static QAction* (*AbstractNickelMenuController_createAction)(void*, QMenu*, QWidget*, bool, bool, bool);
 
 // ConfirmationDialogFactory::showOKDialog does what it says, with the provided
@@ -82,7 +83,7 @@ extern "C" MenuTextItem* _nmi_menu_hook(void* _this, QMenu* menu, QString const&
         NMI_LOG("Adding item '%s'...", ent->lbl);
 
         MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, QString::fromUtf8(ent->lbl), false, false, "");
-        QAction* action = AbstractNickelMenuController_createAction(_this, menu, item, true, true, false);
+        QAction* action = AbstractNickelMenuController_createAction(_this, menu, item, true, true, true);
 
         // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
         QObject::connect(action, &QAction::triggered, std::function<void(bool)>([ent](bool checked){
