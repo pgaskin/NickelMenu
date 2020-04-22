@@ -45,12 +45,4 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-#ifdef __cplusplus
-
-#include <dlfcn.h>
-
-// NMI_SYM loads a symbol from the global scope.
-#define NMI_SYM(var, sym) reinterpret_cast<void*&>(var) = dlsym(RTLD_DEFAULT, sym)
-
-#endif
 #endif
