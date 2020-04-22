@@ -5,10 +5,12 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "config.h"
 #include "failsafe.h"
 #include "menu.h"
+#include "subsys_c.h"
 #include "util.h"
 
 __attribute__((constructor)) void nmi_init() {
@@ -27,14 +29,33 @@ __attribute__((constructor)) void nmi_init() {
         goto stop;
     }
 
-    // TODO: handle uninstall
+    NMI_LOG("init: checking for uninstall flag");
+    if (!access("/mnt/onboard/.adds/nmi/uninstall", F_OK)) {
+        NMI_LOG("init: flag found, uninstalling");
+        nmi_failsafe_uninstall(fs);
+        unlink("/mnt/onboard/.adds/nmi/uninstall");
+        goto stop;
+    }
 
     NMI_LOG("init: parsing config");
-    size_t entries_n;
-    nmi_menu_entry_t *entries;
-    if (!(entries = nmi_config_parse(&entries_n, &err)) && err) {
-        NMI_LOG("error: could not parse config: %s, stopping", err);
+    size_t items_n;
+    nmi_menu_item_t **items;
+    nmi_config_t *cfg;
+    if (!(cfg = nmi_config_parse(&err)) && err) {
+        NMI_LOG("error: could not parse config: %s, creating error item in main menu instead", err);
+
+        items_n = 1;
+        items   = calloc(items_n, sizeof(nmi_menu_item_t*));
+        *items  = calloc(items_n, sizeof(nmi_menu_item_t));
+    
+        items[0]->loc     = NMI_MENU_LOCATION_MAIN_MENU;
+        items[0]->lbl     = strdup("Config Error");
+        items[0]->arg     = strdup(err);
+        items[0]->execute = nmi_subsys_dbgerror;
+
         free(err);
+    } else if (!(items = nmi_config_get_menu(cfg, &items_n))) {
+        NMI_LOG("error: could not allocate memory, stopping");
         goto stop_fs;
     }
 
@@ -46,7 +67,7 @@ __attribute__((constructor)) void nmi_init() {
     }
 
     NMI_LOG("init: hooking libnickel");
-    if (nmi_menu_hook(libnickel, entries, entries_n, &err) && err) {
+    if (nmi_menu_hook(libnickel, items, items_n, &err) && err) {
         NMI_LOG("error: could not hook libnickel: %s, stopping", err);
         free(err);
         goto stop_fs;

@@ -60,7 +60,12 @@ static void *_nmi_failsafe_destroy(void* _fs) {
 void nmi_failsafe_destroy(nmi_failsafe_t *fs, int delay) {
     fs->delay = delay;
 
-    NMI_LOG("failsafe: starting restore thread");
+    NMI_LOG("failsafe: scheduling restore");
     pthread_t t;
     pthread_create(&t, NULL, _nmi_failsafe_destroy, fs);
+}
+
+void nmi_failsafe_uninstall(nmi_failsafe_t *fs) {
+    NMI_LOG("failsafe: deleting %s", fs->tmp);
+    unlink(fs->tmp);
 }

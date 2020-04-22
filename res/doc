@@ -9,7 +9,7 @@
 #
 # Place your configuration files in this folder (/mnt/onboard/.kobo/.adds/nmi).
 # They can be named anything, and should consist of multiple lines either
-# starting with # for a comment, or in the one of the following formats:
+# starting with # for a comment, or in the the following format:
 #
 #   menu_item:<location>:<label>:<subsystem>:<arg>
 #     Adds a menu item (spaces around fields are ignored).
@@ -31,11 +31,17 @@
 #                                       invert      - toggles FeatureSettings.InvertScreen (all versions)
 #                                       screenshots - toggles FeatureSettings.Screenshots (all versions)
 #
-#   uninstall
-#     Makes nickel-menu-inject uninstall itself.
-#
 # For example, you might have a configuration file in KOBOeReader/.adds/nmi/mystuff like:
 #
 #   menu_item :main   :Show an error :dbg_error      :This is an error message!
 #   menu_item :reader :Invert Screen :nickel_setting :invert
 #
+# If there is a error in the configuration, an item which displays it will be
+# added to the main menu. If an internal error occurs, it is written to syslog,
+# which can be viewed over telnet or SSH (the username is root) with the command
+# logread.
+#
+# To uninstall nickel-menu-inject, create a file named KOBOeReader/.adds/nmi/uninstall,
+# or manually uninstall it by deleting libnmi.so. You can also uninstall it by
+# triggering the failsafe mechanism by turning your Kobo off within 20 seconds
+# of turning it on. 

@@ -33,10 +33,10 @@ static QAction* (*AbstractNickelMenuController_createAction)(void*, QMenu*, QWid
 // a signal handler).
 static void (*ConfirmationDialogFactory_showOKDialog)(QString const&, QString const&);
 
-static nmi_menu_entry_t *_entries;
-static size_t _entries_n;
+static nmi_menu_item_t **_items;
+static size_t _items_n;
 
-extern "C" int nmi_menu_hook(void *libnickel, nmi_menu_entry_t *entries, size_t entries_n, char **err_out) {
+extern "C" int nmi_menu_hook(void *libnickel, nmi_menu_item_t **items, size_t items_n, char **err_out) {
     #define NMI_ERR_RET 1
     reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem) = dlsym(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_");
     reinterpret_cast<void*&>(AbstractNickelMenuController_createAction) = dlsym(libnickel, "_ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb");
@@ -53,8 +53,8 @@ extern "C" int nmi_menu_hook(void *libnickel, nmi_menu_entry_t *entries, size_t 
     reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem_orig) = nmi_dlhook(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", nmh, &err);
     NMI_ASSERT(AbstractNickelMenuController_createMenuTextItem_orig, "failed to hook _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_: %s", err);
 
-    _entries = entries;
-    _entries_n = entries_n;
+    _items = items;
+    _items_n = items_n;
 
     NMI_RETURN_OK(0);
     #undef NMI_ERR_RET
@@ -73,25 +73,25 @@ extern "C" MenuTextItem* _nmi_menu_hook(void* _this, QMenu* menu, QString const&
     if ((isrm = (label == trrm) && !checkable))
         NMI_LOG("Intercepting reader menu (label=Dictionary, checkable=false)...");
 
-    for (size_t i = 0; i < _entries_n; i++) {
-        nmi_menu_entry_t *ent = &_entries[i];
-        if (ent->loc == NMI_MENU_LOCATION_MAIN_MENU && !ismm)
+    for (size_t i = 0; i < _items_n; i++) {
+        nmi_menu_item_t *it = _items[i];
+        if (it->loc == NMI_MENU_LOCATION_MAIN_MENU && !ismm)
             continue;
-        if (ent->loc == NMI_MENU_LOCATION_READER_MENU && !isrm)
+        if (it->loc == NMI_MENU_LOCATION_READER_MENU && !isrm)
             continue;
 
-        NMI_LOG("Adding item '%s'...", ent->lbl);
+        NMI_LOG("Adding item '%s'...", it->lbl);
 
-        MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, QString::fromUtf8(ent->lbl), false, false, "");
+        MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, QString::fromUtf8(it->lbl), false, false, "");
         QAction* action = AbstractNickelMenuController_createAction(_this, menu, item, true, true, true);
 
         // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
-        QObject::connect(action, &QAction::triggered, std::function<void(bool)>([ent](bool checked){
-            NMI_LOG("Item '%s' pressed...", ent->lbl);
+        QObject::connect(action, &QAction::triggered, std::function<void(bool)>([it](bool checked){
+            NMI_LOG("Item '%s' pressed...", it->lbl);
             char *err;
-            if (ent->execute(ent->arg, &err) && err) {
+            if (it->execute(it->arg, &err) && err) {
                 NMI_LOG("Got error %s, displaying...", err);
-                ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(ent->lbl), QString::fromUtf8(err));
+                ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
                 free(err);
                 return;
             }

@@ -19,6 +19,10 @@ nmi_failsafe_t *nmi_failsafe_create(char **err_out);
 // after a delay. The nmi_failsafe_t must not be used afterwards.
 void nmi_failsafe_destroy(nmi_failsafe_t *fs, int delay);
 
+// nmi_failsafe_uninstall uninstalls the lib. The nmi_failsafe_t must not be
+// used afterwards.
+void nmi_failsafe_uninstall(nmi_failsafe_t *fs);
+
 #ifdef __cplusplus
 }
 #endif

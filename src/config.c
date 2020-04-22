@@ -1,4 +1,6 @@
 #define _GNU_SOURCE
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,40 +11,54 @@
 #include "subsys_c.h"
 #include "subsys_cc.h"
 
-// TODO: actually parse it
+typedef enum {
+    NMI_CONFIG_TYPE_MENU_ITEM = 1,
+} nmi_config_type_t;
 
-nmi_menu_entry_t *nmi_config_parse(size_t *n, char **err_out) {
+struct nmi_config_t {
+    nmi_config_type_t type;
+    union {
+        nmi_menu_item_t *menu_item;
+    } value;
+    nmi_config_t *next;
+};
+
+nmi_config_t *nmi_config_parse(char **err_out) {
     #define NMI_ERR_RET NULL
-    NMI_ASSERT(n, "required argument is null");
-    nmi_menu_entry_t *me = calloc(5, sizeof(nmi_menu_entry_t));
 
-    me[0].loc = NMI_MENU_LOCATION_MAIN_MENU;
-    me[0].lbl = strdup("Test Log (main)");
-    me[0].arg = strdup("It worked!");
-    me[0].execute = nmi_subsys_dbgsyslog;
-
-    me[1].loc = NMI_MENU_LOCATION_READER_MENU;
-    me[1].lbl = strdup("Test Log (reader)");
-    me[1].arg = strdup("It worked!");
-    me[1].execute = nmi_subsys_dbgsyslog;
-
-    me[2].loc = NMI_MENU_LOCATION_MAIN_MENU;
-    me[2].lbl = strdup("Test Error (main)");
-    me[2].arg = strdup("It's a fake error!");
-    me[2].execute = nmi_subsys_dbgerror;
-
-    me[3].loc = NMI_MENU_LOCATION_READER_MENU;
-    me[3].lbl = strdup("Test Error (reader)");
-    me[3].arg = strdup("It's a fake error!");
-    me[3].execute = nmi_subsys_dbgerror;
-
-    me[4].loc = NMI_MENU_LOCATION_READER_MENU;
-    me[4].lbl = strdup("Invert Screen");
-    me[4].arg = "invert";
-    me[4].execute = nmi_subsys_nickelsetting;
-
-    *n = 5;
-    NMI_RETURN_OK(me);
+    NMI_RETURN_ERR("not implemented");
     #undef NMI_ERR_RET
 }
 
+nmi_menu_item_t **nmi_config_get_menu(nmi_config_t *cfg, size_t *n_out) {
+    *n_out = 0;
+    for (nmi_config_t *cur = cfg; cur; cur = cfg->next)
+        if (cur->type == NMI_CONFIG_TYPE_MENU_ITEM)
+            (*n_out)++;
+
+    nmi_menu_item_t **it = calloc(*n_out, sizeof(nmi_menu_item_t*));
+    if (!it)
+        return NULL;
+
+    nmi_menu_item_t **tmp = it;
+    for (nmi_config_t *cur = cfg; cur; cur = cfg->next)
+        if (cur->type == NMI_CONFIG_TYPE_MENU_ITEM)
+           *(tmp++) = cur->value.menu_item;
+
+    return it;
+}
+
+void nmi_config_free(nmi_config_t *cfg) {
+    while (cfg) {
+        nmi_config_t *n = cfg->next;
+
+        if (cfg->type == NMI_CONFIG_TYPE_MENU_ITEM) {
+            free(cfg->value.menu_item->lbl);
+            free(cfg->value.menu_item->arg);
+            free(cfg->value.menu_item);
+        }
+        free(cfg);
+
+        cfg = n;
+    }
+};
