@@ -1,0 +1,41 @@
+# nickel-menu-inject (libnmi.so)
+#
+# This tool injects menu items into Nickel.
+#
+# It should work on firmware 4.6+, but it has only been tested on 4.20.14622. It
+# is perfectly safe to try out on any newer firmware version, as it has a lot of
+# error checking, and a failsafe mechanism which automatically uninstalls it as
+# a last resort.
+#
+# Place your configuration files in this folder (/mnt/onboard/.kobo/.adds/nmi).
+# They can be named anything, and should consist of multiple lines either
+# starting with # for a comment, or in the one of the following formats:
+#
+#   menu_item:<location>:<label>:<subsystem>:<arg>
+#     Adds a menu item (spaces around fields are ignored).
+#
+#     <location>   the menu to add the item to, one of:
+#                    main   - the menu in the top-left corner of the home screen
+#                    reader - the overflow menu in the reader
+#     <label>      the label to show on the menu item (must not contain :)
+#     <subsystem>  the type of action to run, one of:
+#                    dbg_syslog     - writes a message to syslog (for testing)
+#                    dbg_error      - always returns an error (for testing)
+#                    kfmon          - triggers a kfmon action (coming soon)
+#                    nickel_setting - toggles a boolean setting (coming soon)
+#     <arg>        the argument passed to the subsystem:
+#                    dbg_syslog     - the text to write
+#                    dbg_error      - the error message
+#                    kfmon          - TODO
+#                    nickel_setting - one of:
+#                                       invert      - toggles FeatureSettings.InvertScreen (all versions)
+#                                       screenshots - toggles FeatureSettings.Screenshots (all versions)
+#
+#   uninstall
+#     Makes nickel-menu-inject uninstall itself.
+#
+# For example, you might have a configuration file in KOBOeReader/.adds/nmi/mystuff like:
+#
+#   menu_item :main   :Show an error :dbg_error      :This is an error message!
+#   menu_item :reader :Invert Screen :nickel_setting :invert
+#

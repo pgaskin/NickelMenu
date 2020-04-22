@@ -1,0 +1,15 @@
+# make gitignore
+/KoboRoot
+/src/libnmi.so
+
+/src/qtplugin.moc
+/src/qtplugin.o
+
+/src/failsafe.o
+/src/init.o
+/src/subsys_c.o
+/src/config.o
+/src/dlhook.o
+
+/src/menu.o
+/src/subsys_cc.o
