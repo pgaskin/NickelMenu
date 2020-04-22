@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "failsafe.h"
@@ -26,6 +27,8 @@ nmi_failsafe_t *nmi_failsafe_create(char **err_out) {
     Dl_info info;
     NMI_ASSERT(dladdr(nmi_failsafe_create, &info), "could not find own path");
     NMI_ASSERT(info.dli_fname, "dladdr did not return a filename");
+    char *d = strrchr(info.dli_fname, '.');
+    NMI_ASSERT(!(d && !strcmp(d, ".failsafe")), "lib was loaded from the failsafe for some reason");
     NMI_ASSERT((fs->orig = realpath(info.dli_fname, NULL)), "could not resolve %s", info.dli_fname);
     NMI_ASSERT(asprintf(&fs->tmp, "%s.failsafe", fs->orig) != -1, "could not generate temp filename");
 
