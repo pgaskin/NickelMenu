@@ -21,15 +21,22 @@
 #     <action>    the type of action to run, one of:
 #                   dbg_syslog     - writes a message to syslog (for testing)
 #                   dbg_error      - always returns an error (for testing)
-#                   kfmon          - triggers a kfmon action (coming soon)
-#                   nickel_setting - toggles a boolean setting (coming soon)
+#                   kfmon          - triggers a kfmon action (TODO)
+#                   nickel_setting - toggles a boolean setting
+#                   nickel_extras  - opens one of the beta features (TODO)
+#                   nickel_misc    - other stuff which isn't significant enough for its own category (TODO)
 #     <arg>       the argument passed to the action:
 #                   dbg_syslog     - the text to write
 #                   dbg_error      - the error message
 #                   kfmon          - TODO
 #                   nickel_setting - one of:
 #                                      invert      - toggles FeatureSettings.InvertScreen (all versions)
-#                                      screenshots - toggles FeatureSettings.Screenshots (all versions)
+#                                      screenshots - toggles FeatureSettings.Screenshots (all versions) (TODO)
+#                   nickel_extras - one of:
+#                                      TODO
+#                   misc           - one of:
+#                                      force_usb_connection - forces a usb connection dialog to be shown (TODO)
+#                                      rescan_books         - forces nickel to rescan books (TODO)
 #
 # For example, you might have a configuration file in KOBOeReader/.adds/nmi/mystuff like:
 #
