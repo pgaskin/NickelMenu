@@ -67,7 +67,7 @@ koboroot:
 	tar czf KoboRoot.tgz -C KoboRoot .; rm -rf KoboRoot
 
 .PHONY: all clean gitignore install koboroot
-override GENERATED += KoboRoot
+override GENERATED += KoboRoot KoboRoot.tgz
 
 src/libnmi.so: override CFLAGS   += $(PTHREAD_CFLAGS) -fPIC
 src/libnmi.so: override CXXFLAGS += $(PTHREAD_CFLAGS) $(QT5CORE_CFLAGS) $(QT5WIDGETS_CFLAGS) -fPIC
