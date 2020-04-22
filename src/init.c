@@ -1,8 +1,10 @@
-#define _GNU_SOURCE
+#define _GNU_SOURCE // program_invocation_short_name
 #include <link.h>
 #include <dlfcn.h>
+#include <errno.h> // program_invocation_short_name
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "config.h"
 #include "failsafe.h"
@@ -10,6 +12,11 @@
 #include "util.h"
 
 __attribute__((constructor)) void nmi_init() {
+    // for if it's been loaded with LD_PRELOAD rather than as a Qt plugin
+    if (strcmp(program_invocation_short_name, "nickel"))
+        if (!(getenv("LIBNMI_FORCE") && !strcmp(getenv("LIBNMI_FORCE"), "true")))
+            return;
+
     char *err;
 
     NMI_LOG("init: creating failsafe");

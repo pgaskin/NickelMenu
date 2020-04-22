@@ -46,7 +46,7 @@ static void *_nmi_failsafe_destroy(void* _fs) {
     sleep(fs->delay);
 
     NMI_LOG("failsafe: renaming %s to %s", fs->tmp, fs->orig);
-    if (!rename(fs->tmp, fs->orig))
+    if (rename(fs->tmp, fs->orig))
         NMI_LOG("error: could not rename lib");
 
     NMI_LOG("failsafe: freeing memory");

@@ -52,23 +52,22 @@ void *nmi_dlhook(void *handle, const char *symname, void *target, char **err_out
     // parse DT_DYNAMIC
     for (size_t i = 0; lm->l_ld[i].d_tag != DT_NULL; i++) {
         switch (lm->l_ld[i].d_tag) {
-        case DT_PLTREL:   dyn.plt_is_rela = lm->l_ld[i].d_un.d_val == DT_RELA;     break; // .rel.plt - is Rel or Rela
-        case DT_JMPREL:   dyn.plt._       = lm->l_ld[i].d_un.d_ptr;                break; // .rel.plt - offset from base
-        case DT_PLTRELSZ: dyn.plt_sz      = lm->l_ld[i].d_un.d_val;                break; // .rel.plt - size in bytes
-        case DT_RELENT:   dyn.plt_ent_sz  = lm->l_ld[i].d_un.d_val;                break; // .rel.plt - entry size if Rel
-        case DT_RELAENT:  dyn.plt_ent_sz  = lm->l_ld[i].d_un.d_val;                break; // .rel.plt - entry size if Rela
-        case DT_SYMTAB:   dyn.sym         = (ElfW(Sym)*)(lm->l_ld[i].d_un.d_val);  break; // .dynsym  - offset
-        case DT_STRTAB:   dyn.str         = (const char*)(lm->l_ld[i].d_un.d_val); break; // .dynstr  - offset
+        case DT_PLTREL:   dyn.plt_is_rela = lm->l_ld[i].d_un.d_val == DT_RELA;          break; // .rel.plt - is Rel or Rela
+        case DT_JMPREL:   dyn.plt._       = lm->l_ld[i].d_un.d_ptr;                     break; // .rel.plt - offset from base
+        case DT_PLTRELSZ: dyn.plt_sz      = lm->l_ld[i].d_un.d_val;                     break; // .rel.plt - size in bytes
+        case DT_RELENT:   if (!dyn.plt_ent_sz) dyn.plt_ent_sz = lm->l_ld[i].d_un.d_val; break; // .rel.plt - entry size if Rel
+        case DT_RELAENT:  if (!dyn.plt_ent_sz) dyn.plt_ent_sz = lm->l_ld[i].d_un.d_val; break; // .rel.plt - entry size if Rela
+        case DT_SYMTAB:   dyn.sym         = (ElfW(Sym)*)(lm->l_ld[i].d_un.d_val);       break; // .dynsym  - offset
+        case DT_STRTAB:   dyn.str         = (const char*)(lm->l_ld[i].d_un.d_val);      break; // .dynstr  - offset
         }
     }
     NMI_LOG("DT_DYNAMIC: plt_is_rela=%d plt=%p plt_sz=%lu plt_ent_sz=%lu sym=%p str=%p", dyn.plt_is_rela, (void*)(dyn.plt)._, dyn.plt_sz, dyn.plt_ent_sz, dyn.sym, dyn.str);
-
-    ElfW(Xword) plt_ent_n = dyn.plt_sz / dyn.plt_ent_sz;
+    NMI_ASSERT(dyn.plt_ent_sz, "plt_ent_sz is zero");
     NMI_ASSERT(dyn.plt_sz%dyn.plt_ent_sz == 0, ".rel.plt length is not a multiple of plt_ent_sz");
     NMI_ASSERT((dyn.plt_is_rela ? sizeof(*dyn.plt.rela) : sizeof(*dyn.plt.rel)) == dyn.plt_ent_sz, "size mismatch (%lu != %lu)", dyn.plt_is_rela ? sizeof(*dyn.plt.rela) : sizeof(*dyn.plt.rel), dyn.plt_ent_sz);
 
     // parse the dynamic symbol table, resolve symbols to relocations, then GOT entries
-    for (size_t i = 0; i < plt_ent_n; i++) {
+    for (size_t i = 0; i < dyn.plt_sz/dyn.plt_ent_sz; i++) {
         // note: Rela is a superset of Rel
         ElfW(Rel) *rel = dyn.plt_is_rela
             ? (ElfW(Rel)*)(&dyn.plt.rela[i])
@@ -76,10 +75,6 @@ void *nmi_dlhook(void *handle, const char *symname, void *target, char **err_out
         NMI_ASSERT(ELFW(R_TYPE)(rel->r_info) == R_JUMP_SLOT, "not a jump slot relocation (R_TYPE=%lu)", ELFW(R_TYPE)(rel->r_info));
 
         ElfW(Sym) *sym = &dyn.sym[ELFW(R_SYM)(rel->r_info)];
-        NMI_ASSERT(ELFW(ST_TYPE)(sym->st_info) != STT_GNU_IFUNC, "STT_GNU_IFUNC not implemented");
-        NMI_ASSERT(ELFW(ST_TYPE)(sym->st_info) == STT_FUNC, "not a function symbol (ST_TYPE=%d)", ELFW(ST_TYPE)(sym->st_info));
-        NMI_ASSERT(ELFW(ST_BIND)(sym->st_info) == STB_GLOBAL, "not a globally bound symbol (ST_BIND=%d)", ELFW(ST_BIND)(sym->st_info));
-
         const char *str = &dyn.str[sym->st_name];
         if (strcmp(str, symname))
             continue;
@@ -87,18 +82,25 @@ void *nmi_dlhook(void *handle, const char *symname, void *target, char **err_out
         void **gotoff = (void**)(lm->l_addr + rel->r_offset);
         NMI_LOG("found symbol %s (gotoff=%p [mapped=%p])", str, (void*)(rel->r_offset), gotoff);
 
+        NMI_ASSERT(ELFW(ST_TYPE)(sym->st_info) != STT_GNU_IFUNC, "STT_GNU_IFUNC not implemented (gotoff=%p)", (void*)(rel->r_offset));
+        NMI_ASSERT(ELFW(ST_TYPE)(sym->st_info) == STT_FUNC, "not a function symbol (ST_TYPE=%d) (gotoff=%p)", ELFW(ST_TYPE)(sym->st_info), (void*)(rel->r_offset));
+        NMI_ASSERT(ELFW(ST_BIND)(sym->st_info) == STB_GLOBAL, "not a globally bound symbol (ST_BIND=%d) (gotoff=%p)", ELFW(ST_BIND)(sym->st_info), (void*)(rel->r_offset));
+
         // remove memory protection (to bypass RELRO if it is enabled)
         // note: this doesn't seem to be used on the Kobo, but we might as well stay on the safe side (plus, I test this on my local machine too)
         // note: the only way to read the current memory protection is to parse /proc/maps, but there's no harm in unprotecting it again if it's not protected
         // note: we won't put it back afterwards, as if full RELRO (i.e. RTLD_NOW) wasn't enabled, it would cause segfaults when resolving symbols later on
+        NMI_LOG("removing memory protection");
         long pagesize = sysconf(_SC_PAGESIZE);
         NMI_ASSERT(pagesize != -1, "could not get memory page size");
         void *gotpage = (void*)((size_t)(gotoff) & ~(pagesize-1));
         NMI_ASSERT(!mprotect(gotpage, pagesize, PROT_READ|PROT_WRITE), "could not set memory protection of page %p containing %p to PROT_READ|PROT_WRITE", gotpage, gotoff);
 
         // replace the target offset
+        NMI_LOG("patching symbol");
         void *orig = *gotoff;
         *gotoff = target;
+        NMI_LOG("successfully patched symbol %s (orig=%p, new=%p)", str, orig, target);
         NMI_RETURN_OK(orig);
     }
 
