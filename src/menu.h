@@ -22,7 +22,7 @@ typedef struct {
 // and returns 0 on success, or 1 with err_out (if provided) set to the malloc'd
 // error message on error. The provided configuration and all pointers it
 // references must remain valid for the lifetime of the program (i.e. not stack
-// allocated).
+// allocated). It MUST NOT be called more than once.
 int nmi_menu_hook(void *libnickel, nmi_menu_entry_t *entries, size_t entries_n, char **err_out);
 
 #ifdef __cplusplus
