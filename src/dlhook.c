@@ -86,6 +86,11 @@ void *nmi_dlhook(void *handle, const char *symname, void *target, char **err_out
         NMI_ASSERT(ELFW(ST_TYPE)(sym->st_info) == STT_FUNC, "not a function symbol (ST_TYPE=%d) (gotoff=%p)", ELFW(ST_TYPE)(sym->st_info), (void*)(rel->r_offset));
         NMI_ASSERT(ELFW(ST_BIND)(sym->st_info) == STB_GLOBAL, "not a globally bound symbol (ST_BIND=%d) (gotoff=%p)", ELFW(ST_BIND)(sym->st_info), (void*)(rel->r_offset));
 
+        // TODO: figure out why directly getting the offset from the GOT was broken on ARM, but not x86
+        NMI_LOG("ensuring the symbol is loaded");
+        void *orig = dlsym(handle, symname);
+        NMI_ASSERT(orig, "could not dlsym symbol");
+
         // remove memory protection (to bypass RELRO if it is enabled)
         // note: this doesn't seem to be used on the Kobo, but we might as well stay on the safe side (plus, I test this on my local machine too)
         // note: the only way to read the current memory protection is to parse /proc/maps, but there's no harm in unprotecting it again if it's not protected
@@ -98,7 +103,7 @@ void *nmi_dlhook(void *handle, const char *symname, void *target, char **err_out
 
         // replace the target offset
         NMI_LOG("patching symbol");
-        void *orig = *gotoff;
+        //void *orig = *gotoff;
         *gotoff = target;
         NMI_LOG("successfully patched symbol %s (orig=%p, new=%p)", str, orig, target);
         NMI_RETURN_OK(orig);
