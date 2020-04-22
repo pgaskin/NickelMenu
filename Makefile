@@ -59,7 +59,7 @@ gitignore:
 		sed 's/^./\/&/' >> .gitignore
 
 install:
-	install -Dm644 src/libnmi.so $(DESTDIR)/usr/local/Kobo/plugins/libnmi.so
+	install -Dm644 src/libnmi.so $(DESTDIR)/usr/local/Kobo/imageformats/libnmi.so
 	install -Dm644 res/doc $(DESTDIR)/mnt/onboard/.adds/nmi/doc
 
 koboroot:
