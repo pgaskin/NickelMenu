@@ -1,4 +1,5 @@
 #include <QAction>
+#include <QCoreApplication>
 #include <QMenu>
 #include <QString>
 #include <QWidget>
@@ -60,11 +61,14 @@ extern "C" int nmi_menu_hook(void *libnickel, nmi_menu_entry_t *entries, size_t 
 extern "C" MenuTextItem* _nmi_menu_hook(void* _this, QMenu* menu, QString const& label, bool checkable, bool checked, QString const& thingy) {
     NMI_LOG("AbstractNickelMenuController::createMenuTextItem(%p, `%s`, %d, %d, `%s`)", menu, qPrintable(label), checkable, checked, qPrintable(thingy));
 
-    // TODO: handle other locales (either parse the translations file, call tr, or something else)
+    QString trmm = QCoreApplication::translate("StatusBarMenuController", "Help");
+    QString trrm = QCoreApplication::translate("DictionaryActionProxy", "Dictionary");
+    NMI_LOG("Comparing against '%s', '%s'", qPrintable(trmm), qPrintable(trrm));
+
     bool ismm, isrm;
-    if ((ismm = !label.compare("Help") && !checkable))
+    if ((ismm = (label == trmm) && !checkable))
         NMI_LOG("Intercepting main menu (label=Help, checkable=false)...");
-    if ((isrm = !label.compare("Dictionary") && !checkable))
+    if ((isrm = (label == trrm) && !checkable))
         NMI_LOG("Intercepting reader menu (label=Dictionary, checkable=false)...");
 
     for (size_t i = 0; i < _entries_n; i++) {
