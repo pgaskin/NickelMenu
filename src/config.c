@@ -20,6 +20,10 @@
 #define NM_CONFIG_DIR "/mnt/onboard/.adds/nm"
 #endif
 
+#ifndef NM_CONFIG_MAX_MENU_ITEMS_PER_MENU
+#define NM_CONFIG_MAX_MENU_ITEMS_PER_MENU 50
+#endif
+
 typedef enum {
     NM_CONFIG_TYPE_MENU_ITEM = 1,
 } nm_config_type_t;
@@ -165,9 +169,18 @@ nm_config_t *nm_config_parse(char **err_out) {
         nm_config_push_menu_item(&cfg, it);
     }
 
-    for (nm_config_t *cur = cfg; cur; cur = cur->next)
-        if (cur->type == NM_CONFIG_TYPE_MENU_ITEM)
+    size_t mm = 0, rm = 0;
+    for (nm_config_t *cur = cfg; cur; cur = cur->next) {
+        if (cur->type == NM_CONFIG_TYPE_MENU_ITEM) {
             NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s:%p:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl, cur->value.menu_item->act, cur->value.menu_item->arg);
+            switch (cur->value.menu_item->loc){
+                case NM_MENU_LOCATION_MAIN_MENU:   mm++; break;
+                case NM_MENU_LOCATION_READER_MENU: rm++; break;
+            }
+        }
+    }
+    NM_ASSERT(mm <= NM_CONFIG_MAX_MENU_ITEMS_PER_MENU, "too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
+    NM_ASSERT(rm <= NM_CONFIG_MAX_MENU_ITEMS_PER_MENU, "too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
 
     // return the head of the list
     NM_RETURN_OK(cfg);
