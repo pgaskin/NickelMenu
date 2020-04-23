@@ -94,7 +94,7 @@ nm_config_t *nm_config_parse(char **err_out) {
 
         // parse each line
         char *line;
-        int line_n;
+        int line_n = 0;
         ssize_t line_sz;
         size_t line_bufsz = 0;
         while ((line_sz = getline(&line, &line_bufsz, cfgfile)) != -1) {
