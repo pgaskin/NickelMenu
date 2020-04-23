@@ -128,7 +128,20 @@ extern "C" int nm_action_nickelextras(const char *arg, char **err_out) {
 
 extern "C" int nm_action_nickelmisc(const char *arg, char **err_out) {
     #define NM_ERR_RET 1
-    if (!strcmp(arg, "rescan_books_full")) {
+    if (!strcmp(arg, "rescan_books")) {
+        PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
+        reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");
+        NM_ASSERT(PlugWorkflowManager_sharedInstance, "could not dlsym PlugWorkflowManager::sharedInstance");
+
+        void (*PlugWorkflowManager_sync)(PlugWorkflowManager*);
+        reinterpret_cast<void*&>(PlugWorkflowManager_sync) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager4syncEv");
+        NM_ASSERT(PlugWorkflowManager_sync, "could not dlsym PlugWorkflowManager::sync");
+
+        PlugWorkflowManager *wf = PlugWorkflowManager_sharedInstance();
+        NM_ASSERT(wf, "could not get shared PlugWorkflowManager pointer");
+
+        PlugWorkflowManager_sync(wf);
+    } else if (!strcmp(arg, "rescan_books_full")) {
         PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
         reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");
         NM_ASSERT(PlugWorkflowManager_sharedInstance, "could not dlsym PlugWorkflowManager::sharedInstance");

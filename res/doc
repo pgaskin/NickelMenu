@@ -41,10 +41,10 @@
 #                                      solitaire
 #                                      sudoku
 #                                      word_scramble
-#                   misc           - one of:
+#                   nickel_misc    - one of:
 #                                      force_usb_connection - forces a usb connection dialog to be shown
-#                                      rescan_books         - forces nickel to rescan books (TODO)
-#                                      rescan_books_full    - forcez a full usb connect/disconnect cycle (TODO)
+#                                      rescan_books         - forces nickel to rescan books
+#                                      rescan_books_full    - forces a full usb connect/disconnect cycle
 #                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
 #                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
 #
