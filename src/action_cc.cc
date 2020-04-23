@@ -230,7 +230,7 @@ extern "C" int nm_action_cmdspawn(const char *arg, char **err_out) {
     NM_ASSERT(ok, "could not start process");
 
     if (*err_out)
-        asprintf(err_out, "Successfully started process with PID %lu.", pid);
+        asprintf(err_out, "Successfully started process with PID %lu.", (unsigned long)(pid));
     return 2;
 
     #undef NM_ERR_RET
