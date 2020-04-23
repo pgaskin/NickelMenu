@@ -184,10 +184,10 @@ nm_menu_item_t **nm_config_get_menu(nm_config_t *cfg, size_t *n_out) {
     if (!it)
         return NULL;
 
-    nm_menu_item_t **tmp = it;
+    nm_menu_item_t **tmp = &it[*n_out - 1];
     for (nm_config_t *cur = cfg; cur; cur = cur->next)
         if (cur->type == NM_CONFIG_TYPE_MENU_ITEM)
-           *(tmp++) = cur->value.menu_item;
+           *(tmp--) = cur->value.menu_item;
 
     return it;
 }
