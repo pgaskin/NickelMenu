@@ -1,7 +1,9 @@
 #include <alloca.h>
 #include <dlfcn.h>
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "action_cc.h"
@@ -9,6 +11,7 @@
 
 typedef void Device;
 typedef void Settings;
+typedef void PlugWorkflowManager;
 
 extern "C" int nmi_action_nickelsetting(const char *arg, char **err_out) {
     #define NMI_ERR_RET 1
@@ -79,7 +82,7 @@ extern "C" int nmi_action_nickelsetting(const char *arg, char **err_out) {
     } else {
         // TODO: more settings
         Settings_SettingsD(settings);
-        NMI_RETURN_ERR("unknown setting name");
+        NMI_RETURN_ERR("unknown setting name '%s'", arg);
     }
 
     #undef vtable_ptr
@@ -87,6 +90,63 @@ extern "C" int nmi_action_nickelsetting(const char *arg, char **err_out) {
 
     Settings_SettingsD(settings);
 
+    NMI_RETURN_OK(0);
+    #undef NMI_ERR_RET
+}
+
+extern "C" int nmi_action_nickelextras(const char *arg, char **err_out) {
+    #define NMI_ERR_RET 1
+
+    if (!strcmp(arg, "web_browser")) {
+        NMI_RETURN_ERR("not implemented yet"); // TODO
+    }
+
+    const char* mimetype;
+    if (strchr(arg, '/'))                   mimetype = arg;
+    else if (!strcmp(arg, "unblock_it"))    mimetype = "application/x-games-RushHour";
+    else if (!strcmp(arg, "sketch_pad"))    mimetype = "application/x-games-Scribble";
+    else if (!strcmp(arg, "solitaire"))     mimetype = "application/x-games-Solitaire";
+    else if (!strcmp(arg, "sudoku"))        mimetype = "application/x-games-Sudoku";
+    else if (!strcmp(arg, "word_scramble")) mimetype = "application/x-games-Boggle";
+    else NMI_RETURN_ERR("unknown beta feature name or plugin mimetype '%s'", arg);
+
+    void (*ExtrasPluginLoader_loadPlugin)(const char*);
+    reinterpret_cast<void*&>(ExtrasPluginLoader_loadPlugin) = dlsym(RTLD_DEFAULT, "_ZN18ExtrasPluginLoader10loadPluginEPKc");
+    NMI_ASSERT(ExtrasPluginLoader_loadPlugin, "could not dlsym ExtrasPluginLoader::loadPlugin");
+    ExtrasPluginLoader_loadPlugin(mimetype);
+
+    NMI_RETURN_OK(0);
+    #undef NMI_ERR_RET
+}
+
+extern "C" int nmi_action_nickelmisc(const char *arg, char **err_out) {
+    #define NMI_ERR_RET 1
+    if (!strcmp(arg, "rescan_books")) {
+        PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
+        reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");
+        NMI_ASSERT(PlugWorkflowManager_sharedInstance, "could not dlsym PlugWorkflowManager::sharedInstance");
+
+        void (*PlugWorkflowManager_unplugged)(PlugWorkflowManager*);
+        reinterpret_cast<void*&>(PlugWorkflowManager_unplugged) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager9unpluggedEv");
+        NMI_ASSERT(PlugWorkflowManager_unplugged, "could not dlsym PlugWorkflowManager::unplugged");
+
+        PlugWorkflowManager *wf = PlugWorkflowManager_sharedInstance();
+        NMI_ASSERT(wf, "could not get shared PlugWorkflowManager pointer");
+
+        PlugWorkflowManager_unplugged(wf);
+        // TODO: finish this up
+        NMI_RETURN_ERR("not completely implemented yet");
+    } else if (!strcmp(arg, "force_usb_connection")) {
+        FILE *nhs;
+        NMI_ASSERT((nhs = fopen("/tmp/nickel-hardware-status", "w")), "could not open nickel hardware status pipe: %s", strerror(errno));
+
+        const char *msg = "usb plug add";
+        NMI_ASSERT(fputs(msg, nhs) >= 0, "could not write message '%s' to pipe: %s", msg, strerror(errno));
+
+        fclose(nhs);
+    } else {
+        NMI_RETURN_ERR("unknown action '%s'", arg);
+    }
     NMI_RETURN_OK(0);
     #undef NMI_ERR_RET
 }
