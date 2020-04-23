@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "action_cc.h"
 #include "util.h"
@@ -127,10 +128,15 @@ extern "C" int nm_action_nickelextras(const char *arg, char **err_out) {
 
 extern "C" int nm_action_nickelmisc(const char *arg, char **err_out) {
     #define NM_ERR_RET 1
-    if (!strcmp(arg, "rescan_books")) {
+    if (!strcmp(arg, "rescan_books_full")) {
         PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
         reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");
         NM_ASSERT(PlugWorkflowManager_sharedInstance, "could not dlsym PlugWorkflowManager::sharedInstance");
+
+        // this is what is called by PlugWorkflowManager::plugged after confirmation
+        void (*PlugWorkflowManager_onCancelAndConnect)(PlugWorkflowManager*);
+        reinterpret_cast<void*&>(PlugWorkflowManager_onCancelAndConnect) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager18onCancelAndConnectEv");
+        NM_ASSERT(PlugWorkflowManager_onCancelAndConnect, "could not dlsym PlugWorkflowManager::onCancelAndConnect");
 
         void (*PlugWorkflowManager_unplugged)(PlugWorkflowManager*);
         reinterpret_cast<void*&>(PlugWorkflowManager_unplugged) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager9unpluggedEv");
@@ -139,10 +145,11 @@ extern "C" int nm_action_nickelmisc(const char *arg, char **err_out) {
         PlugWorkflowManager *wf = PlugWorkflowManager_sharedInstance();
         NM_ASSERT(wf, "could not get shared PlugWorkflowManager pointer");
 
+        PlugWorkflowManager_onCancelAndConnect(wf);
+        sleep(1);
         PlugWorkflowManager_unplugged(wf);
-        // TODO: finish this up
-        NM_RETURN_ERR("not completely implemented yet");
     } else if (!strcmp(arg, "force_usb_connection")) {
+        // we could call libnickel directly, but I prefer not to
         FILE *nhs;
         NM_ASSERT((nhs = fopen("/tmp/nickel-hardware-status", "w")), "could not open nickel hardware status pipe: %s", strerror(errno));
 
