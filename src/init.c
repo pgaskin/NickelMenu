@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "action_c.h"
+#include "action_cc.h"
 #include "config.h"
 #include "failsafe.h"
 #include "menu.h"
@@ -44,10 +45,10 @@ __attribute__((constructor)) void nmi_init() {
     if (!(cfg = nmi_config_parse(&err)) && err) {
         NMI_LOG("error: could not parse config: %s, creating error item in main menu instead", err);
 
-        items_n = 1;
-        items   = calloc(items_n, sizeof(nmi_menu_item_t*));
-        *items  = calloc(items_n, sizeof(nmi_menu_item_t));
-    
+        items_n  = 1;
+        items    = calloc(items_n, sizeof(nmi_menu_item_t*));
+        items[0] = calloc(1, sizeof(nmi_menu_item_t));
+
         items[0]->loc = NMI_MENU_LOCATION_MAIN_MENU;
         items[0]->lbl = strdup("Config Error");
         items[0]->arg = strdup(err);
