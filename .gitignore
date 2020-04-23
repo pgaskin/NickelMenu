@@ -1,6 +1,6 @@
 # make gitignore
 /KoboRoot.tgz
-/src/libnmi.so
+/src/libnm.so
 
 /src/qtplugin.moc
 /src/qtplugin.o

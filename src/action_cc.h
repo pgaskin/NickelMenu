@@ -1,12 +1,12 @@
-#ifndef NMI_ACTION_CC_H
-#define NMI_ACTION_CC_H
+#ifndef NM_ACTION_CC_H
+#define NM_ACTION_CC_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int nmi_action_nickelsetting(const char *arg, char **err_out);
-int nmi_action_nickelextras(const char *arg, char **err_out);
-int nmi_action_nickelmisc(const char *arg, char **err_out);
+int nm_action_nickelsetting(const char *arg, char **err_out);
+int nm_action_nickelextras(const char *arg, char **err_out);
+int nm_action_nickelmisc(const char *arg, char **err_out);
 
 #ifdef __cplusplus
 }

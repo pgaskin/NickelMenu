@@ -1,5 +1,5 @@
-#ifndef NMI_UTIL_H
-#define NMI_UTIL_H
+#ifndef NM_UTIL_H
+#define NM_UTIL_H
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,34 +13,34 @@ extern "C" {
 
 // A bunch of useful macros to simplify error handling and logging.
 
-// NMI_LOG writes a log message.
-#define NMI_LOG(fmt, ...) syslog(LOG_DEBUG, "(nickel-menu-inject) " fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__)
+// NM_LOG writes a log message.
+#define NM_LOG(fmt, ...) syslog(LOG_DEBUG, "(NickelMenu) " fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__)
 
-// NMI_RETURN returns ret, and if ret is NMI_ERR_RET and err_out is not NULL, it
+// NM_RETURN returns ret, and if ret is NM_ERR_RET and err_out is not NULL, it
 // writes the formatted error message to *err_out as a malloc'd string. The
 // arguments may or may not be evaluated more than once.
-#define NMI_RETURN(ret, fmt, ...) do {                                                                 \
+#define NM_RETURN(ret, fmt, ...) do {                                                                 \
     typeof(ret) _ret = (ret);                                                                          \
     if (err_out) {                                                                                     \
-        if (_ret == NMI_ERR_RET) asprintf(err_out, fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__); \
+        if (_ret == NM_ERR_RET) asprintf(err_out, fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__); \
         else *err_out = NULL;                                                                          \
     }                                                                                                  \
     return _ret;                                                                                       \
 } while (0)
 
-// NMI_ASSERT is like assert, but it writes the formatted error message to
-// err_out as a malloc'd string, and returns NMI_ERR_RET. Cond will always be
+// NM_ASSERT is like assert, but it writes the formatted error message to
+// err_out as a malloc'd string, and returns NM_ERR_RET. Cond will always be
 // evaluated exactly once. The other arguments may or may not be evaluated one
 // or more times.
-#define NMI_ASSERT(cond, fmt, ...) do {                                                        \
-    if (!(cond)) NMI_RETURN(NMI_ERR_RET, fmt " (assertion failed: %s)", ##__VA_ARGS__, #cond); \
+#define NM_ASSERT(cond, fmt, ...) do {                                                        \
+    if (!(cond)) NM_RETURN(NM_ERR_RET, fmt " (assertion failed: %s)", ##__VA_ARGS__, #cond); \
 } while (0)
 
-// NMI_RETURN_ERR is the same as NMI_RETURN(NMI_ERR_RET, fmt, ...).
-#define NMI_RETURN_ERR(fmt, ...) NMI_RETURN(NMI_ERR_RET, fmt, ##__VA_ARGS__)
+// NM_RETURN_ERR is the same as NM_RETURN(NM_ERR_RET, fmt, ...).
+#define NM_RETURN_ERR(fmt, ...) NM_RETURN(NM_ERR_RET, fmt, ##__VA_ARGS__)
 
-// NMI_RETURN_OK is the same as NMI_RETURN(ret, "").
-#define NMI_RETURN_OK(ret) NMI_RETURN(ret, "")
+// NM_RETURN_OK is the same as NM_RETURN(ret, "").
+#define NM_RETURN_OK(ret) NM_RETURN(ret, "")
 
 #ifdef __cplusplus
 }

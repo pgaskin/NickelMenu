@@ -13,23 +13,23 @@ typedef void Device;
 typedef void Settings;
 typedef void PlugWorkflowManager;
 
-extern "C" int nmi_action_nickelsetting(const char *arg, char **err_out) {
-    #define NMI_ERR_RET 1
+extern "C" int nm_action_nickelsetting(const char *arg, char **err_out) {
+    #define NM_ERR_RET 1
 
     Device *(*Device_getCurrentDevice)();
     reinterpret_cast<void*&>(Device_getCurrentDevice) = dlsym(RTLD_DEFAULT, "_ZN6Device16getCurrentDeviceEv");
-    NMI_ASSERT(Device_getCurrentDevice, "could not dlsym Device::getCurrentDevice");
+    NM_ASSERT(Device_getCurrentDevice, "could not dlsym Device::getCurrentDevice");
 
     void *(*Settings_Settings)(Settings*, Device*, bool);
     reinterpret_cast<void*&>(Settings_Settings) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Deviceb");
-    NMI_ASSERT(Device_getCurrentDevice, "could not dlsym Settings constructor");
+    NM_ASSERT(Device_getCurrentDevice, "could not dlsym Settings constructor");
 
     void *(*Settings_SettingsD)(Settings*);
     reinterpret_cast<void*&>(Settings_SettingsD) = dlsym(RTLD_DEFAULT, "_ZN8SettingsD2Ev");
-    NMI_ASSERT(Settings_SettingsD, "could not dlsym Settings destructor");
+    NM_ASSERT(Settings_SettingsD, "could not dlsym Settings destructor");
 
     Device *dev = Device_getCurrentDevice();
-    NMI_ASSERT(dev, "could not get shared nickel device pointer");
+    NM_ASSERT(dev, "could not get shared nickel device pointer");
 
     Settings *settings = alloca(128); // way larger than it is, but better to be safe
     Settings_Settings(settings, dev, false);
@@ -54,35 +54,35 @@ extern "C" int nmi_action_nickelsetting(const char *arg, char **err_out) {
     #define vtable_target(x) reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(x)+8)
 
     void *Settings_vtable = dlsym(RTLD_DEFAULT, "_ZTV8Settings");
-    NMI_ASSERT(Settings_vtable, "could not dlsym the vtable for Settings");
-    NMI_ASSERT(vtable_ptr(settings) == vtable_target(Settings_vtable), "unexpected vtable layout (expected class to start with a pointer to 8 bytes into the vtable)");
+    NM_ASSERT(Settings_vtable, "could not dlsym the vtable for Settings");
+    NM_ASSERT(vtable_ptr(settings) == vtable_target(Settings_vtable), "unexpected vtable layout (expected class to start with a pointer to 8 bytes into the vtable)");
 
     if (!strcmp(arg, "invert")) {
         void *FeatureSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV15FeatureSettings");
-        NMI_ASSERT(FeatureSettings_vtable, "could not dlsym the vtable for FeatureSettings");
+        NM_ASSERT(FeatureSettings_vtable, "could not dlsym the vtable for FeatureSettings");
         vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
 
         bool (*FeatureSettings_invertScreen)(Settings*);
         reinterpret_cast<void*&>(FeatureSettings_invertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings12invertScreenEv");
-        NMI_ASSERT(FeatureSettings_invertScreen, "could not dlsym FeatureSettings::invertScreen");
+        NM_ASSERT(FeatureSettings_invertScreen, "could not dlsym FeatureSettings::invertScreen");
 
         bool (*FeatureSettings_setInvertScreen)(Settings*, bool);
         reinterpret_cast<void*&>(FeatureSettings_setInvertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings15setInvertScreenEb");
-        NMI_ASSERT(FeatureSettings_setInvertScreen, "could not dlsym FeatureSettings::setInvertScreen");
+        NM_ASSERT(FeatureSettings_setInvertScreen, "could not dlsym FeatureSettings::setInvertScreen");
 
         bool v = FeatureSettings_invertScreen(settings);
-        NMI_LOG("invertScreen = %d", v);
+        NM_LOG("invertScreen = %d", v);
         vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
 
         FeatureSettings_setInvertScreen(settings, !v);
         vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
 
-        NMI_ASSERT(FeatureSettings_invertScreen(settings) == !v, "failed to set setting");
+        NM_ASSERT(FeatureSettings_invertScreen(settings) == !v, "failed to set setting");
         vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
     } else {
         // TODO: more settings
         Settings_SettingsD(settings);
-        NMI_RETURN_ERR("unknown setting name '%s'", arg);
+        NM_RETURN_ERR("unknown setting name '%s'", arg);
     }
 
     #undef vtable_ptr
@@ -90,15 +90,15 @@ extern "C" int nmi_action_nickelsetting(const char *arg, char **err_out) {
 
     Settings_SettingsD(settings);
 
-    NMI_RETURN_OK(0);
-    #undef NMI_ERR_RET
+    NM_RETURN_OK(0);
+    #undef NM_ERR_RET
 }
 
-extern "C" int nmi_action_nickelextras(const char *arg, char **err_out) {
-    #define NMI_ERR_RET 1
+extern "C" int nm_action_nickelextras(const char *arg, char **err_out) {
+    #define NM_ERR_RET 1
 
     if (!strcmp(arg, "web_browser")) {
-        NMI_RETURN_ERR("not implemented yet"); // TODO
+        NM_RETURN_ERR("not implemented yet"); // TODO
     }
 
     const char* mimetype;
@@ -108,45 +108,45 @@ extern "C" int nmi_action_nickelextras(const char *arg, char **err_out) {
     else if (!strcmp(arg, "solitaire"))     mimetype = "application/x-games-Solitaire";
     else if (!strcmp(arg, "sudoku"))        mimetype = "application/x-games-Sudoku";
     else if (!strcmp(arg, "word_scramble")) mimetype = "application/x-games-Boggle";
-    else NMI_RETURN_ERR("unknown beta feature name or plugin mimetype '%s'", arg);
+    else NM_RETURN_ERR("unknown beta feature name or plugin mimetype '%s'", arg);
 
     void (*ExtrasPluginLoader_loadPlugin)(const char*);
     reinterpret_cast<void*&>(ExtrasPluginLoader_loadPlugin) = dlsym(RTLD_DEFAULT, "_ZN18ExtrasPluginLoader10loadPluginEPKc");
-    NMI_ASSERT(ExtrasPluginLoader_loadPlugin, "could not dlsym ExtrasPluginLoader::loadPlugin");
+    NM_ASSERT(ExtrasPluginLoader_loadPlugin, "could not dlsym ExtrasPluginLoader::loadPlugin");
     ExtrasPluginLoader_loadPlugin(mimetype);
 
-    NMI_RETURN_OK(0);
-    #undef NMI_ERR_RET
+    NM_RETURN_OK(0);
+    #undef NM_ERR_RET
 }
 
-extern "C" int nmi_action_nickelmisc(const char *arg, char **err_out) {
-    #define NMI_ERR_RET 1
+extern "C" int nm_action_nickelmisc(const char *arg, char **err_out) {
+    #define NM_ERR_RET 1
     if (!strcmp(arg, "rescan_books")) {
         PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
         reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");
-        NMI_ASSERT(PlugWorkflowManager_sharedInstance, "could not dlsym PlugWorkflowManager::sharedInstance");
+        NM_ASSERT(PlugWorkflowManager_sharedInstance, "could not dlsym PlugWorkflowManager::sharedInstance");
 
         void (*PlugWorkflowManager_unplugged)(PlugWorkflowManager*);
         reinterpret_cast<void*&>(PlugWorkflowManager_unplugged) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager9unpluggedEv");
-        NMI_ASSERT(PlugWorkflowManager_unplugged, "could not dlsym PlugWorkflowManager::unplugged");
+        NM_ASSERT(PlugWorkflowManager_unplugged, "could not dlsym PlugWorkflowManager::unplugged");
 
         PlugWorkflowManager *wf = PlugWorkflowManager_sharedInstance();
-        NMI_ASSERT(wf, "could not get shared PlugWorkflowManager pointer");
+        NM_ASSERT(wf, "could not get shared PlugWorkflowManager pointer");
 
         PlugWorkflowManager_unplugged(wf);
         // TODO: finish this up
-        NMI_RETURN_ERR("not completely implemented yet");
+        NM_RETURN_ERR("not completely implemented yet");
     } else if (!strcmp(arg, "force_usb_connection")) {
         FILE *nhs;
-        NMI_ASSERT((nhs = fopen("/tmp/nickel-hardware-status", "w")), "could not open nickel hardware status pipe: %s", strerror(errno));
+        NM_ASSERT((nhs = fopen("/tmp/nickel-hardware-status", "w")), "could not open nickel hardware status pipe: %s", strerror(errno));
 
         const char *msg = "usb plug add";
-        NMI_ASSERT(fputs(msg, nhs) >= 0, "could not write message '%s' to pipe: %s", msg, strerror(errno));
+        NM_ASSERT(fputs(msg, nhs) >= 0, "could not write message '%s' to pipe: %s", msg, strerror(errno));
 
         fclose(nhs);
     } else {
-        NMI_RETURN_ERR("unknown action '%s'", arg);
+        NM_RETURN_ERR("unknown action '%s'", arg);
     }
-    NMI_RETURN_OK(0);
-    #undef NMI_ERR_RET
+    NM_RETURN_OK(0);
+    #undef NM_ERR_RET
 }

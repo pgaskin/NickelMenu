@@ -6,7 +6,7 @@
 // we make it a fake image plugin so we can have Qt automatically load it
 // without needing extra configuration (e.g. LD_PRELOAD, -plugin arg, etc).
 
-class NMIPlugin : public QImageIOPlugin {
+class NMPlugin : public QImageIOPlugin {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QImageIOHandlerFactoryInterface")
 public:

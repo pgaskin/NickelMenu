@@ -47,7 +47,7 @@ override CXXFLAGS += -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=hard
 override LDFLAGS  += -Wl,-rpath,/usr/local/Kobo -Wl,-rpath,/usr/local/Qt-5.2.1-arm/lib
 endif
 
-all: src/libnmi.so
+all: src/libnm.so
 
 clean:
 	rm -f $(GENERATED)
@@ -59,21 +59,21 @@ gitignore:
 		sed 's/^./\/&/' >> .gitignore
 
 install:
-	install -Dm644 src/libnmi.so $(DESTDIR)/usr/local/Kobo/imageformats/libnmi.so
-	install -Dm644 res/doc $(DESTDIR)/mnt/onboard/.adds/nmi/doc
+	install -Dm644 src/libnm.so $(DESTDIR)/usr/local/Kobo/imageformats/libnm.so
+	install -Dm644 res/doc $(DESTDIR)/mnt/onboard/.adds/nm/doc
 
 koboroot:
-	tar cvzf KoboRoot.tgz --show-transformed --owner=root --group=root --mode="u=rwX,go=rX" --transform="s,src/libnmi.so,./usr/local/Kobo/imageformats/libnmi.so," --transform="s,res/doc,./mnt/onboard/.adds/nmi/doc," src/libnmi.so res/doc
+	tar cvzf KoboRoot.tgz --show-transformed --owner=root --group=root --mode="u=rwX,go=rX" --transform="s,src/libnm.so,./usr/local/Kobo/imageformats/libnm.so," --transform="s,res/doc,./mnt/onboard/.adds/nm/doc," src/libnm.so res/doc
 
 .PHONY: all clean gitignore install koboroot
 override GENERATED += KoboRoot.tgz
 
-src/libnmi.so: override CFLAGS   += $(PTHREAD_CFLAGS) -fPIC
-src/libnmi.so: override CXXFLAGS += $(PTHREAD_CFLAGS) $(QT5CORE_CFLAGS) $(QT5WIDGETS_CFLAGS) -fPIC
-src/libnmi.so: override LDFLAGS  += $(PTHREAD_LIBS) $(QT5CORE_LIBS) $(QT5WIDGETS_LIBS) -ldl -Wl,-soname,libnmi.so
-src/libnmi.so: src/qtplugin.o src/init.o src/config.o src/dlhook.o src/failsafe.o src/menu.o src/action_c.o src/action_cc.o
+src/libnm.so: override CFLAGS   += $(PTHREAD_CFLAGS) -fPIC
+src/libnm.so: override CXXFLAGS += $(PTHREAD_CFLAGS) $(QT5CORE_CFLAGS) $(QT5WIDGETS_CFLAGS) -fPIC
+src/libnm.so: override LDFLAGS  += $(PTHREAD_LIBS) $(QT5CORE_LIBS) $(QT5WIDGETS_LIBS) -ldl -Wl,-soname,libnm.so
+src/libnm.so: src/qtplugin.o src/init.o src/config.o src/dlhook.o src/failsafe.o src/menu.o src/action_c.o src/action_cc.o
 
-override LIBRARIES += src/libnmi.so
+override LIBRARIES += src/libnm.so
 override MOCS      += src/qtplugin.moc
 
 define patw =

@@ -1,4 +1,4 @@
-# nickel-menu-inject (libnmi.so)
+# NickelMenu (libnm.so)
 #
 # This tool injects menu items into Nickel.
 #
@@ -7,7 +7,7 @@
 # error checking, and a failsafe mechanism which automatically uninstalls it as
 # a last resort.
 #
-# Place your configuration files in this folder (/mnt/onboard/.kobo/.adds/nmi).
+# Place your configuration files in this folder (/mnt/onboard/.kobo/.adds/nm).
 # They can be named anything, and should consist of multiple lines either
 # starting with # for a comment, or in the the following format:
 #
@@ -43,7 +43,7 @@
 #                                      force_usb_connection - forces a usb connection dialog to be shown
 #                                      rescan_books         - forces nickel to rescan books (TODO)
 #
-# For example, you might have a configuration file in KOBOeReader/.adds/nmi/mystuff like:
+# For example, you might have a configuration file in KOBOeReader/.adds/nm/mystuff like:
 #
 #   menu_item :main   :Show an error :dbg_error      :This is an error message!
 #   menu_item :reader :Invert Screen :nickel_setting :invert
@@ -55,7 +55,7 @@
 # which can be viewed over telnet or SSH (the username is root) with the command
 # logread.
 #
-# To uninstall nickel-menu-inject, create a file named KOBOeReader/.adds/nmi/uninstall,
-# or manually uninstall it by deleting libnmi.so. You can also uninstall it by
+# To uninstall NickelMenu, create a file named KOBOeReader/.adds/nm/uninstall,
+# or manually uninstall it by deleting libnm.so. You can also uninstall it by
 # triggering the failsafe mechanism by turning your Kobo off within 20 seconds
 # of turning it on. 
