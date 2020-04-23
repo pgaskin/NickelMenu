@@ -1,7 +1,10 @@
+#include <QApplication>
 #include <QProcess>
 #include <QString>
 #include <QStringList>
 #include <QUrl>
+#include <QVariant>
+#include <QWidget>
 
 #include <initializer_list>
 
@@ -22,6 +25,30 @@ typedef void Settings;
 typedef void PlugWorkflowManager;
 typedef void BrowserWorkflowManager;
 typedef void N3SettingsExtrasController;
+typedef void MainWindowController;
+
+static void toast(QString const& primaryText, QString const& secondaryText, int msecs) {
+    MainWindowController *(*MainWindowController_sharedInstance)();
+    reinterpret_cast<void*&>(MainWindowController_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN20MainWindowController14sharedInstanceEv");
+    if (!MainWindowController_sharedInstance) {
+        NM_LOG("toast: could not dlsym MainWindowController::sharedInstance");
+        return;
+    }
+
+    void (*MainWindowController_toast)(MainWindowController*, QString const&, QString const&, int);
+    reinterpret_cast<void*&>(MainWindowController_toast) = dlsym(RTLD_DEFAULT, "_ZN20MainWindowController5toastERK7QStringS2_i");
+    if (!MainWindowController_toast) {
+        NM_LOG("toast: could not dlsym MainWindowController::toast");
+        return;
+    }
+
+    MainWindowController *mwc = MainWindowController_sharedInstance();
+    if (!mwc) {
+        NM_LOG("toast: could not get shared main window controller pointer");
+        return;
+    }
+    MainWindowController_toast(mwc, primaryText, secondaryText, msecs);
+}
 
 extern "C" int nm_action_nickelsetting(const char *arg, char **err_out) {
     #define NM_ERR_RET 1
@@ -67,28 +94,38 @@ extern "C" int nm_action_nickelsetting(const char *arg, char **err_out) {
     NM_ASSERT(Settings_vtable, "could not dlsym the vtable for Settings");
     NM_ASSERT(vtable_ptr(settings) == vtable_target(Settings_vtable), "unexpected vtable layout (expected class to start with a pointer to 8 bytes into the vtable)");
 
-    if (!strcmp(arg, "invert")) {
+    bool v = false;
+
+    if (!strcmp(arg, "invert") || !strcmp(arg, "screenshots")) {
         void *FeatureSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV15FeatureSettings");
         NM_ASSERT(FeatureSettings_vtable, "could not dlsym the vtable for FeatureSettings");
         vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
 
-        bool (*FeatureSettings_invertScreen)(Settings*);
-        reinterpret_cast<void*&>(FeatureSettings_invertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings12invertScreenEv");
-        NM_ASSERT(FeatureSettings_invertScreen, "could not dlsym FeatureSettings::invertScreen");
+        if (!strcmp(arg, "invert")) {
+            bool (*FeatureSettings_invertScreen)(Settings*);
+            reinterpret_cast<void*&>(FeatureSettings_invertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings12invertScreenEv");
+            NM_ASSERT(FeatureSettings_invertScreen, "could not dlsym FeatureSettings::invertScreen");
 
-        bool (*FeatureSettings_setInvertScreen)(Settings*, bool);
-        reinterpret_cast<void*&>(FeatureSettings_setInvertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings15setInvertScreenEb");
-        NM_ASSERT(FeatureSettings_setInvertScreen, "could not dlsym FeatureSettings::setInvertScreen");
+            bool (*FeatureSettings_setInvertScreen)(Settings*, bool);
+            reinterpret_cast<void*&>(FeatureSettings_setInvertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings15setInvertScreenEb");
+            NM_ASSERT(FeatureSettings_setInvertScreen, "could not dlsym FeatureSettings::setInvertScreen");
 
-        bool v = FeatureSettings_invertScreen(settings);
-        NM_LOG("invertScreen = %d", v);
-        vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+            v = FeatureSettings_invertScreen(settings);
+            vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
 
-        FeatureSettings_setInvertScreen(settings, !v);
-        vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+            FeatureSettings_setInvertScreen(settings, !v);
+            vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
 
-        NM_ASSERT(FeatureSettings_invertScreen(settings) == !v, "failed to set setting");
-        vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+            NM_ASSERT(FeatureSettings_invertScreen(settings) == !v, "failed to set setting");
+            vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+
+            QWidget *w = QApplication::topLevelAt(10, 10);
+            NM_LOG("updating top-level window %p after invert", w);
+            if (w)
+                w->update(); // TODO: figure out how to make it update _after_ the menu item redraws itself
+        } else if (!strcmp(arg, "screenshots")) {
+            NM_RETURN_ERR("not implemented yet");
+        }
     } else {
         // TODO: more settings
         Settings_SettingsD(settings);
@@ -99,6 +136,9 @@ extern "C" int nm_action_nickelsetting(const char *arg, char **err_out) {
     #undef vtable_target
 
     Settings_SettingsD(settings);
+
+    if (strcmp(arg, "invert")) // invert is obvious
+        toast(arg, v ? QStringLiteral("Disabled") : QStringLiteral("Enabled"), 1500);
 
     NM_RETURN_OK(0);
     #undef NM_ERR_RET
