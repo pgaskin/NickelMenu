@@ -5,11 +5,11 @@
 /src/qtplugin.moc
 /src/qtplugin.o
 
+/src/action_c.o
 /src/failsafe.o
 /src/init.o
 /src/config.o
 /src/dlhook.o
-/src/action_c.o
 
 /src/menu.o
 /src/action_cc.o

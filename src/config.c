@@ -132,6 +132,8 @@ nm_config_t *nm_config_parse(char **err_out) {
                 else if (!strcmp(c_act, "nickel_setting")) it->act = nm_action_nickelsetting;
                 else if (!strcmp(c_act, "nickel_extras"))  it->act = nm_action_nickelextras;
                 else if (!strcmp(c_act, "nickel_misc"))    it->act = nm_action_nickelmisc;
+                else if (!strcmp(c_act, "cmd_spawn"))      it->act = nm_action_cmdspawn;
+                else if (!strcmp(c_act, "cmd_output"))     it->act = nm_action_cmdoutput;
                 else RETERR("file %s: line %d: field 4: unknown action '%s'", fn, line_n, c_act);
 
                 // type: menu_item - field 5: argument

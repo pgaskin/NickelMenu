@@ -1,3 +1,9 @@
+#include <QProcess>
+#include <QString>
+#include <QStringList>
+
+#include <initializer_list>
+
 #include <alloca.h>
 #include <dlfcn.h>
 #include <errno.h>
@@ -148,5 +154,83 @@ extern "C" int nm_action_nickelmisc(const char *arg, char **err_out) {
         NM_RETURN_ERR("unknown action '%s'", arg);
     }
     NM_RETURN_OK(0);
+    #undef NM_ERR_RET
+}
+
+// TODO: stop abusing err_out to display messages, maybe add a msg_out arg
+// for that kind of thing instead (I've marked those spots by returning 2 for
+// now).
+
+extern "C" int nm_action_cmdspawn(const char *arg, char **err_out) {
+    #define NM_ERR_RET 1
+
+    QProcess proc;
+    uint64_t pid;
+    bool ok = proc.startDetached(
+        QStringLiteral("/bin/sh"),
+        QStringList(std::initializer_list<QString>{
+            QStringLiteral("-c"),
+            QString::fromUtf8(arg),
+        }),
+        QStringLiteral("/"),
+        (qint64*)(&pid)
+    );
+    NM_ASSERT(ok, "could not start process");
+
+    if (*err_out)
+        asprintf(err_out, "Successfully started process with PID %lu.", pid);
+    return 2;
+
+    #undef NM_ERR_RET
+}
+
+extern "C" int nm_action_cmdoutput(const char *arg, char **err_out) {
+    #define NM_ERR_RET 1
+
+    char *tmp = strdup(arg);
+
+    char *cmd = tmp;
+    char *tmp1 = strsep(&cmd, ":"), *tmp2;
+    long timeout = strtol(tmp1, &tmp2, 10);
+    NM_ASSERT(*tmp1 && !*tmp2 && timeout > 0 && timeout < 10000, "invalid timeout '%s'", tmp1);
+
+    QProcess proc;
+    proc.setProcessChannelMode(QProcess::MergedChannels);
+    proc.setWorkingDirectory(QStringLiteral("/"));
+    proc.start(
+        QStringLiteral("/bin/sh"),
+        QStringList(std::initializer_list<QString>{
+            QStringLiteral("-c"),
+            QString::fromUtf8(cmd),
+        }),
+        QIODevice::ReadOnly
+    );
+
+    bool ok = proc.waitForFinished(timeout);
+    if (!ok) {
+        switch (proc.error()) {
+        case QProcess::Timedout:
+            NM_RETURN_ERR("could not run process: timed out");
+        case QProcess::FailedToStart:
+            NM_RETURN_ERR("could not run process: missing program or wrong permissions");
+        case QProcess::Crashed:
+            NM_RETURN_ERR("could not run process: process crashed");
+        default:
+            NM_RETURN_ERR("could not run process");
+        }
+    }
+    if (proc.exitStatus() == QProcess::NormalExit && proc.exitCode() != 0)
+        NM_RETURN_ERR("could not run process: process exited with status %d", proc.exitCode());
+
+    QString out = proc.readAllStandardOutput();
+    if (out.length() > 500)
+        out = out.left(500) + "...";
+
+    free(tmp);
+
+    if (err_out)
+        *err_out = strdup(qPrintable(out));
+    return 2;
+
     #undef NM_ERR_RET
 }

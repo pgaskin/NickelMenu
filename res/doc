@@ -25,8 +25,8 @@
 #                   nickel_setting - toggles a boolean setting
 #                   nickel_extras  - opens one of the beta features
 #                   nickel_misc    - other stuff which isn't significant enough for its own category
-#                   cmdline_spawn  - starts another process or script in the background (TODO)
-#                   cmdline_output - runs a command and displays the output (TODO)
+#                   cmd_spawn      - starts another process or script in the background
+#                   cmd_output     - runs a command and displays the output
 #     <arg>       the argument passed to the action:
 #                   dbg_syslog     - the text to write
 #                   dbg_error      - the error message
@@ -44,6 +44,8 @@
 #                   misc           - one of:
 #                                      force_usb_connection - forces a usb connection dialog to be shown
 #                                      rescan_books         - forces nickel to rescan books (TODO)
+#                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
+#                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
 #
 # For example, you might have a configuration file in KOBOeReader/.adds/nm/mystuff like:
 #
