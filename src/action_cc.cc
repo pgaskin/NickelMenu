@@ -1,6 +1,7 @@
 #include <QProcess>
 #include <QString>
 #include <QStringList>
+#include <QUrl>
 
 #include <initializer_list>
 
@@ -19,6 +20,8 @@
 typedef void Device;
 typedef void Settings;
 typedef void PlugWorkflowManager;
+typedef void BrowserWorkflowManager;
+typedef void N3SettingsExtrasController;
 
 extern "C" int nm_action_nickelsetting(const char *arg, char **err_out) {
     #define NM_ERR_RET 1
@@ -105,7 +108,36 @@ extern "C" int nm_action_nickelextras(const char *arg, char **err_out) {
     #define NM_ERR_RET 1
 
     if (!strcmp(arg, "web_browser")) {
-        NM_RETURN_ERR("not implemented yet"); // TODO
+        void (*N3SettingsExtrasController_N3SettingsExtrasController)(N3SettingsExtrasController*);
+        reinterpret_cast<void*&>(N3SettingsExtrasController_N3SettingsExtrasController) = dlsym(RTLD_DEFAULT, "_ZN26N3SettingsExtrasControllerC2Ev");
+        NM_ASSERT(N3SettingsExtrasController_N3SettingsExtrasController, "could not dlsym N3SettingsExtrasController constructor");
+
+        void (*N3SettingsExtrasController_N3SettingsExtrasControllerD)(N3SettingsExtrasController*);
+        reinterpret_cast<void*&>(N3SettingsExtrasController_N3SettingsExtrasControllerD) = dlsym(RTLD_DEFAULT, "_ZN26N3SettingsExtrasControllerD1Ev");
+        NM_ASSERT(N3SettingsExtrasController_N3SettingsExtrasControllerD, "could not dlsym N3SettingsExtrasController destructor");
+
+        void (*N3SettingsExtrasController_openBrowser)(N3SettingsExtrasController*);
+        reinterpret_cast<void*&>(N3SettingsExtrasController_openBrowser) = dlsym(RTLD_DEFAULT, "_ZN26N3SettingsExtrasController11openBrowserEv");
+        NM_ASSERT(N3SettingsExtrasController_openBrowser, "could not dlsym BrowserWorkflowManager::openBrowser");
+
+        N3SettingsExtrasController *nse = alloca(128); // as of 4.20.14622, it's actually 48 bytes, but we're going to stay on the safe side
+        N3SettingsExtrasController_N3SettingsExtrasController(nse);
+        N3SettingsExtrasController_openBrowser(nse);
+        N3SettingsExtrasController_N3SettingsExtrasControllerD(nse);
+
+        // the QObject is only used to pass events to it, but there's something I'm missing here which leads to it segfaulting after connecting to WiFi if it isn't already connected
+        /*void (*BrowserWorkflowManager_BrowserWorkflowManager)(BrowserWorkflowManager*, QObject*);
+        reinterpret_cast<void*&>(BrowserWorkflowManager_BrowserWorkflowManager) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManagerC1EP7QObject");
+        NM_ASSERT(BrowserWorkflowManager_BrowserWorkflowManager, "could not dlsym BrowserWorkflowManager constructor");
+
+        void (*BrowserWorkflowManager_openBrowser)(BrowserWorkflowManager*, bool, QUrl const&, QString const&); // the bool is whether to open it as a modal, the string is CSS to inject
+        reinterpret_cast<void*&>(BrowserWorkflowManager_openBrowser) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString");
+        NM_ASSERT(BrowserWorkflowManager_openBrowser, "could not dlsym BrowserWorkflowManager::openBrowser");
+
+        BrowserWorkflowManager *bwm = alloca(128); // as of 4.20.14622, it's actually 20 bytes, but we're going to stay on the safe side
+        BrowserWorkflowManager_BrowserWorkflowManager(bwm, new QObject());
+        BrowserWorkflowManager_openBrowser(bwm, false, QUrl(), QStringLiteral("")); // if !QUrl::isValid(), it loads the homepage*/
+        NM_RETURN_OK(0);
     }
 
     const char* mimetype;
