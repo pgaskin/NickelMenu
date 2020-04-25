@@ -32,6 +32,8 @@
 #     <arg>       the argument passed to the action:
 #                   dbg_syslog     - the text to write
 #                   dbg_error      - the error message
+#                   dbg_msg        - the message
+#                   dbg_toast      - the message
 #                   kfmon          - TODO
 #                   nickel_setting - one of:
 #                                      invert      - toggles FeatureSettings.InvertScreen (all versions)
