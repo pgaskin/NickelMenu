@@ -34,7 +34,7 @@ $(call pkgconf,QT5WIDGETS,Qt5Widgets)
 
 CFLAGS   ?= -Wall -Wextra -Werror
 CXXFLAGS ?= -Wall -Wextra -Werror
-LDFLAGS  ?=
+LDFLAGS  ?= -Wl,--no-undefined
 
 # temporary workaround for broken cflags in kobo-toolchain Docker image:
 QT5CORE_CFLAGS    := $(shell echo "$(QT5CORE_CFLAGS)"    | sed 's:/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/:/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/:g')
@@ -84,7 +84,7 @@ define rpatw =
 endef
 
 $(LIBRARIES): src/%.so:
-	$(CC) -shared -o $@ $^ $(LDFLAGS)
+	$(CXX) -shared -o $@ $^ $(LDFLAGS)
 $(MOCS): %.moc: %.h
 	$(MOC) $< -o $@
 $(patsubst %.moc,%.o,$(MOCS)): %.o: %.moc
