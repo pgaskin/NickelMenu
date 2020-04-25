@@ -9,6 +9,7 @@
 /src/failsafe.o
 /src/init.o
 /src/config.o
+/src/action.o
 /src/dlhook.o
 
 /src/menu.o

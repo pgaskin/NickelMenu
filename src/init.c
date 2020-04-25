@@ -7,8 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "action_c.h"
-#include "action_cc.h"
+#include "action.h"
 #include "config.h"
 #include "failsafe.h"
 #include "menu.h"
@@ -52,7 +51,7 @@ __attribute__((constructor)) void nm_init() {
         items[0]->loc = NM_MENU_LOCATION_MAIN_MENU;
         items[0]->lbl = strdup("Config Error");
         items[0]->arg = strdup(err);
-        items[0]->act = nm_action_dbgerror;
+        items[0]->act = NM_ACTION(dbg_msg);
 
         free(err);
     } else if (!(items = nm_config_get_menu(cfg, &items_n))) {
