@@ -119,7 +119,7 @@ extern "C" int nm_action_nickelsetting(const char *arg, char **err_out) {
             NM_ASSERT(FeatureSettings_invertScreen(settings) == !v, "failed to set setting");
             vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
 
-            QWidget *w = QApplication::topLevelAt(10, 10);
+            QWidget *w = QApplication::topLevelAt(25, 25);
             NM_LOG("updating top-level window %p after invert", w);
             if (w)
                 w->update(); // TODO: figure out how to make it update _after_ the menu item redraws itself
