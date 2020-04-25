@@ -41,6 +41,16 @@ NM_ACTION_(nickel_setting) {
     reinterpret_cast<void*&>(Settings_SettingsD) = dlsym(RTLD_DEFAULT, "_ZN8SettingsD2Ev");
     NM_ASSERT(Settings_SettingsD, "could not dlsym Settings destructor");
 
+    // some settings don't have symbols in a usable form, and some are inlined, so we may need to set them directly
+    QVariant (*Settings_getSetting)(Settings*, QString const&, QVariant const&); // the last param is the default, also note that this requires a subclass of Settings
+    reinterpret_cast<void*&>(Settings_getSetting) = dlsym(RTLD_DEFAULT, "_ZN8Settings10getSettingERK7QStringRK8QVariant");
+    NM_ASSERT(Settings_getSetting, "could not dlsym Settings::getSetting");
+
+    // ditto
+    void *(*Settings_saveSetting)(Settings*, QString const&, QVariant const&, bool); // the last param is whether to do a full disk sync immediately (rather than waiting for the kernel to do it)
+    reinterpret_cast<void*&>(Settings_saveSetting) = dlsym(RTLD_DEFAULT, "_ZN8Settings11saveSettingERK7QStringRK8QVariantb");
+    NM_ASSERT(Settings_saveSetting, "could not dlsym Settings::saveSetting");
+
     Device *dev = Device_getCurrentDevice();
     NM_ASSERT(dev, "could not get shared nickel device pointer");
 
@@ -100,7 +110,16 @@ NM_ACTION_(nickel_setting) {
             if (w)
                 w->update(); // TODO: figure out how to make it update _after_ the menu item redraws itself
         } else if (!strcmp(arg, "screenshots")) {
-            NM_RETURN_ERR("not implemented yet");
+            QVariant v1 = Settings_getSetting(settings, QStringLiteral("Screenshots"), QVariant(false));
+            vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+
+            v = v1.toBool();
+
+            Settings_saveSetting(settings, QStringLiteral("Screenshots"), QVariant(!v), false);
+            vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+
+            QVariant v2 = Settings_getSetting(settings, QStringLiteral("Screenshots"), QVariant(false));
+            vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
         }
     } else if (!strcmp(arg, "lockscreen")) {
         void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV13PowerSettings");
