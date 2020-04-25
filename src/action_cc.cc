@@ -17,7 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "action_cc.h"
+#include "action.h"
 #include "util.h"
 
 typedef void Device;
@@ -25,33 +25,9 @@ typedef void Settings;
 typedef void PlugWorkflowManager;
 typedef void BrowserWorkflowManager;
 typedef void N3SettingsExtrasController;
-typedef void MainWindowController;
 
-static void toast(QString const& primaryText, QString const& secondaryText, int msecs) {
-    MainWindowController *(*MainWindowController_sharedInstance)();
-    reinterpret_cast<void*&>(MainWindowController_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN20MainWindowController14sharedInstanceEv");
-    if (!MainWindowController_sharedInstance) {
-        NM_LOG("toast: could not dlsym MainWindowController::sharedInstance");
-        return;
-    }
-
-    void (*MainWindowController_toast)(MainWindowController*, QString const&, QString const&, int);
-    reinterpret_cast<void*&>(MainWindowController_toast) = dlsym(RTLD_DEFAULT, "_ZN20MainWindowController5toastERK7QStringS2_i");
-    if (!MainWindowController_toast) {
-        NM_LOG("toast: could not dlsym MainWindowController::toast");
-        return;
-    }
-
-    MainWindowController *mwc = MainWindowController_sharedInstance();
-    if (!mwc) {
-        NM_LOG("toast: could not get shared main window controller pointer");
-        return;
-    }
-    MainWindowController_toast(mwc, primaryText, secondaryText, msecs);
-}
-
-extern "C" int nm_action_nickelsetting(const char *arg, char **err_out) {
-    #define NM_ERR_RET 1
+NM_ACTION_(nickel_setting) {
+    #define NM_ERR_RET nullptr
 
     Device *(*Device_getCurrentDevice)();
     reinterpret_cast<void*&>(Device_getCurrentDevice) = dlsym(RTLD_DEFAULT, "_ZN6Device16getCurrentDeviceEv");
@@ -137,15 +113,14 @@ extern "C" int nm_action_nickelsetting(const char *arg, char **err_out) {
 
     Settings_SettingsD(settings);
 
-    if (strcmp(arg, "invert")) // invert is obvious
-        toast(arg, v ? QStringLiteral("Disabled") : QStringLiteral("Enabled"), 1500);
-
-    NM_RETURN_OK(0);
+    NM_RETURN_OK(strcmp(arg, "invert") // invert is obvious
+        ? nm_action_result_toast("%s %s", v ? "disabled" : "enabled", arg)
+        : nm_action_result_silent());
     #undef NM_ERR_RET
 }
 
-extern "C" int nm_action_nickelextras(const char *arg, char **err_out) {
-    #define NM_ERR_RET 1
+NM_ACTION_(nickel_extras) {
+    #define NM_ERR_RET nullptr
 
     if (!strcmp(arg, "web_browser")) {
         void (*N3SettingsExtrasController_N3SettingsExtrasController)(N3SettingsExtrasController*);
@@ -177,7 +152,7 @@ extern "C" int nm_action_nickelextras(const char *arg, char **err_out) {
         BrowserWorkflowManager *bwm = alloca(128); // as of 4.20.14622, it's actually 20 bytes, but we're going to stay on the safe side
         BrowserWorkflowManager_BrowserWorkflowManager(bwm, new QObject());
         BrowserWorkflowManager_openBrowser(bwm, false, QUrl(), QStringLiteral("")); // if !QUrl::isValid(), it loads the homepage*/
-        NM_RETURN_OK(0);
+        NM_RETURN_OK(nm_action_result_silent());
     }
 
     const char* mimetype;
@@ -194,12 +169,12 @@ extern "C" int nm_action_nickelextras(const char *arg, char **err_out) {
     NM_ASSERT(ExtrasPluginLoader_loadPlugin, "could not dlsym ExtrasPluginLoader::loadPlugin");
     ExtrasPluginLoader_loadPlugin(mimetype);
 
-    NM_RETURN_OK(0);
+    NM_RETURN_OK(nm_action_result_silent());
     #undef NM_ERR_RET
 }
 
-extern "C" int nm_action_nickelmisc(const char *arg, char **err_out) {
-    #define NM_ERR_RET 1
+NM_ACTION_(nickel_misc) {
+    #define NM_ERR_RET nullptr
     if (!strcmp(arg, "rescan_books")) {
         PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
         reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");
@@ -245,17 +220,12 @@ extern "C" int nm_action_nickelmisc(const char *arg, char **err_out) {
     } else {
         NM_RETURN_ERR("unknown action '%s'", arg);
     }
-    NM_RETURN_OK(0);
+    NM_RETURN_OK(nm_action_result_silent());
     #undef NM_ERR_RET
 }
 
-// TODO: stop abusing err_out to display messages, maybe add a msg_out arg
-// for that kind of thing instead (I've marked those spots by returning 2 for
-// now).
-
-extern "C" int nm_action_cmdspawn(const char *arg, char **err_out) {
-    #define NM_ERR_RET 1
-
+NM_ACTION_(cmd_spawn) {
+    #define NM_ERR_RET nullptr
     QProcess proc;
     uint64_t pid;
     bool ok = proc.startDetached(
@@ -268,16 +238,12 @@ extern "C" int nm_action_cmdspawn(const char *arg, char **err_out) {
         (qint64*)(&pid)
     );
     NM_ASSERT(ok, "could not start process");
-
-    if (*err_out)
-        asprintf(err_out, "Successfully started process with PID %lu.", (unsigned long)(pid));
-    return 2;
-
+    NM_RETURN_OK(nm_action_result_toast("Successfully started process with PID %lu.", (unsigned long)(pid)));
     #undef NM_ERR_RET
 }
 
-extern "C" int nm_action_cmdoutput(const char *arg, char **err_out) {
-    #define NM_ERR_RET 1
+NM_ACTION_(cmd_output) {
+    #define NM_ERR_RET nullptr
 
     char *tmp = strdup(arg);
 
@@ -320,9 +286,7 @@ extern "C" int nm_action_cmdoutput(const char *arg, char **err_out) {
 
     free(tmp);
 
-    if (err_out)
-        *err_out = strdup(qPrintable(out));
-    return 2;
+    NM_RETURN_OK(nm_action_result_msg("%s", qPrintable(out)));
 
     #undef NM_ERR_RET
 }

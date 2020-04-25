@@ -6,6 +6,8 @@ extern "C" {
 
 #include <stddef.h>
 
+#include "action.h"
+
 typedef enum {
     NM_MENU_LOCATION_MAIN_MENU   = 1,
     NM_MENU_LOCATION_READER_MENU = 2,
@@ -15,7 +17,7 @@ typedef struct {
     nm_menu_location_t loc;
     char *lbl;
     char *arg;
-    int (*act)(const char *arg, char **out_err); // can block, must return 0 on success, nonzero with out_err set to the malloc'd error message on error
+    nm_action_fn_t act; // can block, must return 0 on success, nonzero with out_err set to the malloc'd error message on error
 } nm_menu_item_t;
 
 // nm_menu_hook hooks a dlopen'd libnickel handle to add the specified menus,
