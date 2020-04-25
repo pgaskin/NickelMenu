@@ -7,9 +7,9 @@
 # error checking, and a failsafe mechanism which automatically uninstalls it as
 # a last resort.
 #
-# Place your configuration files in this folder (/mnt/onboard/.kobo/.adds/nm).
-# They can be named anything, and should consist of multiple lines either
-# starting with # for a comment, or in the the following format:
+# Place your configuration files in this folder (/mnt/onboard/.adds/nm). They
+# can be named anything, and should consist of multiple lines either starting
+# with # for a comment, or in the the following format:
 #
 #   menu_item:<location>:<label>:<action>:<arg>
 #     Adds a menu item (spaces around fields are ignored).
