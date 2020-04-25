@@ -52,7 +52,7 @@
 #
 #   menu_item :main   :Show an Error  :dbg_error      :This is an error message!
 #   menu_item :main   :Do Nothing     :cmd_spawn      :sleep 60
-#   menu_item :main   :Kernel Version :cmd_output     :uname -a
+#   menu_item :main   :Kernel Version :cmd_output     :500:uname -a
 #   menu_item :main   :Sketch Pad     :nickel_extras  :Sketch Pad
 #   menu_item :reader :Invert Screen  :nickel_setting :invert
 #
