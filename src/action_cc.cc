@@ -102,6 +102,29 @@ NM_ACTION_(nickel_setting) {
         } else if (!strcmp(arg, "screenshots")) {
             NM_RETURN_ERR("not implemented yet");
         }
+    } else if (!strcmp(arg, "lockscreen")) {
+        void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV13PowerSettings");
+        NM_ASSERT(PowerSettings_vtable, "could not dlsym the vtable for PowerSettings");
+        vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+        if (!strcmp(arg, "lockscreen")) {
+            bool (*PowerSettings__getUnlockEnabled)(Settings*);
+            reinterpret_cast<void*&>(PowerSettings__getUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16getUnlockEnabledEv");
+            NM_ASSERT(PowerSettings__getUnlockEnabled, "could not dlsym PowerSettings::getUnlockEnabled");
+
+            bool (*PowerSettings__setUnlockEnabled)(Settings*, bool);
+            reinterpret_cast<void*&>(PowerSettings__setUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16setUnlockEnabledEb");
+            NM_ASSERT(PowerSettings__setUnlockEnabled, "could not dlsym PowerSettings::setUnlockEnabled");
+
+            v = PowerSettings__getUnlockEnabled(settings);
+            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+            PowerSettings__setUnlockEnabled(settings, !v);
+            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+            NM_ASSERT(PowerSettings__getUnlockEnabled(settings) == !v, "failed to set setting");
+            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+        }
     } else {
         // TODO: more settings
         Settings_SettingsD(settings);

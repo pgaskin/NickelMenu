@@ -37,6 +37,7 @@
 #                   kfmon          - TODO
 #                   nickel_setting - one of:
 #                                      invert      - toggles FeatureSettings.InvertScreen (all versions)
+#                                      lockscreen  - toggles PowerSettings.UnlockEnabled (4.12.12111+)
 #                                      screenshots - toggles FeatureSettings.Screenshots (all versions)
 #                   nickel_extras - the mimetype of the plugin, or one of:
 #                                      web_browser
