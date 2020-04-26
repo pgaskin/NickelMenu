@@ -9,15 +9,10 @@
 #
 # Place your configuration files in this folder (/mnt/onboard/.adds/nm). They
 # can be named anything, and should consist of multiple lines either starting
-# with # for a comment, or in the the following format:
+# with # for a comment, or in one of the the following formats:
 #
 #   menu_item:<location>:<label>:<action>:<arg>
 #     Adds a menu item (spaces around fields are ignored).
-#   chain:<action>:<arg>
-#     Adds an action to the chain that began with the preceeding menu_item.
-#     Actions are performed in the order they are written in the config order.
-#     chain lines MUST follow the menu_item they are attached to. A new menu_item
-#     marks the start of the next chain.
 #
 #     <location>  the menu to add the item to, one of:
 #                   main   - the menu in the top-left corner of the home screen
@@ -57,6 +52,12 @@
 #                                      rescan_books_full    - forces a full usb connect/disconnect cycle
 #                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
 #                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
+#
+#   chain:<action>:<arg>
+#     Adds an action to the chain that began with the preceding menu_item.
+#     Actions are performed in the order they are written.
+#     Each chain entry MUST follow the menu_item it is attached to. Another
+#     menu_item marks the start of the next chain.
 #
 # For example, you might have a configuration file in KOBOeReader/.adds/nm/mystuff like:
 #
