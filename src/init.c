@@ -47,11 +47,11 @@ __attribute__((constructor)) void nm_init() {
         items_n  = 1;
         items    = calloc(items_n, sizeof(nm_menu_item_t*));
         items[0] = calloc(1, sizeof(nm_menu_item_t));
-
         items[0]->loc = NM_MENU_LOCATION_MAIN_MENU;
         items[0]->lbl = strdup("Config Error");
-        items[0]->arg = strdup(err);
-        items[0]->act = NM_ACTION(dbg_msg);
+        items[0]->action = calloc(1, sizeof(nm_menu_action_t));
+        items[0]->action->arg = strdup(err);
+        items[0]->action->act = NM_ACTION(dbg_msg);
 
         free(err);
     } else if (!(items = nm_config_get_menu(cfg, &items_n))) {

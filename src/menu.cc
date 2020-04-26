@@ -102,33 +102,36 @@ extern "C" MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& 
         QObject::connect(action, &QAction::triggered, std::function<void(bool)>([it](bool){
             NM_LOG("Item '%s' pressed...", it->lbl);
             char *err;
-            nm_action_result_t *res = it->act(it->arg, &err);
-            if (err) {
-                NM_LOG("Got error: '%s', displaying...", err);
-                ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
-                free(err);
-                return;
-            } else if (res) {
-                NM_LOG("Got result: type=%d msg='%s', handling...", res->type, res->msg);
-                MainWindowController *mwc;
-                switch (res->type) {
-                case NM_ACTION_RESULT_TYPE_SILENT:
-                    break;
-                case NM_ACTION_RESULT_TYPE_MSG:
-                    ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QLatin1String(res->msg));
-                    break;
-                case NM_ACTION_RESULT_TYPE_TOAST:
-                    mwc = MainWindowController_sharedInstance();
-                    if (!mwc) {
-                        NM_LOG("toast: could not get shared main window controller pointer");
+            for (nm_menu_action_t *cur = it->action; cur; cur = cur->next) {
+                NM_LOG("running action %p with argument %s : ", cur->act, cur->arg);
+                nm_action_result_t *res = cur->act(cur->arg, &err);
+                if (err) {
+                    NM_LOG("Got error: '%s', displaying...", err);
+                    ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
+                    free(err);
+                    return;
+                } else if (res) {
+                    NM_LOG("Got result: type=%d msg='%s', handling...", res->type, res->msg);
+                    MainWindowController *mwc;
+                    switch (res->type) {
+                    case NM_ACTION_RESULT_TYPE_SILENT:
+                        break;
+                    case NM_ACTION_RESULT_TYPE_MSG:
+                        ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QLatin1String(res->msg));
+                        break;
+                    case NM_ACTION_RESULT_TYPE_TOAST:
+                        mwc = MainWindowController_sharedInstance();
+                        if (!mwc) {
+                            NM_LOG("toast: could not get shared main window controller pointer");
+                            break;
+                        }
+                        MainWindowController_toast(mwc, QLatin1String(res->msg), QStringLiteral(""), 1500);
                         break;
                     }
-                    MainWindowController_toast(mwc, QLatin1String(res->msg), QStringLiteral(""), 1500);
-                    break;
+                    nm_action_result_free(res);
+                } else {
+                    NM_LOG("warning: you should have returned a result with type silent, not null, upon success");
                 }
-                nm_action_result_free(res);
-            } else {
-                NM_LOG("warning: you should have returned a result with type silent, not null, upon success");
             }
             NM_LOG("Success!");
         }));

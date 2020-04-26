@@ -54,6 +54,12 @@ static void nm_config_push_menu_item(nm_config_t **cfg, nm_menu_item_t *it) {
     *cfg = tmp;
 }
 
+static void nm_config_push_action(nm_menu_action_t **cur, nm_menu_action_t *act) {
+    if (*cur)
+        (*cur)->next = act;
+    *cur = act;
+}
+
 nm_config_t *nm_config_parse(char **err_out) {
     #define NM_ERR_RET NULL
     NM_LOG("config: reading config dir %s", NM_CONFIG_DIR);
@@ -100,6 +106,9 @@ nm_config_t *nm_config_parse(char **err_out) {
         int line_n = 0;
         ssize_t line_sz;
         size_t line_bufsz = 0;
+
+        nm_menu_item_t *it = NULL;
+        nm_menu_action_t *cur_act = NULL;
         while ((line_sz = getline(&line, &line_bufsz, cfgfile)) != -1) {
             line_n++;
 
@@ -111,9 +120,10 @@ nm_config_t *nm_config_parse(char **err_out) {
             // field 1: type
             char *c_typ = strtrim(strsep(&cur, ":"));
             if (!strcmp(c_typ, "menu_item")) {
+                if (it) nm_config_push_menu_item(&cfg, it);
                 // type: menu_item
-                nm_menu_item_t *it = calloc(1, sizeof(nm_menu_item_t));
-
+                it = calloc(1, sizeof(nm_menu_item_t));
+                cur_act = NULL;
                 // type: menu_item - field 2: location
                 char *c_loc = strtrim(strsep(&cur, ":"));
                 if (!c_loc) RETERR("file %s: line %d: field 2: expected location, got end of line", fn, line_n);
@@ -126,10 +136,11 @@ nm_config_t *nm_config_parse(char **err_out) {
                 if (!c_lbl) RETERR("file %s: line %d: field 3: expected label, got end of line", fn, line_n);
                 else it->lbl = strdup(c_lbl);
 
+                nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
                 // type: menu_item - field 4: action
                 char *c_act = strtrim(strsep(&cur, ":"));
                 if (!c_act) RETERR("file %s: line %d: field 4: expected action, got end of line", fn, line_n);
-                #define X(name) else if (!strcmp(c_act, #name)) it->act = NM_ACTION(name);
+                #define X(name) else if (!strcmp(c_act, #name)) action->act = NM_ACTION(name);
                 NM_ACTIONS
                 #undef X
                 else RETERR("file %s: line %d: field 4: unknown action '%s'", fn, line_n, c_act);
@@ -137,12 +148,32 @@ nm_config_t *nm_config_parse(char **err_out) {
                 // type: menu_item - field 5: argument
                 char *c_arg = strtrim(cur);
                 if (!c_arg) RETERR("file %s: line %d: field 5: expected argument, got end of line\n", fn, line_n);
-                else it->arg = strdup(c_arg);
+                else action->arg = strdup(c_arg);
+                nm_config_push_action(&cur_act, action);
+                it->action = cur_act;
+            } else if (!strcmp(c_typ, "chain")) {
+                if (!it) RETERR("file %s: line %d: unexpected chain, no menu_item to link to", fn, line_n);
+                nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
 
-                nm_config_push_menu_item(&cfg, it);
+                // type: chain - field 2: action
+                char *c_act = strtrim(strsep(&cur, ":"));
+                if (!c_act) RETERR("file %s: line %d: field 2: expected action, got end of line", fn, line_n);
+                #define X(name) else if (!strcmp(c_act, #name)) action->act = NM_ACTION(name);
+                NM_ACTIONS
+                #undef X
+                else RETERR("file %s: line %d: field 2: unknown action '%s'", fn, line_n, c_act);
+
+                // type: chain - field 3: argument
+                char *c_arg = strtrim(cur);
+                if (!c_arg) RETERR("file %s: line %d: field 3: expected argument, got end of line\n", fn, line_n);
+                else action->arg = strdup(c_arg);
+                nm_config_push_action(&cur_act, action);
             } else RETERR("file %s: line %d: field 1: unknown type '%s'", fn, line_n, c_typ);
         }
-
+        // Push the last menu item onto the config
+        if (it) nm_config_push_menu_item(&cfg, it);
+        it = NULL;
+        cur_act = NULL;
         #undef RETERR
 
         fclose(cfgfile);
@@ -156,18 +187,20 @@ nm_config_t *nm_config_parse(char **err_out) {
     // add a default entry if none were found
     if (!cfg) {
         nm_menu_item_t *it = calloc(1, sizeof(nm_menu_item_t));
+        nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
         it->loc = NM_MENU_LOCATION_MAIN_MENU;
         it->lbl = strdup("NickelMenu");
-        it->arg = strdup("See KOBOeReader/.add/nm/doc for instructions on how to customize this menu.");
-        it->act = NM_ACTION(dbg_toast);
+        action->arg = strdup("See KOBOeReader/.add/nm/doc for instructions on how to customize this menu.");
+        action->act = NM_ACTION(dbg_toast);
         nm_config_push_menu_item(&cfg, it);
     }
 
     size_t mm = 0, rm = 0;
     for (nm_config_t *cur = cfg; cur; cur = cur->next) {
         if (cur->type == NM_CONFIG_TYPE_MENU_ITEM) {
-            NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s:%p:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl, cur->value.menu_item->act, cur->value.menu_item->arg);
-            switch (cur->value.menu_item->loc){
+            for (nm_menu_action_t *cur_act = cur->value.menu_item->action; cur_act; cur_act = cur_act->next)
+                NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s:%p:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl, cur_act->act, cur_act->arg);
+            switch (cur->value.menu_item->loc) {
                 case NM_MENU_LOCATION_MAIN_MENU:   mm++; break;
                 case NM_MENU_LOCATION_READER_MENU: rm++; break;
             }
@@ -205,7 +238,16 @@ void nm_config_free(nm_config_t *cfg) {
 
         if (cfg->type == NM_CONFIG_TYPE_MENU_ITEM) {
             free(cfg->value.menu_item->lbl);
-            free(cfg->value.menu_item->arg);
+            if (cfg->value.menu_item->action) {
+                nm_menu_action_t *cur = cfg->value.menu_item->action;
+                nm_menu_action_t *tmp;
+                while (cur) {
+                    tmp = cur;
+                    cur = cur->next;
+                    free(tmp->arg);
+                    free(tmp);
+                }
+            }
             free(cfg->value.menu_item);
         }
         free(cfg);

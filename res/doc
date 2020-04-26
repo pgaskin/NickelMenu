@@ -13,6 +13,11 @@
 #
 #   menu_item:<location>:<label>:<action>:<arg>
 #     Adds a menu item (spaces around fields are ignored).
+#   chain:<action>:<arg>
+#     Adds an action to the chain that began with the preceeding menu_item.
+#     Actions are performed in the order they are written in the config order.
+#     chain lines MUST follow the menu_item they are attached to. A new menu_item
+#     marks the start of the next chain.
 #
 #     <location>  the menu to add the item to, one of:
 #                   main   - the menu in the top-left corner of the home screen
