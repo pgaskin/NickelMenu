@@ -25,9 +25,12 @@ static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem_orig)(voi
 static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem)(void*, QMenu*, QString const&, bool, bool, QString const&);
 
 // AbstractNickelMenuController::createAction finishes adding the action to the
-// menu. IDK what the bool params are for, but the first and second always seem
-// to be true (I know one or the other is for if it is greyed out), and the
-// third is whether to add a separator after it.
+// menu.
+// First bool is whether to close the menu on tap (false: keep it open)
+// Second bool is whether the entry is enabled (false: grayed out)
+// Third bool is whether to add a separator after the entry (false: no separator)
+//     Note that, even in the Main Menu, it'll inherit the color of a Reader Menu separator (#66),
+//     instead of the usual dim (#BB) or solid (#00) seen in the stock Main Menu.
 static QAction* (*AbstractNickelMenuController_createAction)(void*, QMenu*, QWidget*, bool, bool, bool);
 
 // ConfirmationDialogFactory::showOKDialog does what it says, with the provided
