@@ -32,19 +32,13 @@ endef
 $(call pkgconf,QT5CORE,Qt5Core)
 $(call pkgconf,QT5WIDGETS,Qt5Widgets)
 
-CFLAGS   ?= -Wall -Wextra -Werror
-CXXFLAGS ?= -Wall -Wextra -Werror
-LDFLAGS  ?= -Wl,--no-undefined
+CFLAGS   ?= -O2 -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=hard -mthumb
+CXXFLAGS ?= -O2 -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=hard -mthumb
+LDFLAGS  ?= -Wl,--as-needed
 
-# temporary workaround for broken cflags in kobo-toolchain Docker image:
-QT5CORE_CFLAGS    := $(shell echo "$(QT5CORE_CFLAGS)"    | sed 's:/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/:/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/:g')
-QT5WIDGETS_CFLAGS := $(shell echo "$(QT5WIDGETS_CFLAGS)" | sed 's:/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/:/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/:g')
-override CFLAGS   += -I/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/include
-override CXXFLAGS += -I/toolchain/arm-nickel-linux-gnueabihf/arm-nickel-linux-gnueabihf/sysroot/include
-
-override CFLAGS   += -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=hard -mthumb -std=gnu11
-override CXXFLAGS += -march=armv7-a -mtune=cortex-a8 -mfpu=neon -mfloat-abi=hard -mthumb -std=gnu++11
-override LDFLAGS  += -Wl,-rpath,/usr/local/Kobo -Wl,-rpath,/usr/local/Qt-5.2.1-arm/lib
+override CFLAGS   += -std=gnu11 -Wall -Wextra -Werror
+override CXXFLAGS += -std=gnu++11 -Wall -Wextra -Werror
+override LDFLAGS  += -Wl,--no-undefined -Wl,-rpath,/usr/local/Kobo -Wl,-rpath,/usr/local/Qt-5.2.1-arm/lib
 endif
 
 all: src/libnm.so
