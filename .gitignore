@@ -5,7 +5,7 @@
 NickelMenu.kdev4
 .kateconfig
 
-# Build artefacts
+# Build artifacts
 /KoboRoot.tgz
 /src/libnm.so
 

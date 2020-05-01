@@ -49,7 +49,7 @@ define GITIGNORE_HEAD
 NickelMenu.kdev4
 .kateconfig
 
-# Build artefacts
+# Build artifacts
 endef
 export GITIGNORE_HEAD
 
