@@ -35,7 +35,7 @@
 #                   dbg_msg        - the message
 #                   dbg_toast      - the message
 #                   kfmon          - the filename of the KFMon watched item to launch.
-#                                    This is actually the basename of the watch's filename as specified in its KFMon config.
+#                                    This is actually the basename of the watch's filename as specified in its KFMon config (i.e., the png).
 #                                    You can also check the output of the 'list' command via the kfmon-ipc tool.
 #                   nickel_setting - one of:
 #                                      invert      - toggles FeatureSettings.InvertScreen (all versions)

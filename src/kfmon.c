@@ -455,7 +455,7 @@ nm_action_result_t* nm_kfmon_return_handler(int status, char **err_out) {
         } else if (status == KFMON_IPC_ERR_INVALID_ID) {
             NM_RETURN_ERR("Requested to start an invalid watch index");
         } else if (status == KFMON_IPC_ERR_INVALID_NAME) {
-            NM_RETURN_ERR("Requested to trigger an invalid watch filename (this is the image filename with, not the config) (maybe you forget the extension?)");
+            NM_RETURN_ERR("Requested to trigger an invalid watch filename (expected the basename of the image trigger)");
         } else if (status == KFMON_IPC_WARN_ALREADY_RUNNING) {
             NM_RETURN_ERR("Requested watch is already running");
         } else if (status == KFMON_IPC_WARN_SPAWN_BLOCKED) {
