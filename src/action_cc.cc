@@ -61,7 +61,7 @@ NM_ACTION_(nickel_setting) {
     // vtable pointer at the beginning needs to be replaced with the target
     // vtable address plus 8 (for the header) (and if we don't do this, the
     // virtual functions such as sectionName won't get resolved properly) (it
-    // it also needs to be restored after each function call, as that call may
+    // also needs to be restored after each function call, as that call may
     // change it to something itself).
 
     // warning: this is highly unportable, unsafe, and implementation

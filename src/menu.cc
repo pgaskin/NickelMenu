@@ -12,7 +12,7 @@
 #include "menu.h"
 #include "util.h"
 
-typedef QWidget MenuTextItem; // it's actually a subclass, but we don't need it's functionality directly, so we'll stay on the safe side
+typedef QWidget MenuTextItem; // it's actually a subclass, but we don't need its functionality directly, so we'll stay on the safe side
 typedef void MainWindowController;
 
 // AbstractNickelMenuController::createMenuTextItem creates a menu item in the
@@ -30,7 +30,7 @@ static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem)(void*, Q
 // Second bool is whether the entry is enabled (false: grayed out)
 // Third bool is whether to add a separator after the entry (false: no separator)
 //     Note that, even in the Main Menu, it'll inherit the color of a Reader Menu separator (#66),
-//     instead of the usual dim (#BB) or solid (#00) seen in the stock Main Menu.
+//     instead of the usual dim (#BB) or solid (#00) ones seen in the stock Main Menu.
 static QAction* (*AbstractNickelMenuController_createAction)(void*, QMenu*, QWidget*, bool, bool, bool);
 
 // ConfirmationDialogFactory::showOKDialog does what it says, with the provided

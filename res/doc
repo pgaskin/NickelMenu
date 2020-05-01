@@ -70,7 +70,7 @@
 #
 # You will need to reboot to see any changes.
 #
-# If there is a error in the configuration, an item which displays it will be
+# If there is an error in the configuration, an item which displays it will be
 # added to the main menu. If an internal error occurs, it is written to syslog,
 # which can be viewed over telnet or SSH (the username is root) with the command
 # logread.
