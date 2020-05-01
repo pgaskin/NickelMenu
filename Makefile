@@ -41,13 +41,25 @@ override CXXFLAGS += -std=gnu++11 -Wall -Wextra -Werror
 override LDFLAGS  += -Wl,--no-undefined -Wl,-rpath,/usr/local/Kobo -Wl,-rpath,/usr/local/Qt-5.2.1-arm/lib
 endif
 
+define GITIGNORE_HEAD
+# make gitignore
+
+# KDevelop
+.kdev4/
+NickelMenu.kdev4
+.kateconfig
+
+# Build artefacts
+endef
+export GITIGNORE_HEAD
+
 all: src/libnm.so
 
 clean:
 	rm -f $(GENERATED)
 
 gitignore:
-	echo '# make gitignore' > .gitignore
+	echo "$${GITIGNORE_HEAD}" > .gitignore
 	echo '$(GENERATED)' | \
 		sed 's/ /\n/g' | \
 		sed 's/^./\/&/' >> .gitignore
@@ -65,7 +77,7 @@ override GENERATED += KoboRoot.tgz
 src/libnm.so: override CFLAGS   += $(PTHREAD_CFLAGS) -fPIC
 src/libnm.so: override CXXFLAGS += $(PTHREAD_CFLAGS) $(QT5CORE_CFLAGS) $(QT5WIDGETS_CFLAGS) -fPIC
 src/libnm.so: override LDFLAGS  += $(PTHREAD_LIBS) $(QT5CORE_LIBS) $(QT5WIDGETS_LIBS) -ldl -Wl,-soname,libnm.so
-src/libnm.so: src/qtplugin.o src/init.o src/config.o src/dlhook.o src/failsafe.o src/menu.o src/action.o src/action_c.o src/action_cc.o
+src/libnm.so: src/qtplugin.o src/init.o src/config.o src/dlhook.o src/failsafe.o src/menu.o src/kfmon.o src/action.o src/action_c.o src/action_cc.o
 
 override LIBRARIES += src/libnm.so
 override MOCS      += src/qtplugin.moc
