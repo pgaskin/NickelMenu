@@ -144,6 +144,23 @@ NM_ACTION_(nickel_setting) {
             NM_ASSERT(PowerSettings__getUnlockEnabled(settings) == !v, "failed to set setting");
             vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
         }
+    }  else if (!strcmp(arg, "force_wifi")) {
+        void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV11DevSettings");
+        NM_ASSERT(PowerSettings_vtable, "could not dlsym the vtable for DevSettings");
+        vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+        if (!strcmp(arg, "force_wifi")) {
+            QVariant v1 = Settings_getSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(false));
+            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+            v = v1.toBool();
+
+            Settings_saveSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(!v), false);
+            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+            QVariant v2 = Settings_getSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(false));
+            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+        }
     } else {
         // TODO: more settings
         Settings_SettingsD(settings);

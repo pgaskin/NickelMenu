@@ -39,6 +39,7 @@
 #                                      invert      - toggles FeatureSettings.InvertScreen (all versions)
 #                                      lockscreen  - toggles PowerSettings.UnlockEnabled (4.12.12111+)
 #                                      screenshots - toggles FeatureSettings.Screenshots (all versions)
+#                                      force_wifi  - toggles DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi) (all versions)
 #                   nickel_extras - the mimetype of the plugin, or one of:
 #                                      web_browser
 #                                      unblock_it
