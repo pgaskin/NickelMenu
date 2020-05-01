@@ -1,0 +1,33 @@
+name: Release
+on: {push: {tags: [v*]}}
+
+jobs:
+  build:
+    name: NickelMenu
+    runs-on: ubuntu-latest
+    container: docker.io/geek1011/kobo-toolchain:latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+    - name: Build
+      run: make all koboroot
+    - name: Release
+      id: release
+      uses: actions/create-release@latest
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      with:
+        tag_name: ${{github.ref}}
+        release_name: NickelMenu ${{github.ref}}
+        body: '<!-- replace this with the release notes -->'
+        draft: true
+        prerelease: false
+    - name: Upload
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      with:
+        upload_url: ${{steps.release.outputs.upload_url}}
+        asset_path: ./KoboRoot.tgz
+        asset_name: KoboRoot.tgz
+        asset_content_type: application/gzip
