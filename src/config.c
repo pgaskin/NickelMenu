@@ -190,7 +190,8 @@ nm_config_t *nm_config_parse(char **err_out) {
         nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
         it->loc = NM_MENU_LOCATION_MAIN_MENU;
         it->lbl = strdup("NickelMenu");
-        action->arg = strdup("See KOBOeReader/.add/nm/doc for instructions on how to customize this menu.");
+        it->action = action;
+        action->arg = strdup("See .adds/nm/doc for instructions on how to customize this menu.");
         action->act = NM_ACTION(dbg_toast);
         nm_config_push_menu_item(&cfg, it);
     }
