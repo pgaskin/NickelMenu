@@ -75,7 +75,7 @@ __attribute__((constructor)) void nm_init() {
 
 stop_fs:
     NM_LOG("init: destroying failsafe");
-    nm_failsafe_destroy(fs, 20);
+    nm_failsafe_destroy(fs, 10);
 
 stop:
     NM_LOG("init: done");
