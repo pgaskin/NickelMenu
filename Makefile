@@ -93,14 +93,14 @@ define rpatw =
 endef
 
 $(LIBRARIES): src/%.so:
-	$(CXX) -shared -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -shared -o $@ $^ $(LDFLAGS)
 $(MOCS): %.moc: %.h
 	$(MOC) $< -o $@
 $(patsubst %.moc,%.o,$(MOCS)): %.o: %.moc
-	$(CXX) -xc++ $(CXXFLAGS) -c $< -o $@
+	$(CXX) -xc++ $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 $(call rpatw,.c,.o): %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 $(call rpatw,.cc,.o): %.o: %.cc
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 override GENERATED += $(LIBRARIES)  $(MOCS) $(patsubst %.moc,%.o,$(MOCS)) $(call rpatw,.c,.o) $(call rpatw,.cc,.o)
