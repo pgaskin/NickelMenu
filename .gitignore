@@ -5,6 +5,9 @@
 NickelMenu.kdev4
 .kateconfig
 
+# VSCode
+.vscode/
+
 # Build artifacts
 /KoboRoot.tgz
 /src/libnm.so
@@ -12,13 +15,13 @@ NickelMenu.kdev4
 /src/qtplugin.moc
 /src/qtplugin.o
 
-/src/action_c.o
 /src/failsafe.o
 /src/init.o
 /src/config.o
 /src/kfmon.o
 /src/action.o
 /src/dlhook.o
+/src/action_c.o
 
 /src/menu.o
 /src/action_cc.o

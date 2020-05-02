@@ -49,6 +49,9 @@ define GITIGNORE_HEAD
 NickelMenu.kdev4
 .kateconfig
 
+# VSCode
+.vscode/
+
 # Build artifacts
 endef
 export GITIGNORE_HEAD
