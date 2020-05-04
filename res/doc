@@ -68,7 +68,7 @@
 #   menu_item :main   :Do Nothing     :cmd_spawn      :sleep 60
 #   menu_item :main   :Dump Syslog    :cmd_spawn      :logread > /mnt/onboard/.adds/syslog.log
 #   menu_item :main   :Kernel Version :cmd_output     :500:uname -a
-#   menu_item :main   :Sketch Pad     :nickel_extras  :Sketch Pad
+#   menu_item :main   :Sketch Pad     :nickel_extras  :sketch_pad
 #   menu_item :main   :Plato          :kfmon          :plato.png
 #   menu_item :reader :Invert Screen  :nickel_setting :invert
 #
