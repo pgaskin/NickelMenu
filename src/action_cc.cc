@@ -34,8 +34,10 @@ NM_ACTION_(nickel_setting) {
     NM_ASSERT(Device_getCurrentDevice, "could not dlsym Device::getCurrentDevice");
 
     void *(*Settings_Settings)(Settings*, Device*, bool);
+    void *(*Settings_SettingsLegacy)(Settings*, Device*);
     reinterpret_cast<void*&>(Settings_Settings) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Deviceb");
-    NM_ASSERT(Settings_Settings, "could not dlsym Settings constructor");
+    reinterpret_cast<void*&>(Settings_SettingsLegacy) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Device");
+    NM_ASSERT(Settings_Settings || Settings_SettingsLegacy, "could not dlsym Settings constructor (new and/or old)");
 
     void *(*Settings_SettingsD)(Settings*);
     reinterpret_cast<void*&>(Settings_SettingsD) = dlsym(RTLD_DEFAULT, "_ZN8SettingsD2Ev");
@@ -55,7 +57,10 @@ NM_ACTION_(nickel_setting) {
     NM_ASSERT(dev, "could not get shared nickel device pointer");
 
     Settings *settings = alloca(128); // way larger than it is, but better to be safe
-    Settings_Settings(settings, dev, false);
+    if (Settings_Settings)
+        Settings_Settings(settings, dev, false);
+    else if (Settings_SettingsLegacy)
+        Settings_SettingsLegacy(settings, dev);
 
     // to cast the generic Settings into its subclass FeatureSettings, the
     // vtable pointer at the beginning needs to be replaced with the target
