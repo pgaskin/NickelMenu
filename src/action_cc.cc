@@ -35,7 +35,7 @@ NM_ACTION_(nickel_setting) {
 
     void *(*Settings_Settings)(Settings*, Device*, bool);
     reinterpret_cast<void*&>(Settings_Settings) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Deviceb");
-    NM_ASSERT(Device_getCurrentDevice, "could not dlsym Settings constructor");
+    NM_ASSERT(Settings_Settings, "could not dlsym Settings constructor");
 
     void *(*Settings_SettingsD)(Settings*);
     reinterpret_cast<void*&>(Settings_SettingsD) = dlsym(RTLD_DEFAULT, "_ZN8SettingsD2Ev");
