@@ -49,6 +49,7 @@ typedef void Settings;
 typedef void PlugWorkflowManager;
 typedef void BrowserWorkflowManager;
 typedef void N3SettingsExtrasController;
+typedef void N3PowerWorkflowManager;
 
 NM_ACTION_(nickel_setting) {
     #define NM_ERR_RET nullptr
@@ -307,6 +308,38 @@ NM_ACTION_(nickel_misc) {
         fclose(nhs);
     } else {
         NM_RETURN_ERR("unknown action '%s'", arg);
+    }
+    NM_RETURN_OK(nm_action_result_silent());
+    #undef NM_ERR_RET
+}
+
+NM_ACTION_(power) {
+    #define NM_ERR_RET nullptr
+    if (!strcmp(arg, "shutdown") || !strcmp(arg, "reboot")) {
+        N3PowerWorkflowManager *(*N3PowerWorkflowManager_sharedInstance)();
+        reinterpret_cast<void*&>(N3PowerWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager14sharedInstanceEv");
+        NM_ASSERT(N3PowerWorkflowManager_sharedInstance, "could not dlsym N3PowerWorkflowManager::sharedInstance, so cannot perform action cleanly (if you must, report a bug and use cmd_spawn instead)");
+        
+        N3PowerWorkflowManager *pwm = N3PowerWorkflowManager_sharedInstance();
+        NM_ASSERT(pwm, "could not get shared power manager pointer");
+
+        if (!strcmp(arg, "shutdown")) {
+            void (*N3PowerWorkflowManager_powerOff)(N3PowerWorkflowManager*, bool); // bool is for if it's due to low battery
+            reinterpret_cast<void*&>(N3PowerWorkflowManager_powerOff) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager8powerOffEb");
+            NM_ASSERT(N3PowerWorkflowManager_powerOff, "could not dlsym N3PowerWorkflowManager::powerOff");
+
+            N3PowerWorkflowManager_powerOff(pwm, false);
+            NM_RETURN_OK(nm_action_result_toast("Shutting down..."));
+        } else if (!strcmp(arg, "reboot")) {
+            void (*N3PowerWorkflowManager_reboot)(N3PowerWorkflowManager*);
+            reinterpret_cast<void*&>(N3PowerWorkflowManager_reboot) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager6rebootEv");
+            NM_ASSERT(N3PowerWorkflowManager_reboot, "could not dlsym N3PowerWorkflowManager::reboot");
+
+            N3PowerWorkflowManager_reboot(pwm);
+            NM_RETURN_OK(nm_action_result_toast("Rebooting..."));
+        }
+    } else {
+        NM_RETURN_ERR("unknown power action '%s'", arg);
     }
     NM_RETURN_OK(nm_action_result_silent());
     #undef NM_ERR_RET

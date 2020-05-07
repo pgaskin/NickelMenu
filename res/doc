@@ -27,6 +27,7 @@
 #                   nickel_setting - toggles a boolean setting
 #                   nickel_extras  - opens one of the beta features
 #                   nickel_misc    - other stuff which isn't significant enough for its own category
+#                   power          - gracefully controls the power state
 #                   cmd_spawn      - starts another process or script in the background
 #                   cmd_output     - runs a command and displays the output
 #     <arg>       the argument passed to the action:
@@ -53,6 +54,9 @@
 #                                      force_usb_connection - forces a usb connection dialog to be shown
 #                                      rescan_books         - forces nickel to rescan books
 #                                      rescan_books_full    - forces a full usb connect/disconnect cycle
+#                   power          - one of:
+#                                      shutdown
+#                                      reboot
 #                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
 #                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
 #
