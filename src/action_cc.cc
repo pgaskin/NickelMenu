@@ -20,6 +20,30 @@
 #include "action.h"
 #include "util.h"
 
+// A note about Nickel dlsyms:
+//
+// In general, we try to use Nickel's functionality over a Qt or system
+// version provided that the symbol has existed for multiple versions, is
+// unlikely to change (as judged by @geek1011), is not deeply tied to other
+// parts of Nickel, and is unlikely to cause issues if it fails to run properly.
+//
+// Other times, we generally try to use system functionality through C library
+// calls. This should be used if the action could easily be performed externally
+// from Nickel with the exact same effect. Just keep in mind that NickelMenu
+// runs as part of Nickel. Note that for this, you generally should put it into
+// action_c.c instead of this file.
+//
+// In some cases, we might use Qt. This should only be done if it makes things
+// significantly simpler, is the alternative to doing something which may
+// interfere with Nickel's usage of Qt (i.e. exec), and will not interfere with
+// Nickel itself. One example of this is running processes.
+//
+// Although we could write more C++-like code here, we're generally trying to
+// reduce dependency on compiler-specific behaviour (e.g. with vtables) and
+// external libraries. This is so we are able to gracefully catch and show the
+// greatest number of errors, and so we are the most cross-Nickel-version
+// compatible as possible.
+
 typedef void Device;
 typedef void Settings;
 typedef void PlugWorkflowManager;
