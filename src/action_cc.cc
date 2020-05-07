@@ -50,6 +50,7 @@ typedef void PlugWorkflowManager;
 typedef void BrowserWorkflowManager;
 typedef void N3SettingsExtrasController;
 typedef void N3PowerWorkflowManager;
+typedef void FrontLight;
 
 NM_ACTION_(nickel_setting) {
     #define NM_ERR_RET nullptr
@@ -205,6 +206,182 @@ NM_ACTION_(nickel_setting) {
     NM_RETURN_OK(strcmp(arg, "invert") // invert is obvious
         ? nm_action_result_toast("%s %s", v ? "disabled" : "enabled", arg)
         : nm_action_result_silent());
+    #undef NM_ERR_RET
+}
+
+NM_ACTION_(frontlight) {
+    // DO NOT USE THIS ACTION! SEE https://github.com/geek1011/NickelMenu/issues/3#issuecomment-625440790.
+    // (it segfaults intermittently some time after changing it, due to unknown
+    // reasons which are most likely to do with the hackery around the QObject
+    // memory management here)
+
+    #define NM_ERR_RET nullptr
+
+    char *tmp = strdup(arg);
+
+    char *value = tmp;
+    char *thingy = strtrim(strsep(&value, ":"));
+    NM_ASSERT(*value, "no value in frontlight argument '%s'", arg);
+    value = strtrim(value);
+
+    // note: this is probably the most fragile and complex out of all the actions
+
+    void *(*FrontLight_FrontLight)(QObject*);
+    reinterpret_cast<void*&>(FrontLight_FrontLight) = dlsym(RTLD_DEFAULT, "_ZN10FrontLightC2EP7QObject");
+    NM_ASSERT(FrontLight_FrontLight, "could not dlsym FrontLight constructor");
+
+    void *(*FrontLight_FrontLightD)(FrontLight*);
+    reinterpret_cast<void*&>(FrontLight_FrontLightD) = dlsym(RTLD_DEFAULT, "_ZN10FrontLightD1Ev"); // note: we don't use D0, as that will delete the object itself too
+    NM_ASSERT(FrontLight_FrontLightD, "could not dlsym FrontLight destructor");
+
+    Device *(*Device_getCurrentDevice)();
+    reinterpret_cast<void*&>(Device_getCurrentDevice) = dlsym(RTLD_DEFAULT, "_ZN6Device16getCurrentDeviceEv");
+    NM_ASSERT(Device_getCurrentDevice, "could not dlsym Device::getCurrentDevice");
+
+    void *(*Settings_Settings)(Settings*, Device*, bool);
+    void *(*Settings_SettingsLegacy)(Settings*, Device*);
+    reinterpret_cast<void*&>(Settings_Settings) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Deviceb");
+    reinterpret_cast<void*&>(Settings_SettingsLegacy) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Device");
+    NM_ASSERT(Settings_Settings || Settings_SettingsLegacy, "could not dlsym Settings constructor (new and/or old)");
+
+    void *(*Settings_SettingsD)(Settings*);
+    reinterpret_cast<void*&>(Settings_SettingsD) = dlsym(RTLD_DEFAULT, "_ZN8SettingsD2Ev");
+    NM_ASSERT(Settings_SettingsD, "could not dlsym Settings destructor");
+
+    // I don't like the feel of this much, but it's the only way, so we'll have
+    // to live with the possible segfaults. We need a custom QObject for the
+    // FrontLight constructor, and it replaces the vtable with the FrontLight
+    // one, so it doesn't actually matter what it is. Since we are doing funny
+    // stuff (for lack of a better word) with this, we need to dlsym the QObject
+    // constructor so *this* compiler doesn't try to treat it like a real
+    // object.
+
+    QObject *parent = new QObject(nullptr); // we can't just use another object directly, as FrontLight will replace the vtable
+    parent->moveToThread(QApplication::instance()->thread()); // the QObject doesn't have a thread to begin with
+    NM_ASSERT(parent->thread(), "our parent QObject doesn't have a thread for FrontLight to attach signals to");
+    FrontLight *fl = FrontLight_FrontLight(parent); // this will replace the vtable and attach some signals
+    NM_ASSERT(fl, "frontlight didn't return anything"); // it's more likely to just segfault in the constructor
+
+    Device *dev = Device_getCurrentDevice();
+    NM_ASSERT(dev, "could not get shared nickel device pointer");
+
+    Settings *settings = alloca(128); // way larger than it is, but better to be safe
+    if (Settings_Settings)
+        Settings_Settings(settings, dev, false);
+    else if (Settings_SettingsLegacy)
+        Settings_SettingsLegacy(settings, dev);
+
+    #define vtable_ptr(x) *reinterpret_cast<void**&>(settings)
+    #define vtable_target(x) reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(x)+8)
+
+    void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV13PowerSettings");
+    NM_ASSERT(PowerSettings_vtable, "could not dlsym the vtable for PowerSettings");
+    vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+    if (!strcmp(thingy, "level")) {
+        char *end;
+        long pct = strtol(value, &end, 10);
+        NM_ASSERT(*thingy && !*end && pct >= 0 && pct <= 100, "level (%%) invalid or out of range 0-100: '%s'", value);
+
+        bool (*Device__supportsLight)(Device*);
+        reinterpret_cast<void*&>(Device__supportsLight) = dlsym(RTLD_DEFAULT, "_ZNK6Device13supportsLightEv");
+        if (Device__supportsLight)
+            NM_ASSERT(Device__supportsLight(dev), "device does not have a light");
+
+        void (*FrontLight__setBrightness)(FrontLight*, int, int); // the first int is percent (it must not be 0, or it will segfault), the second int is animation duration
+        reinterpret_cast<void*&>(FrontLight__setBrightness) = dlsym(RTLD_DEFAULT, "_ZNK10FrontLight13setBrightnessEii");
+        NM_ASSERT(FrontLight__setBrightness, "could not dlsym FrontLight::setBrightness");
+
+        void (*PowerSettings__setFrontLightState)(Settings*, bool);
+        reinterpret_cast<void*&>(PowerSettings__setFrontLightState) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings18setFrontLightStateEb");
+        NM_ASSERT(PowerSettings__setFrontLightState, "could not dlsym PowerSettings::setFrontLightState");
+
+        void (*PowerSettings__setFrontLightLevel)(Settings*, int);
+        reinterpret_cast<void*&>(PowerSettings__setFrontLightLevel) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings18setFrontLightLevelEi");
+        NM_ASSERT(PowerSettings__setFrontLightLevel, "could not dlsym PowerSettings::setFrontLightLevel");
+
+        bool (*Device__hasAmbientLightSensor)(Device*);
+        reinterpret_cast<void*&>(Device__hasAmbientLightSensor) = dlsym(RTLD_DEFAULT, "_ZNK6Device21hasAmbientLightSensorEv");
+        if (Device__hasAmbientLightSensor && Device__hasAmbientLightSensor(dev)) {
+            void (*PowerSettings__setAmbientLightSensorEnabled)(Settings*, bool);
+            reinterpret_cast<void*&>(PowerSettings__setAmbientLightSensorEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings28setAmbientLightSensorEnabledEb");
+            NM_ASSERT(PowerSettings__setAmbientLightSensorEnabled, "could not dlsym PowerSettings::setAmbientLightSensorEnabled");
+
+            PowerSettings__setAmbientLightSensorEnabled(settings, false); // this won't update the toggle in the frontlight dialog, but that's just a cosmetic issue
+            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+        }
+
+        FrontLight__setBrightness(fl, (int)(pct), 0);
+
+        PowerSettings__setFrontLightState(settings, pct != 0);
+        vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+        if (pct) {
+            PowerSettings__setFrontLightLevel(settings, (int)(pct));
+            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+        }
+    } else if (!strcmp(thingy, "temperature")) {
+        char *end;
+        long temp = strtol(value, &end, 10);
+        NM_ASSERT(*thingy && !*end , "temperature (K) invalid: '%s'", value);
+
+        bool (*Device__hasNaturalLight)(Device*);
+        reinterpret_cast<void*&>(Device__hasNaturalLight) = dlsym(RTLD_DEFAULT, "_ZNK6Device15hasNaturalLightEv");
+        if (Device__hasNaturalLight)
+            NM_ASSERT(Device__hasNaturalLight(dev), "device does not support ComfortLight");
+
+        int (*FrontLight__minTemperature)(FrontLight*);
+        reinterpret_cast<void*&>(FrontLight__minTemperature) = dlsym(RTLD_DEFAULT, "_ZNK10FrontLight14minTemperatureEv");
+        NM_ASSERT(FrontLight__minTemperature, "could not dlsym FrontLight::minTemperature");
+
+        int (*FrontLight__maxTemperature)(FrontLight*);
+        reinterpret_cast<void*&>(FrontLight__maxTemperature) = dlsym(RTLD_DEFAULT, "_ZNK10FrontLight14maxTemperatureEv");
+        NM_ASSERT(FrontLight__maxTemperature, "could not dlsym FrontLight::maxTemperature");
+
+        int min = FrontLight__minTemperature(fl);
+        int max = FrontLight__maxTemperature(fl);
+        NM_LOG("temp: min=%d max=%d", min, max);
+        NM_ASSERT(temp == 0 || (temp >= min && temp <= max), "temperature (K) out of device range %d-%d (or 0 for auto): '%s'", min, max, value);
+
+        // note: this one MUST not be called with a temperature out of range, or it corrupts something and eventually segfaults within a minute or two
+        void (*FrontLight__setTemperature)(FrontLight*, int, bool, int); // the first int is percent, the second int is animation duration, I don't have the slightest idea what the bool is for, but it seems to segfault after a delay if it's false
+        reinterpret_cast<void*&>(FrontLight__setTemperature) = dlsym(RTLD_DEFAULT, "_ZN10FrontLight14setTemperatureEibi");
+        NM_ASSERT(FrontLight__setTemperature, "could not dlsym FrontLight::setTemperature");
+
+        void (*PowerSettings__setAutoColorEnabled)(Settings*, bool);
+        reinterpret_cast<void*&>(PowerSettings__setAutoColorEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings19setAutoColorEnabledEb");
+        NM_ASSERT(PowerSettings__setAutoColorEnabled, "could not dlsym PowerSettings::setAutoColorEnabled");
+
+        void (*PowerSettings__setColorSetting)(Settings*, int);
+        reinterpret_cast<void*&>(PowerSettings__setColorSetting) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings15setColorSettingEi");
+        NM_ASSERT(PowerSettings__setColorSetting, "could not dlsym PowerSettings::setColorSetting");
+
+        if (temp)
+            FrontLight__setTemperature(fl, temp, true, 0);
+
+        PowerSettings__setAutoColorEnabled(settings, temp == 0); // this won't update the toggle in the frontlight dialog, but that's just a cosmetic issue
+        vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+        if (temp) {
+            PowerSettings__setColorSetting(settings, (int)(temp));
+            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+        }
+    } else {
+        Settings_SettingsD(settings);
+        NM_RETURN_ERR("unknown frontlight action '%s'", arg);
+    }
+
+    #undef vtable_ptr
+    #undef vtable_target
+
+    // see https://github.com/geek1011/NickelMenu/issues/3#issuecomment-625376864
+    NM_LOG("there is an intentional memory leak here (but it is small enough to be neglegible) of FrontLight objects, as we can't destroy them until after their QTimer is done, which is past the lifetime of the action, and we can't do it from a different thread without violating Qt's memory model");
+    //FrontLight_FrontLightD(fl);
+
+    Settings_SettingsD(settings);
+    free(tmp);
+
+    NM_RETURN_OK(nm_action_result_silent());
     #undef NM_ERR_RET
 }
 

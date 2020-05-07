@@ -35,17 +35,6 @@ struct nm_config_t {
     nm_config_t *next;
 };
 
-// strtrim trims ASCII whitespace in-place (i.e. don't give it a string literal)
-// from the left/right of the string.
-static char *strtrim(char *s){
-    if (!s) return NULL;
-    char *a = s, *b = s + strlen(s);
-    for (; a < b && isspace((unsigned char)(*a)); a++);
-    for (; b > a && isspace((unsigned char)(*(b-1))); b--);
-    *b = '\0';
-    return a;
-}
-
 static void nm_config_push_menu_item(nm_config_t **cfg, nm_menu_item_t *it) {
     nm_config_t *tmp = calloc(1, sizeof(nm_config_t));
     tmp->type = NM_CONFIG_TYPE_MENU_ITEM;

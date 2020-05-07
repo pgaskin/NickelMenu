@@ -8,7 +8,9 @@ extern "C" {
 #define _GNU_SOURCE // asprintf
 #endif
 
+#include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 #include <syslog.h>
 
 // A bunch of useful macros to simplify error handling and logging.
@@ -41,6 +43,17 @@ extern "C" {
 
 // NM_RETURN_OK is the same as NM_RETURN(ret, "").
 #define NM_RETURN_OK(ret) NM_RETURN(ret, "")
+
+// strtrim trims ASCII whitespace in-place (i.e. don't give it a string literal)
+// from the left/right of the string.
+static __attribute__((unused)) char *strtrim(char *s){
+    if (!s) return NULL;
+    char *a = s, *b = s + strlen(s);
+    for (; a < b && isspace((unsigned char)(*a)); a++);
+    for (; b > a && isspace((unsigned char)(*(b-1))); b--);
+    *b = '\0';
+    return a;
+}
 
 #ifdef __cplusplus
 }

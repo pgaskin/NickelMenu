@@ -27,6 +27,7 @@
 #                   nickel_setting - toggles a boolean setting
 #                   nickel_extras  - opens one of the beta features
 #                   nickel_misc    - other stuff which isn't significant enough for its own category
+#                   frontlight     - controls the frontlight
 #                   power          - gracefully controls the power state
 #                   cmd_spawn      - starts another process or script in the background
 #                   cmd_output     - runs a command and displays the output
@@ -54,6 +55,9 @@
 #                                      force_usb_connection - forces a usb connection dialog to be shown
 #                                      rescan_books         - forces nickel to rescan books
 #                                      rescan_books_full    - forces a full usb connect/disconnect cycle
+#                   frontlight     - one of:
+#                                      level:<percent>       - sets the white light level where percent is an integer in 0-100 inclusive (auto light will be disabled if it is supported, but the auto light toggle state won't be updated) (all versions)
+#                                      temperature:<kelvins> - sets the color temperature where kelvins is in the device's supported range (usually between 1500 and 6400 inclusive), or 0 to enable auto color (the auto color toggle state won't be updated) (all versions)
 #                   power          - one of:
 #                                      shutdown
 #                                      reboot
