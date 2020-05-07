@@ -58,6 +58,7 @@
 #                                      shutdown
 #                                      reboot
 #                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
+#                                    It can be prefixed with "quiet:" to prevent the toast with the process PID from being displayed.
 #                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
 #
 #   chain:<action>:<arg>

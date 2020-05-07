@@ -347,19 +347,27 @@ NM_ACTION_(power) {
 
 NM_ACTION_(cmd_spawn) {
     #define NM_ERR_RET nullptr
+    char *tmp = strdup(arg);
+    char *cmd = tmp;
+    bool quiet = false;
+    if (!strncmp(tmp, "quiet:", 6)) {
+        cmd += 6;
+        quiet = true;
+    }
     QProcess proc;
     uint64_t pid;
     bool ok = proc.startDetached(
         QStringLiteral("/bin/sh"),
         QStringList(std::initializer_list<QString>{
             QStringLiteral("-c"),
-            QString::fromUtf8(arg),
+            QString::fromUtf8(cmd),
         }),
         QStringLiteral("/"),
         (qint64*)(&pid)
     );
+    free(tmp);
     NM_ASSERT(ok, "could not start process");
-    NM_RETURN_OK(nm_action_result_toast("Successfully started process with PID %lu.", (unsigned long)(pid)));
+    NM_RETURN_OK(quiet ? nm_action_result_silent() : nm_action_result_toast("Successfully started process with PID %lu.", (unsigned long)(pid)));
     #undef NM_ERR_RET
 }
 
