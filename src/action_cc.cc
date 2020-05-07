@@ -166,12 +166,12 @@ NM_ACTION_(nickel_setting) {
         vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
 
         if (!strcmp(arg, "lockscreen")) {
-            //libnickel 4.6 * _ZN13PowerSettings16getUnlockEnabledEv
+            //libnickel 4.12.12111 * _ZN13PowerSettings16getUnlockEnabledEv
             bool (*PowerSettings__getUnlockEnabled)(Settings*);
             reinterpret_cast<void*&>(PowerSettings__getUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16getUnlockEnabledEv");
             NM_ASSERT(PowerSettings__getUnlockEnabled, "could not dlsym PowerSettings::getUnlockEnabled");
 
-            //libnickel 4.6 * _ZN13PowerSettings16setUnlockEnabledEb
+            //libnickel 4.12.12111 * _ZN13PowerSettings16setUnlockEnabledEb
             bool (*PowerSettings__setUnlockEnabled)(Settings*, bool);
             reinterpret_cast<void*&>(PowerSettings__setUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16setUnlockEnabledEb");
             NM_ASSERT(PowerSettings__setUnlockEnabled, "could not dlsym PowerSettings::setUnlockEnabled");
@@ -246,7 +246,7 @@ NM_ACTION_(nickel_extras) {
 
         // the QObject is only used to pass events to it, but there's something I'm missing here which leads to it segfaulting after connecting to WiFi if it isn't already connected
         /*
-        //libnickel 4.6 * _ZN22BrowserWorkflowManagerC1EP7QObject
+        //libnickel 4.11.11911 * _ZN22BrowserWorkflowManagerC1EP7QObject
         void (*BrowserWorkflowManager_BrowserWorkflowManager)(BrowserWorkflowManager*, QObject*);
         reinterpret_cast<void*&>(BrowserWorkflowManager_BrowserWorkflowManager) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManagerC1EP7QObject");
         NM_ASSERT(BrowserWorkflowManager_BrowserWorkflowManager, "could not dlsym BrowserWorkflowManager constructor");
@@ -285,12 +285,12 @@ NM_ACTION_(nickel_extras) {
 NM_ACTION_(nickel_misc) {
     #define NM_ERR_RET nullptr
     if (!strcmp(arg, "rescan_books")) {
-        //libnickel 4.6 * _ZN19PlugWorkflowManager14sharedInstanceEv
+        //libnickel 4.13.12638 * _ZN19PlugWorkflowManager14sharedInstanceEv
         PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
         reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");
         NM_ASSERT(PlugWorkflowManager_sharedInstance, "could not dlsym PlugWorkflowManager::sharedInstance");
 
-        //libnickel 4.6 * _ZN19PlugWorkflowManager4syncEv
+        //libnickel 4.13.12638 * _ZN19PlugWorkflowManager4syncEv
         void (*PlugWorkflowManager_sync)(PlugWorkflowManager*);
         reinterpret_cast<void*&>(PlugWorkflowManager_sync) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager4syncEv");
         NM_ASSERT(PlugWorkflowManager_sync, "could not dlsym PlugWorkflowManager::sync");
@@ -300,18 +300,18 @@ NM_ACTION_(nickel_misc) {
 
         PlugWorkflowManager_sync(wf);
     } else if (!strcmp(arg, "rescan_books_full")) {
-        //libnickel 4.6 * _ZN19PlugWorkflowManager14sharedInstanceEv
+        //libnickel 4.13.12638 * _ZN19PlugWorkflowManager14sharedInstanceEv
         PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
         reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");
         NM_ASSERT(PlugWorkflowManager_sharedInstance, "could not dlsym PlugWorkflowManager::sharedInstance");
 
         // this is what is called by PlugWorkflowManager::plugged after confirmation
-        //libnickel 4.6 * _ZN19PlugWorkflowManager18onCancelAndConnectEv
+        //libnickel 4.13.12638 * _ZN19PlugWorkflowManager18onCancelAndConnectEv
         void (*PlugWorkflowManager_onCancelAndConnect)(PlugWorkflowManager*);
         reinterpret_cast<void*&>(PlugWorkflowManager_onCancelAndConnect) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager18onCancelAndConnectEv");
         NM_ASSERT(PlugWorkflowManager_onCancelAndConnect, "could not dlsym PlugWorkflowManager::onCancelAndConnect");
 
-        //libnickel 4.6 * _ZN19PlugWorkflowManager9unpluggedEv
+        //libnickel 4.13.12638 * _ZN19PlugWorkflowManager9unpluggedEv
         void (*PlugWorkflowManager_unplugged)(PlugWorkflowManager*);
         reinterpret_cast<void*&>(PlugWorkflowManager_unplugged) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager9unpluggedEv");
         NM_ASSERT(PlugWorkflowManager_unplugged, "could not dlsym PlugWorkflowManager::unplugged");
@@ -341,7 +341,7 @@ NM_ACTION_(nickel_misc) {
 NM_ACTION_(power) {
     #define NM_ERR_RET nullptr
     if (!strcmp(arg, "shutdown") || !strcmp(arg, "reboot")) {
-        //libnickel 4.6 * _ZN22N3PowerWorkflowManager14sharedInstanceEv
+        //libnickel 4.13.12638 * _ZN22N3PowerWorkflowManager14sharedInstanceEv
         N3PowerWorkflowManager *(*N3PowerWorkflowManager_sharedInstance)();
         reinterpret_cast<void*&>(N3PowerWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager14sharedInstanceEv");
         NM_ASSERT(N3PowerWorkflowManager_sharedInstance, "could not dlsym N3PowerWorkflowManager::sharedInstance, so cannot perform action cleanly (if you must, report a bug and use cmd_spawn instead)");
@@ -350,7 +350,7 @@ NM_ACTION_(power) {
         NM_ASSERT(pwm, "could not get shared power manager pointer");
 
         if (!strcmp(arg, "shutdown")) {
-            //libnickel 4.6 * _ZN22N3PowerWorkflowManager8powerOffEb
+            //libnickel 4.13.12638 * _ZN22N3PowerWorkflowManager8powerOffEb
             void (*N3PowerWorkflowManager_powerOff)(N3PowerWorkflowManager*, bool); // bool is for if it's due to low battery
             reinterpret_cast<void*&>(N3PowerWorkflowManager_powerOff) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager8powerOffEb");
             NM_ASSERT(N3PowerWorkflowManager_powerOff, "could not dlsym N3PowerWorkflowManager::powerOff");
@@ -358,7 +358,7 @@ NM_ACTION_(power) {
             N3PowerWorkflowManager_powerOff(pwm, false);
             NM_RETURN_OK(nm_action_result_toast("Shutting down..."));
         } else if (!strcmp(arg, "reboot")) {
-            //libnickel 4.6 * _ZN22N3PowerWorkflowManager6rebootEv
+            //libnickel 4.13.12638 * _ZN22N3PowerWorkflowManager6rebootEv
             void (*N3PowerWorkflowManager_reboot)(N3PowerWorkflowManager*);
             reinterpret_cast<void*&>(N3PowerWorkflowManager_reboot) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager6rebootEv");
             NM_ASSERT(N3PowerWorkflowManager_reboot, "could not dlsym N3PowerWorkflowManager::reboot");

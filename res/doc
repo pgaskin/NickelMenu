@@ -39,10 +39,10 @@
 #                                    This is actually the basename of the watch's filename as specified in its KFMon config (i.e., the png).
 #                                    You can also check the output of the 'list' command via the kfmon-ipc tool.
 #                   nickel_setting - one of:
-#                                      invert      - toggles FeatureSettings.InvertScreen (all versions)
+#                                      invert      - toggles FeatureSettings.InvertScreen
 #                                      lockscreen  - toggles PowerSettings.UnlockEnabled (4.12.12111+)
-#                                      screenshots - toggles FeatureSettings.Screenshots (all versions)
-#                                      force_wifi  - toggles DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi) (all versions)
+#                                      screenshots - toggles FeatureSettings.Screenshots
+#                                      force_wifi  - toggles DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
 #                   nickel_extras - the mimetype of the plugin, or one of:
 #                                      web_browser
 #                                      unblock_it
@@ -52,11 +52,11 @@
 #                                      word_scramble
 #                   nickel_misc    - one of:
 #                                      force_usb_connection - forces a usb connection dialog to be shown
-#                                      rescan_books         - forces nickel to rescan books
-#                                      rescan_books_full    - forces a full usb connect/disconnect cycle
+#                                      rescan_books         - forces nickel to rescan books (4.13.12638+)
+#                                      rescan_books_full    - forces a full usb connect/disconnect cycle (4.13.12638+)
 #                   power          - one of:
-#                                      shutdown
-#                                      reboot
+#                                      shutdown (4.13.12638+)
+#                                      reboot (4.13.12638+)
 #                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
 #                                    It can be prefixed with "quiet:" to prevent the toast with the process PID from being displayed.
 #                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
