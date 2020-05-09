@@ -85,13 +85,13 @@ extern "C" int nm_menu_hook(void *libnickel, nm_menu_item_t **items, size_t item
 extern "C" MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& label, bool checkable, bool checked, QString const& thingy) {
     NM_LOG("AbstractNickelMenuController::createMenuTextItem(%p, `%s`, %d, %d, `%s`)", menu, qPrintable(label), checkable, checked, qPrintable(thingy));
 
-    QString trmm = QCoreApplication::translate("StatusBarMenuController", "Help");
+    QString trmm = QCoreApplication::translate("StatusBarMenuController", "Settings");
     QString trrm = QCoreApplication::translate("DictionaryActionProxy", "Dictionary");
     NM_LOG("Comparing against '%s', '%s'", qPrintable(trmm), qPrintable(trrm));
 
     bool ismm, isrm;
     if ((ismm = (label == trmm) && !checkable))
-        NM_LOG("Intercepting main menu (label=Help, checkable=false)...");
+        NM_LOG("Intercepting main menu (label=Settings, checkable=false)...");
     if ((isrm = (label == trrm) && !checkable))
         NM_LOG("Intercepting reader menu (label=Dictionary, checkable=false)...");
 
