@@ -143,7 +143,7 @@ func main() {
 }
 
 func GetPatcher(version, lib string) (*patchlib.Patcher, error) {
-	resp, err := http.Get("https://github.com/geek1011/kobopatch-patches/raw/master/testdata/" + version + ".tar.xz")
+	resp, err := http.Get("https://github.com/geek1011/kobopatch-patches/raw/v60/testdata/" + version + ".tar.xz")
 	if err != nil {
 		return nil, fmt.Errorf("get kobopatch testdata for %#v: %w", version, err)
 	}
