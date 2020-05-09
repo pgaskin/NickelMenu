@@ -28,9 +28,17 @@ static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem)(void*, Q
 // menu.
 // First bool is whether to close the menu on tap (false: keep it open)
 // Second bool is whether the entry is enabled (false: grayed out)
-// Third bool is whether to add a separator after the entry (false: no separator)
+// Third bool is whether to add the default separator after the entry (false: no separator)
 //     Note that, even in the Main Menu, it'll inherit the color of a Reader Menu separator (#66),
 //     instead of the usual dim (#BB) or solid (#00) ones seen in the stock Main Menu.
+// The code is basically:
+//     act = new QWidgetAction(this, arg2);
+//     act->setEnabled(arg4);
+//     if (arg3)
+//         connect(act, &QAction::triggered, &QWidget::hide, arg1);
+//     arg1->addAction(act);
+//     if (arg5)
+//         arg1->addSeparator();
 static QAction* (*AbstractNickelMenuController_createAction)(void*, QMenu*, QWidget*, bool, bool, bool);
 
 // ConfirmationDialogFactory::showOKDialog does what it says, with the provided
@@ -44,6 +52,13 @@ MainWindowController *(*MainWindowController_sharedInstance)();
 // an overlay for a number of milliseconds. It should also be called from the
 // GUI thread.
 void (*MainWindowController_toast)(MainWindowController*, QString const&, QString const&, int);
+
+// *MenuSeparator::*MenuSeparator initializes a light main menu separator which
+// can be added to the menu with QWidget::addAction. It should be passed at
+// least 8 bytes (as of 14622, but should give more to be safe) malloc'd, and
+// the menu as the parent. It initializes a QAction.
+static void (*LightMenuSeparator_LightMenuSeparator)(void*, QWidget*);
+static void (*BoldMenuSeparator_BoldMenuSeparator)(void*, QWidget*);
 
 static nm_menu_item_t **_items;
 static size_t _items_n;
@@ -60,12 +75,20 @@ extern "C" int nm_menu_hook(void *libnickel, nm_menu_item_t **items, size_t item
     reinterpret_cast<void*&>(MainWindowController_sharedInstance) = dlsym(libnickel, "_ZN20MainWindowController14sharedInstanceEv");
     //libnickel 4.6 * _ZN20MainWindowController5toastERK7QStringS2_i
     reinterpret_cast<void*&>(MainWindowController_toast) = dlsym(libnickel, "_ZN20MainWindowController5toastERK7QStringS2_i");
+    //libnickel 4.6 * _ZN18LightMenuSeparatorC2EP7QWidget
+    reinterpret_cast<void*&>(LightMenuSeparator_LightMenuSeparator) = dlsym(libnickel, "_ZN18LightMenuSeparatorC2EP7QWidget");
+    //libnickel 4.6 * _ZN17BoldMenuSeparatorC1EP7QWidget
+    reinterpret_cast<void*&>(BoldMenuSeparator_BoldMenuSeparator) = dlsym(libnickel, "_ZN17BoldMenuSeparatorC1EP7QWidget");
 
     NM_ASSERT(AbstractNickelMenuController_createMenuTextItem, "unsupported firmware: could not find AbstractNickelMenuController::createMenuTextItem(void* _this, QMenu*, QString, bool, bool, QString const&)");
     NM_ASSERT(AbstractNickelMenuController_createAction, "unsupported firmware: could not find AbstractNickelMenuController::createAction(void* _this, QMenu*, QWidget*, bool, bool, bool)");
     NM_ASSERT(ConfirmationDialogFactory_showOKDialog, "unsupported firmware: could not find ConfirmationDialogFactory::showOKDialog(String const&, QString const&)");
     NM_ASSERT(MainWindowController_sharedInstance, "unsupported firmware: could not find MainWindowController::sharedInstance()");
-    NM_ASSERT(MainWindowController_toast, "unsupported firmware: could not find MainWindowController_toast(QString const&, QString const&, int)");
+    NM_ASSERT(MainWindowController_toast, "unsupported firmware: could not find MainWindowController::toast(QString const&, QString const&, int)");
+    if (!LightMenuSeparator_LightMenuSeparator)
+        NM_LOG("warning: could not find LightMenuSeparator constructor, falling back to generic separators");
+    if (!BoldMenuSeparator_BoldMenuSeparator)
+        NM_LOG("warning: could not find BoldMenuSeparator constructor, falling back to generic separators");
 
     void* nmh = dlsym(RTLD_DEFAULT, "_nm_menu_hook");
     NM_ASSERT(nmh, "internal error: could not dlsym _nm_menu_hook");
@@ -89,7 +112,7 @@ extern "C" MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& 
     QString trrm = QCoreApplication::translate("DictionaryActionProxy", "Dictionary");
     NM_LOG("Comparing against '%s', '%s'", qPrintable(trmm), qPrintable(trrm));
 
-    bool ismm, isrm;
+    bool ismm, isrm; // only one will be true
     if ((ismm = (label == trmm) && !checkable))
         NM_LOG("Intercepting main menu (label=Settings, checkable=false)...");
     if ((isrm = (label == trrm) && !checkable))
@@ -105,7 +128,18 @@ extern "C" MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& 
         NM_LOG("Adding item '%s'...", it->lbl);
 
         MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, QString::fromUtf8(it->lbl), false, false, "");
-        QAction* action = AbstractNickelMenuController_createAction(_this, menu, item, true, true, true);
+        QAction* action;
+        if (ismm && LightMenuSeparator_LightMenuSeparator && BoldMenuSeparator_BoldMenuSeparator) {
+            action = AbstractNickelMenuController_createAction(_this, menu, item, true, true, false);
+            QAction *lsp = reinterpret_cast<QAction*>(calloc(1, 32)); // it's actually 8 as of 14622, but better to be safe
+            (i == _items_n-1
+                ? BoldMenuSeparator_BoldMenuSeparator
+                : LightMenuSeparator_LightMenuSeparator
+            )(lsp, reinterpret_cast<QWidget*>(_this));
+            menu->addAction(lsp);
+        } else {
+            action = AbstractNickelMenuController_createAction(_this, menu, item, true, true, true);
+        }
 
         // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
         QObject::connect(action, &QAction::triggered, std::function<void(bool)>([it](bool){
