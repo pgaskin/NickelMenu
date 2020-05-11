@@ -64,8 +64,15 @@ void nm_failsafe_destroy(nm_failsafe_t *fs, int delay) {
     fs->delay = delay;
 
     NM_LOG("failsafe: scheduling restore");
+
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     pthread_t t;
-    pthread_create(&t, NULL, _nm_failsafe_destroy, fs);
+    pthread_create(&t, &attr, _nm_failsafe_destroy, fs);
+    const char name[16] = "nm_failsafe";
+    pthread_setname_np(t, name);
+    pthread_attr_destroy(&attr);
 }
 
 void nm_failsafe_uninstall(nm_failsafe_t *fs) {
