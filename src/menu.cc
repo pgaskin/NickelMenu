@@ -143,40 +143,50 @@ extern "C" MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& 
 
         // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
         QObject::connect(action, &QAction::triggered, std::function<void(bool)>([it](bool){
-            NM_LOG("Item '%s' pressed...", it->lbl);
-            char *err;
+            NM_LOG("item '%s' pressed...", it->lbl);
+            char *err = NULL;
+            bool success = true;
             for (nm_menu_action_t *cur = it->action; cur; cur = cur->next) {
-                NM_LOG("running action %p with argument %s : ", cur->act, cur->arg);
+                NM_LOG("action %p with argument %s : ", cur->act, cur->arg);
+                NM_LOG("...success=%d ; on_success=%d on_failure=%d", success, cur->on_success, cur->on_failure);
+                if (!((success && cur->on_success) || (!success && cur->on_failure))) {
+                    NM_LOG("...skipping action due to condition flags");
+                    continue;
+                }
+                free(err);
                 nm_action_result_t *res = cur->act(cur->arg, &err);
-                if (err) {
-                    NM_LOG("Got error: '%s', displaying...", err);
-                    ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
-                    free(err);
-                    return;
-                } else if (res) {
-                    NM_LOG("Got result: type=%d msg='%s', handling...", res->type, res->msg);
-                    MainWindowController *mwc;
-                    switch (res->type) {
-                    case NM_ACTION_RESULT_TYPE_SILENT:
-                        break;
-                    case NM_ACTION_RESULT_TYPE_MSG:
-                        ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QLatin1String(res->msg));
-                        break;
-                    case NM_ACTION_RESULT_TYPE_TOAST:
-                        mwc = MainWindowController_sharedInstance();
-                        if (!mwc) {
-                            NM_LOG("toast: could not get shared main window controller pointer");
-                            break;
-                        }
-                        MainWindowController_toast(mwc, QLatin1String(res->msg), QStringLiteral(""), 1500);
+                if (!(success = err == NULL)) {
+                    NM_LOG("...error: '%s'", err);
+                    continue;
+                } else if (!res) {
+                    NM_LOG("...warning: you should have returned a result with type silent, not null, upon success");
+                    continue;
+                }
+                NM_LOG("...result: type=%d msg='%s', handling...", res->type, res->msg);
+                MainWindowController *mwc;
+                switch (res->type) {
+                case NM_ACTION_RESULT_TYPE_SILENT:
+                    break;
+                case NM_ACTION_RESULT_TYPE_MSG:
+                    ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QLatin1String(res->msg));
+                    break;
+                case NM_ACTION_RESULT_TYPE_TOAST:
+                    mwc = MainWindowController_sharedInstance();
+                    if (!mwc) {
+                        NM_LOG("toast: could not get shared main window controller pointer");
                         break;
                     }
-                    nm_action_result_free(res);
-                } else {
-                    NM_LOG("warning: you should have returned a result with type silent, not null, upon success");
+                    MainWindowController_toast(mwc, QLatin1String(res->msg), QStringLiteral(""), 1500);
+                    break;
                 }
+                nm_action_result_free(res);
             }
-            NM_LOG("Success!");
+            if (err) {
+                NM_LOG("last action returned error %s", err);
+                ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
+                free(err);
+            }
+            NM_LOG("done");
         }));
     }
 

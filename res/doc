@@ -62,10 +62,18 @@
 #                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
 #
 #   chain:<action>:<arg>
+#   chain_failure:<action>:<arg>
+#   chain_always:<action>:<arg>
 #     Adds an action to the chain that began with the preceding menu_item.
 #     Actions are performed in the order they are written.
 #     Each chain entry MUST follow the menu_item it is attached to. Another
 #     menu_item marks the start of the next chain.
+#     By default, each action only executes if the previous one was successful.
+#     If chain_failure is used, the action is only executed if the last one
+#     failed. If chain_always is used, the action is executed no matter what.
+#     Any error message is only displayed if the action is the last one which
+#     was executed in the chain (not necessarily the last one in the config
+#     file).
 #
 # For example, you might have a configuration file in KOBOeReader/.adds/nm/mystuff like:
 #
