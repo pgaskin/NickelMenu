@@ -388,7 +388,12 @@ NM_ACTION_(cmd_spawn) {
     if (!cmd) {
         cmd = tmp;
     } else {
-        cmd = strtrim(cmd);
+        if (!quiet) {
+            // If there was an extra field, but with no recognizable option, assume it's a stray colon from the actual command
+            cmd = tmp;
+        } else {
+            cmd = strtrim(cmd);
+        }
     }
 
     QProcess proc;
