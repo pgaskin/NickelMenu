@@ -383,11 +383,12 @@ NM_ACTION_(cmd_spawn) {
     bool quiet = false;
     if (cmd && !strncmp(tmp1, "quiet", 5)) {
         quiet = true;
-        cmd = strtrim(cmd);
     }
     // Restore cmd if there was no option field
     if (!cmd) {
         cmd = tmp;
+    } else {
+        cmd = strtrim(cmd);
     }
 
     QProcess proc;
