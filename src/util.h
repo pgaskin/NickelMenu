@@ -8,8 +8,21 @@ extern "C" {
 #define _GNU_SOURCE // asprintf
 #endif
 
+#include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 #include <syslog.h>
+
+// strtrim trims ASCII whitespace in-place (i.e. don't give it a string literal)
+// from the left/right of the string.
+inline char *strtrim(char *s){
+    if (!s) return NULL;
+    char *a = s, *b = s + strlen(s);
+    for (; a < b && isspace((unsigned char)(*a)); a++);
+    for (; b > a && isspace((unsigned char)(*(b-1))); b--);
+    *b = '\0';
+    return a;
+}
 
 // A bunch of useful macros to simplify error handling and logging.
 
