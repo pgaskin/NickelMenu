@@ -13,6 +13,11 @@ extern "C" {
 #include <string.h>
 #include <syslog.h>
 
+// Fallback version tag
+#ifndef NM_VERSION
+#define NM_VERSION "dev"
+#endif
+
 // strtrim trims ASCII whitespace in-place (i.e. don't give it a string literal)
 // from the left/right of the string.
 inline char *strtrim(char *s){
