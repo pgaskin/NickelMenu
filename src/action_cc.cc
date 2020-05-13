@@ -405,13 +405,21 @@ NM_ACTION_(cmd_spawn) {
 NM_ACTION_(cmd_output) {
     #define NM_ERR_RET nullptr
 
+    // split the timeout into timeout, put the command into cmd
     char *tmp = strdup(arg);
-
     char *cmd = tmp;
     char *tmp1 = strtrim(strsep(&cmd, ":")), *tmp2;
     long timeout = strtol(tmp1, &tmp2, 10);
     cmd = strtrim(cmd);
     NM_ASSERT(*tmp1 && !*tmp2 && timeout > 0 && timeout < 10000, "invalid timeout '%s'", tmp1);
+
+    // parse the quiet option and update cmd if it's specified
+    char *tmp3 = strdup(cmd);
+    char *tmp4 = tmp3;
+    char *tmp5 = strtrim(strsep(&tmp4, ":"));
+    bool quiet = tmp4 && !strcmp(tmp5, "quiet");
+    if (tmp4 && quiet)
+        cmd = strtrim(tmp4); // update cmd to exclude "quiet:"
 
     QProcess proc;
     proc.setProcessChannelMode(QProcess::MergedChannels);
@@ -445,9 +453,10 @@ NM_ACTION_(cmd_output) {
     if (out.length() > 500)
         out = out.left(500) + "...";
 
+    free(tmp3);
     free(tmp);
 
-    NM_RETURN_OK(nm_action_result_msg("%s", qPrintable(out)));
+    NM_RETURN_OK(quiet ? nm_action_result_silent() : nm_action_result_msg("%s", qPrintable(out)));
 
     #undef NM_ERR_RET
 }
