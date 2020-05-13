@@ -58,6 +58,9 @@ NickelMenu.kdev4
 # VSCode
 .vscode/
 
+# clangd
+compile_flags.txt
+
 # Build artifacts
 endef
 export GITIGNORE_HEAD
