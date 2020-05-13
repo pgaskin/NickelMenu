@@ -375,26 +375,14 @@ NM_ACTION_(power) {
 
 NM_ACTION_(cmd_spawn) {
     #define NM_ERR_RET nullptr
+    char *tmp = strdup(arg); // strsep and strtrim will modify it
+    char *tmp1 = tmp; // so we can still free tmp later
+    char *tmp2 = strtrim(strsep(&tmp1, ":")); // get the part before the : into tmp1, if any
 
-    char *tmp = strdup(arg);
-
-    char *cmd = tmp;
-    char *tmp1 = strtrim(strsep(&cmd, ":"));
-    bool quiet = false;
-    if (cmd && !strncmp(tmp1, "quiet", 5)) {
-        quiet = true;
-    }
-    // Restore cmd if there was no option field
-    if (!cmd) {
-        cmd = tmp;
-    } else {
-        if (!quiet) {
-            // If there was an extra field, but with no recognizable option, assume it's a stray colon from the actual command
-            cmd = tmp;
-        } else {
-            cmd = strtrim(cmd);
-        }
-    }
+    bool quiet = tmp1 && !strcmp(tmp2, "quiet");
+    const char *cmd = (tmp1 && quiet)
+        ? strtrim(tmp1) // trim the actual command
+        : arg; // restore the original arg if there was no option field or if it wasn't "quiet"
 
     QProcess proc;
     uint64_t pid;
@@ -407,10 +395,10 @@ NM_ACTION_(cmd_spawn) {
         QStringLiteral("/"),
         (qint64*)(&pid)
     );
+
     free(tmp);
     NM_ASSERT(ok, "could not start process");
     NM_RETURN_OK(quiet ? nm_action_result_silent() : nm_action_result_toast("Successfully started process with PID %lu.", (unsigned long)(pid)));
-
     #undef NM_ERR_RET
 }
 
