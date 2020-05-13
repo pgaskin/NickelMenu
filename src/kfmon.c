@@ -1,18 +1,18 @@
 #define _GNU_SOURCE
 #include <errno.h>
+#include <linux/limits.h>
 #include <poll.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <linux/limits.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
 
-#include "util.h"
-#include "kfmon_helpers.h"
 #include "kfmon.h"
+#include "kfmon_helpers.h"
+#include "util.h"
 
 // Free all resources allocated by a list and its nodes
 static void teardown_list(kfmon_watch_list_t* list) {
@@ -405,11 +405,9 @@ int nm_kfmon_list_request(const char *restrict foo __attribute__((unused))) {
     NM_LOG("List has %zu nodes", list.count);
     NM_LOG("Head is at %p", list.head);
     NM_LOG("Tail is at %p", list.tail);
-    kfmon_watch_node_t* node = list.head;
-    while (node) {
+    for (kfmon_watch_node_t* node = list.head; node != NULL; node = node->next) {
         NM_LOG("Dumping node at %p", node);
         NM_LOG("idx: %hhu // filename: %s // label: %s", node->watch.idx, node->watch.filename, node->watch.label);
-        node = node->next;
     }
 
     // Destroy it
@@ -421,61 +419,61 @@ int nm_kfmon_list_request(const char *restrict foo __attribute__((unused))) {
 }
 
 // Giant ladder of fail
-nm_action_result_t* nm_kfmon_return_handler(int status, char **err_out) {
+nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out) {
     #define NM_ERR_RET NULL
 
-    if (status != EXIT_SUCCESS) {
+    switch (status) {
+        case KFMON_IPC_OK:
+            NM_RETURN_OK(nm_action_result_silent());
         // Fail w/ the right log message
-        if (status == KFMON_IPC_ETIMEDOUT) {
+        case KFMON_IPC_ETIMEDOUT:
             NM_RETURN_ERR("Timed out waiting for KFMon");
-        } else if (status == KFMON_IPC_EPIPE) {
+        case KFMON_IPC_EPIPE:
             NM_RETURN_ERR("KFMon closed the connection");
-        } else if (status == KFMON_IPC_ENODATA) {
+        case KFMON_IPC_ENODATA:
             NM_RETURN_ERR("No more data to read");
-        } else if (status == KFMON_IPC_READ_FAILURE) {
+        case KFMON_IPC_READ_FAILURE:
             // NOTE: Let's hope close() won't mangle errno...
             NM_RETURN_ERR("read: %m");
-        } else if (status == KFMON_IPC_SEND_FAILURE) {
+        case KFMON_IPC_SEND_FAILURE:
             // NOTE: Let's hope close() won't mangle errno...
             NM_RETURN_ERR("send: %m");
-        } else if (status == KFMON_IPC_SOCKET_FAILURE) {
+        case KFMON_IPC_SOCKET_FAILURE:
             NM_RETURN_ERR("Failed to create local KFMon IPC socket (socket: %m)");
-        } else if (status == KFMON_IPC_CONNECT_FAILURE) {
+        case KFMON_IPC_CONNECT_FAILURE:
             NM_RETURN_ERR("KFMon IPC is down (connect: %m)");
-        } else if (status == KFMON_IPC_POLL_FAILURE) {
+        case KFMON_IPC_POLL_FAILURE:
             // NOTE: Let's hope close() won't mangle errno...
             NM_RETURN_ERR("poll: %m");
-        } else if (status == KFMON_IPC_CALLOC_FAILURE) {
+        case KFMON_IPC_CALLOC_FAILURE:
             NM_RETURN_ERR("calloc: %m");
-        } else if (status == KFMON_IPC_REPLY_READ_FAILURE) {
+        case KFMON_IPC_REPLY_READ_FAILURE:
             // NOTE: Let's hope close() won't mangle errno...
             NM_RETURN_ERR("Failed to read KFMon's reply (%m)");
-        } else if (status == KFMON_IPC_LIST_PARSE_FAILURE) {
+        case KFMON_IPC_LIST_PARSE_FAILURE:
             NM_RETURN_ERR("Failed to parse the list of watches (no separator found)");
-        } else if (status == KFMON_IPC_ERR_INVALID_ID) {
+        case KFMON_IPC_ERR_INVALID_ID:
             NM_RETURN_ERR("Requested to start an invalid watch index");
-        } else if (status == KFMON_IPC_ERR_INVALID_NAME) {
+        case KFMON_IPC_ERR_INVALID_NAME:
             NM_RETURN_ERR("Requested to trigger an invalid watch filename (expected the basename of the image trigger)");
-        } else if (status == KFMON_IPC_WARN_ALREADY_RUNNING) {
+        case KFMON_IPC_WARN_ALREADY_RUNNING:
             NM_RETURN_ERR("Requested watch is already running");
-        } else if (status == KFMON_IPC_WARN_SPAWN_BLOCKED) {
+        case KFMON_IPC_WARN_SPAWN_BLOCKED:
             NM_RETURN_ERR("A spawn blocker is currently running");
-        } else if (status == KFMON_IPC_WARN_SPAWN_INHIBITED) {
+        case KFMON_IPC_WARN_SPAWN_INHIBITED:
             NM_RETURN_ERR("Spawns are currently inhibited");
-        } else if (status == KFMON_IPC_ERR_REALLY_MALFORMED_CMD) {
+        case KFMON_IPC_ERR_REALLY_MALFORMED_CMD:
             NM_RETURN_ERR("KFMon couldn't parse our command");
-        } else if (status == KFMON_IPC_ERR_MALFORMED_CMD) {
+        case KFMON_IPC_ERR_MALFORMED_CMD:
             NM_RETURN_ERR("Bad command syntax");
-        } else if (status == KFMON_IPC_ERR_INVALID_CMD) {
+        case KFMON_IPC_ERR_INVALID_CMD:
             NM_RETURN_ERR("Command wasn't recognized by KFMon");
-        } else if (status == KFMON_IPC_UNKNOWN_REPLY) {
+        case KFMON_IPC_UNKNOWN_REPLY:
             NM_RETURN_ERR("We couldn't make sense of KFMon's reply");
-        } else {
+        case KFMON_IPC_EAGAIN:
+        default:
             // Should never happen
             NM_RETURN_ERR("Something went wrong");
-        }
-    } else {
-        NM_RETURN_OK(nm_action_result_silent());
     }
 
     #undef NM_ERR_RET
