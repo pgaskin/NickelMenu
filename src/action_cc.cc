@@ -377,12 +377,12 @@ NM_ACTION_(cmd_spawn) {
     #define NM_ERR_RET nullptr
     char *tmp = strdup(arg); // strsep and strtrim will modify it
     char *tmp1 = tmp; // so we can still free tmp later
-    char *tmp2 = strtrim(strsep(&tmp1, ":")); // get the part before the : into tmp1, if any
+    char *tmp2 = strtrim(strsep(&tmp1, ":")); // get the part before the : into tmp2, if any
 
     bool quiet = tmp1 && !strcmp(tmp2, "quiet");
     const char *cmd = (tmp1 && quiet)
         ? strtrim(tmp1) // trim the actual command
-        : arg; // restore the original arg if there was no option field or if it wasn't "quiet"
+        : arg; // restore the original arg if there wasn't any option field or if it wasn't "quiet"
 
     QProcess proc;
     uint64_t pid;
