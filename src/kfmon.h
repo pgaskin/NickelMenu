@@ -14,7 +14,7 @@ extern "C" {
 // Flags for the failure bingo
 typedef enum {
     // Not an error ;p
-    KFMON_IPC_OK = EXIT_SUCCESS,
+    KFMON_IPC_OK = 0,   // i.e., EXIT_SUCCESS
     // NOTE: Start > 256 to stay clear of errno
     KFMON_IPC_ETIMEDOUT = 512,
     KFMON_IPC_EPIPE,
