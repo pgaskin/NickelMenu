@@ -469,6 +469,7 @@ nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err
                 NM_RETURN_ERR("Command wasn't recognized by KFMon");
             case KFMON_IPC_UNKNOWN_REPLY:
                 NM_RETURN_ERR("We couldn't make sense of KFMon's reply");
+            case KFMON_IPC_EAGAIN:
             default:
                 // Should never happen
                 NM_RETURN_ERR("Something went wrong");
