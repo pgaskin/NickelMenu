@@ -15,7 +15,7 @@ extern "C" {
 
 // Fallback version tag
 #ifndef NM_VERSION
-#   define NM_VERSION "dev"
+#define NM_VERSION "dev"
 #endif
 
 // strtrim trims ASCII whitespace in-place (i.e. don't give it a string literal)
