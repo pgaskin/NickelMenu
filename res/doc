@@ -60,6 +60,7 @@
 #                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
 #                                    It can be prefixed with "quiet:" to prevent the toast with the process PID from being displayed.
 #                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
+#                                    It can be prefixed with "quiet:" to prevent the message box with the output from being displayed (i.e. you'd use this where you'd normally use >/dev/null 2>&1).
 #
 #   chain:<action>:<arg>
 #     Adds an action to the chain that began with the preceding menu_item.
