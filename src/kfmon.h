@@ -13,6 +13,8 @@ extern "C" {
 
 // Flags for the failure bingo
 typedef enum {
+    // Not an error ;p
+    KFMON_IPC_OK = EXIT_SUCCESS,
     // NOTE: Start > 256 to stay clear of errno
     KFMON_IPC_ETIMEDOUT = 512,
     KFMON_IPC_EPIPE,
@@ -35,8 +37,6 @@ typedef enum {
     KFMON_IPC_ERR_REALLY_MALFORMED_CMD,
     KFMON_IPC_ERR_MALFORMED_CMD,
     KFMON_IPC_ERR_INVALID_CMD,
-    // Not an error ;p
-    //KFMON_IPC_OK,
     KFMON_IPC_UNKNOWN_REPLY,
     // Not an error either, means we have more to read...
     KFMON_IPC_EAGAIN,
