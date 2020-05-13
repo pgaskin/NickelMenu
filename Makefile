@@ -39,6 +39,12 @@ LDFLAGS  ?= -Wl,--as-needed
 override CFLAGS   += -std=gnu11 -Wall -Wextra -Werror
 override CXXFLAGS += -std=gnu++11 -Wall -Wextra -Werror
 override LDFLAGS  += -Wl,--no-undefined -Wl,-rpath,/usr/local/Kobo -Wl,-rpath,/usr/local/Qt-5.2.1-arm/lib
+
+NM_VERSION:=$(shell git describe --tags)
+# Only use it if we got something useful out of git describe...
+ifdef NM_VERSION
+	override CPPFLAGS += -DNM_VERSION='"$(NM_VERSION)"'
+endif
 endif
 
 define GITIGNORE_HEAD

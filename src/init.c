@@ -21,6 +21,7 @@ __attribute__((constructor)) void nm_init() {
 
     char *err;
 
+    NM_LOG("version: " NM_VERSION);
     NM_LOG("init: creating failsafe");
     nm_failsafe_t *fs;
     if (!(fs = nm_failsafe_create(&err)) && err) {
