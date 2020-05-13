@@ -397,6 +397,7 @@ NM_ACTION_(cmd_spawn) {
     );
 
     free(tmp);
+
     NM_ASSERT(ok, "could not start process");
     NM_RETURN_OK(quiet ? nm_action_result_silent() : nm_action_result_toast("Successfully started process with PID %lu.", (unsigned long)(pid)));
     #undef NM_ERR_RET
@@ -433,6 +434,9 @@ NM_ACTION_(cmd_output) {
         QIODevice::ReadOnly
     );
 
+    free(tmp3);
+    free(tmp);
+
     bool ok = proc.waitForFinished(timeout);
     if (!ok) {
         switch (proc.error()) {
@@ -452,9 +456,6 @@ NM_ACTION_(cmd_output) {
     QString out = proc.readAllStandardOutput();
     if (out.length() > 500)
         out = out.left(500) + "...";
-
-    free(tmp3);
-    free(tmp);
 
     NM_RETURN_OK(quiet ? nm_action_result_silent() : nm_action_result_msg("%s", qPrintable(out)));
 
