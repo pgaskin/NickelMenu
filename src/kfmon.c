@@ -1,18 +1,18 @@
 #define _GNU_SOURCE
 #include <errno.h>
+#include <linux/limits.h>
 #include <poll.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <linux/limits.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
 
-#include "util.h"
-#include "kfmon_helpers.h"
 #include "kfmon.h"
+#include "kfmon_helpers.h"
+#include "util.h"
 
 // Free all resources allocated by a list and its nodes
 static void teardown_list(kfmon_watch_list_t* list) {
