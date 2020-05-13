@@ -423,7 +423,7 @@ nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err
     #define NM_ERR_RET NULL
 
     switch (status) {
-        case EXIT_SUCCESS:
+        case KFMON_IPC_OK:
             NM_RETURN_OK(nm_action_result_silent());
         // Fail w/ the right log message
         case KFMON_IPC_ETIMEDOUT:
