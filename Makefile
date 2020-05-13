@@ -43,7 +43,7 @@ override LDFLAGS  += -Wl,--no-undefined -Wl,-rpath,/usr/local/Kobo -Wl,-rpath,/u
 NM_VERSION:=$(shell git describe --tags)
 # Only use it if we got something useful out of git describe...
 ifdef NM_VERSION
-	override CPPFLAGS += -DNM_VERSION='"$(NM_VERSION)"'
+	CPPFLAGS += -DNM_VERSION='"$(NM_VERSION)"'
 endif
 endif
 
