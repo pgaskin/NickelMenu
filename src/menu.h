@@ -4,6 +4,7 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "action.h"
@@ -15,6 +16,8 @@ typedef enum {
 
 typedef struct nm_menu_action_t {
     char *arg;
+    bool on_success;
+    bool on_failure;
     nm_action_fn_t act; // can block, must return 0 on success, nonzero with out_err set to the malloc'd error message on error
     struct nm_menu_action_t *next;
 } nm_menu_action_t;

@@ -108,8 +108,8 @@ nm_config_t *nm_config_parse(char **err_out) {
             // field 1: type
             char *c_typ = strtrim(strsep(&cur, ":"));
             if (!strcmp(c_typ, "menu_item")) {
-                if (it) nm_config_push_menu_item(&cfg, it);
                 // type: menu_item
+                if (it) nm_config_push_menu_item(&cfg, it);
                 it = calloc(1, sizeof(nm_menu_item_t));
                 cur_act = NULL;
                 // type: menu_item - field 2: location
@@ -124,8 +124,10 @@ nm_config_t *nm_config_parse(char **err_out) {
                 if (!c_lbl) RETERR("file %s: line %d: field 3: expected label, got end of line", fn, line_n);
                 else it->lbl = strdup(c_lbl);
 
-                nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
                 // type: menu_item - field 4: action
+                nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
+                action->on_failure = true;
+                action->on_success = true;
                 char *c_act = strtrim(strsep(&cur, ":"));
                 if (!c_act) RETERR("file %s: line %d: field 4: expected action, got end of line", fn, line_n);
                 #define X(name) else if (!strcmp(c_act, #name)) action->act = NM_ACTION(name);
@@ -139,9 +141,21 @@ nm_config_t *nm_config_parse(char **err_out) {
                 else action->arg = strdup(c_arg);
                 nm_config_push_action(&cur_act, action);
                 it->action = cur_act;
-            } else if (!strcmp(c_typ, "chain")) {
+            } else if (!strncmp(c_typ, "chain", 5)) {
+                // type: chain
                 if (!it) RETERR("file %s: line %d: unexpected chain, no menu_item to link to", fn, line_n);
                 nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
+
+                if (!strcmp(c_typ, "chain")) {
+                    action->on_failure = false;
+                    action->on_success = true;
+                } else if (!strcmp(c_typ, "chain_always")) {
+                    action->on_failure = true;
+                    action->on_success = true;
+                } else if (!strcmp(c_typ, "chain_failure")) {
+                    action->on_failure = true;
+                    action->on_success = false;
+                } else RETERR("file %s: line %d: field 1: unknown type '%s'", fn, line_n, c_typ);
 
                 // type: chain - field 2: action
                 char *c_act = strtrim(strsep(&cur, ":"));
@@ -187,8 +201,9 @@ nm_config_t *nm_config_parse(char **err_out) {
     size_t mm = 0, rm = 0;
     for (nm_config_t *cur = cfg; cur; cur = cur->next) {
         if (cur->type == NM_CONFIG_TYPE_MENU_ITEM) {
+            NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl);
             for (nm_menu_action_t *cur_act = cur->value.menu_item->action; cur_act; cur_act = cur_act->next)
-                NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s:%p:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl, cur_act->act, cur_act->arg);
+                NM_LOG("...cfg(NM_CONFIG_TYPE_MENU_ITEM) (%s%s%s) : %p:%s", cur_act->on_success ? "on_success" : "", (cur_act->on_success && cur_act->on_failure) ? ", " : "", cur_act->on_failure ? "on_failure" : "", cur_act->act, cur_act->arg);
             switch (cur->value.menu_item->loc) {
                 case NM_MENU_LOCATION_MAIN_MENU:   mm++; break;
                 case NM_MENU_LOCATION_READER_MENU: rm++; break;
