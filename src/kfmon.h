@@ -5,8 +5,8 @@ extern "C" {
 #endif
 
 #include <stddef.h>
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "action.h"
 
 // Path to KFMon's IPC Unix socket
