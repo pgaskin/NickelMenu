@@ -1,6 +1,6 @@
 #define _GNU_SOURCE // asprintf, Dl_info, dladdr
-#include <link.h>
 #include <dlfcn.h>
+#include <link.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>

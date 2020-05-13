@@ -1,7 +1,7 @@
 #define _GNU_SOURCE // program_invocation_short_name
-#include <link.h>
 #include <dlfcn.h>
 #include <errno.h> // program_invocation_short_name
+#include <link.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
