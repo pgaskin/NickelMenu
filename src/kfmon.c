@@ -405,11 +405,9 @@ int nm_kfmon_list_request(const char *restrict foo __attribute__((unused))) {
     NM_LOG("List has %zu nodes", list.count);
     NM_LOG("Head is at %p", list.head);
     NM_LOG("Tail is at %p", list.tail);
-    kfmon_watch_node_t* node = list.head;
-    while (node) {
+    for (kfmon_watch_node_t* node = list.head; node != NULL; node = node->next) {
         NM_LOG("Dumping node at %p", node);
         NM_LOG("idx: %hhu // filename: %s // label: %s", node->watch.idx, node->watch.filename, node->watch.label);
-        node = node->next;
     }
 
     // Destroy it
