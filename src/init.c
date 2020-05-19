@@ -53,6 +53,8 @@ __attribute__((constructor)) void nm_init() {
         items[0]->action = calloc(1, sizeof(nm_menu_action_t));
         items[0]->action->arg = strdup(err);
         items[0]->action->act = NM_ACTION(dbg_msg);
+        items[0]->action->on_failure = true;
+        items[0]->action->on_success = true;
 
         free(err);
     } else if (!(items = nm_config_get_menu(cfg, &items_n))) {

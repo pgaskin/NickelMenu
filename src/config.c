@@ -195,6 +195,8 @@ nm_config_t *nm_config_parse(char **err_out) {
         it->action = action;
         action->arg = strdup("See .adds/nm/doc for instructions on how to customize this menu.");
         action->act = NM_ACTION(dbg_toast);
+        action->on_failure = true;
+        action->on_success = true;
         nm_config_push_menu_item(&cfg, it);
     }
 
