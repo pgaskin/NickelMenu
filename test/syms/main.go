@@ -32,7 +32,7 @@ func main() {
 		"4.10.11591", "4.10.11655", "4.11.11911", "4.11.11976", "4.11.11980",
 		"4.11.11982", "4.11.12019", "4.12.12111", "4.13.12638", "4.14.12777",
 		"4.15.12920", "4.16.13162", "4.17.13651", "4.17.13694", "4.18.13737",
-		"4.19.14123", "4.20.14601", "4.20.14617", "4.20.14622",
+		"4.19.14123", "4.20.14601", "4.20.14617", "4.20.14622", "4.21.15015",
 	}
 
 	checks := map[string]map[string][]SymCheck{}
@@ -143,7 +143,7 @@ func main() {
 }
 
 func GetPatcher(version, lib string) (*patchlib.Patcher, error) {
-	resp, err := http.Get("https://github.com/geek1011/kobopatch-patches/raw/v60/testdata/" + version + ".tar.xz")
+	resp, err := http.Get("https://github.com/geek1011/kobopatch-patches/raw/v61/testdata/" + version + ".tar.xz")
 	if err != nil {
 		return nil, fmt.Errorf("get kobopatch testdata for %#v: %w", version, err)
 	}
