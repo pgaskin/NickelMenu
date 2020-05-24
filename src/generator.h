@@ -35,7 +35,8 @@ nm_menu_item_t **nm_generator_do(nm_generator_t *gen, size_t *sz_out);
 #endif
 
 #define NM_GENERATORS \
-    X(_test)
+    X(_test)          \
+    X(kfmon)
 
 #define X(name) NM_GENERATOR_(name);
 NM_GENERATORS

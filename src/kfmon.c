@@ -14,45 +14,6 @@
 #include "kfmon_helpers.h"
 #include "util.h"
 
-// Free all resources allocated by a list and its nodes
-static void teardown_list(kfmon_watch_list_t* list) {
-    kfmon_watch_node_t* node = list->head;
-    while (node) {
-        NM_LOG("Freeing node at %p", node);
-        kfmon_watch_node_t* p = node->next;
-        free(node->watch.filename);
-        free(node->watch.label);
-        free(node);
-        node = p;
-    }
-    // Don't leave dangling pointers
-    list->head = NULL;
-    list->tail = NULL;
-}
-
-// Allocate a single new node to the list
-static int grow_list(kfmon_watch_list_t* list) {
-    kfmon_watch_node_t* prev = list->tail;
-    kfmon_watch_node_t* node = calloc(1, sizeof(*node));
-    if (!node) {
-        return KFMON_IPC_CALLOC_FAILURE;
-    }
-    list->count++;
-
-    // Update the head if this is the first node
-    if (!list->head) {
-        list->head = node;
-    }
-    // Update the tail pointer
-    list->tail = node;
-    // If there was a previous node, link the two together
-    if (prev) {
-        prev->next = node;
-    }
-
-    return EXIT_SUCCESS;
-}
-
 // Handle replies from the IPC socket
 static int handle_reply(int data_fd, void *data __attribute__((unused))) {
     // Eh, recycle PIPE_BUF, it should be more than enough for our needs.
@@ -188,7 +149,7 @@ static int handle_list_reply(int data_fd, void *data) {
         // Store that at the tail of the list
         kfmon_watch_list_t* list = (kfmon_watch_list_t*) data;
         // Make room for a new node
-        if (grow_list(list) != EXIT_SUCCESS) {
+        if (kfmon_grow_list(list) != EXIT_SUCCESS) {
             status = KFMON_IPC_CALLOC_FAILURE;
             break;
         }
@@ -368,7 +329,7 @@ int nm_kfmon_simple_request(const char *restrict ipc_cmd, const char *restrict i
 }
 
 // PoC handling of a list request
-int nm_kfmon_list_request(const char *restrict foo __attribute__((unused))) {
+int nm_kfmon_poc_list_request(const char *restrict foo __attribute__((unused))) {
     // Assume everything's peachy until shit happens...
     int status = EXIT_SUCCESS;
 
@@ -382,7 +343,7 @@ int nm_kfmon_list_request(const char *restrict foo __attribute__((unused))) {
     }
 
     // Attempt to send the specified command in full over the wire
-    status = send_ipc_command(data_fd, "list", NULL);   // FIXME: switch to gui-list
+    status = send_ipc_command(data_fd, "list", NULL);
     // If it failed, return early, after closing the socket
     if (status != EXIT_SUCCESS) {
         close(data_fd);
@@ -411,7 +372,52 @@ int nm_kfmon_list_request(const char *restrict foo __attribute__((unused))) {
     }
 
     // Destroy it
-    teardown_list(&list);
+    kfmon_teardown_list(&list);
+
+    // Bye now!
+    close(data_fd);
+    return status;
+}
+
+// Handle a list request for the KFMon generator
+int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t* list) {
+    // Assume everything's peachy until shit happens...
+    int status = EXIT_SUCCESS;
+
+    int data_fd = -1;
+    // Attempt to connect to KFMon...
+    // As long as KFMon is up, has very little chance to fail, even if the connection backlog is full.
+    status = connect_to_kfmon_socket(&data_fd);
+    // If it failed, return early
+    if (status != EXIT_SUCCESS) {
+        return status;
+    }
+
+    // Attempt to send the specified command in full over the wire
+    status = send_ipc_command(data_fd, ipc_cmd, NULL);
+    // If it failed, return early, after closing the socket
+    if (status != EXIT_SUCCESS) {
+        close(data_fd);
+        return status;
+    }
+
+    // We'll be polling the socket for a reply, this'll make things neater, and allows us to abort on timeout,
+    // in the unlikely event there's already an IPC session being handled by KFMon,
+    // in which case the reply would be delayed by an undeterminate amount of time (i.e., until KFMon gets to it).
+    // Here, we'll want to timeout after 2s
+    ipc_handler_t handler = &handle_list_reply;
+    status = wait_for_replies(data_fd, 500, 4, handler, (void *) &list);
+    // NOTE: We happen to be done with the connection right now.
+    //       But if we still needed it, KFMON_IPC_POLL_FAILURE would warrant an early abort w/ a forced close().
+
+    // Walk the list
+    NM_LOG("List has %zu nodes", list->count);
+    NM_LOG("Head is at %p", list->head);
+    NM_LOG("Tail is at %p", list->tail);
+    for (kfmon_watch_node_t* node = list->head; node != NULL; node = node->next) {
+        NM_LOG("Dumping node at %p", node);
+        NM_LOG("idx: %hhu // filename: %s // label: %s", node->watch.idx, node->watch.filename, node->watch.label);
+    }
 
     // Bye now!
     close(data_fd);
@@ -419,12 +425,13 @@ int nm_kfmon_list_request(const char *restrict foo __attribute__((unused))) {
 }
 
 // Giant ladder of fail
-nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out) {
+void* nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out) {
     #define NM_ERR_RET NULL
 
     switch (status) {
+        // NOTE: Should never be passed a succes status code!
         case KFMON_IPC_OK:
-            NM_RETURN_OK(nm_action_result_silent());
+            return NULL;
         // Fail w/ the right log message
         case KFMON_IPC_ETIMEDOUT:
             NM_RETURN_ERR("Timed out waiting for KFMon");
@@ -474,6 +481,20 @@ nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err
         default:
             // Should never happen
             NM_RETURN_ERR("Something went wrong");
+    }
+
+    #undef NM_ERR_RET
+}
+
+nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out) {
+    #define NM_ERR_RET NULL
+
+    switch (status) {
+        case KFMON_IPC_OK:
+            NM_RETURN_OK(nm_action_result_silent());
+        // Fail w/ the right log message
+        default:
+            return nm_kfmon_error_handler(status, err_out);
     }
 
     #undef NM_ERR_RET

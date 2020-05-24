@@ -8,6 +8,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 #include "action.h"
+#include "util.h"
 
 // Path to KFMon's IPC Unix socket
 #define KFMON_IPC_SOCKET "/tmp/kfmon-ipc.ctl"
@@ -68,6 +69,48 @@ typedef struct {
 // (e.g., a pointer to a kfmon_watch_list_t, or NULL if no storage is needed).
 typedef int (*ipc_handler_t)(int, void *);
 
+// Free all resources allocated by a list and its nodes
+inline void kfmon_teardown_list(kfmon_watch_list_t* list) {
+    kfmon_watch_node_t* node = list->head;
+    while (node) {
+        NM_LOG("Freeing node at %p", node);
+        kfmon_watch_node_t* p = node->next;
+        free(node->watch.filename);
+        free(node->watch.label);
+        free(node);
+        node = p;
+    }
+    // Don't leave dangling pointers
+    list->head = NULL;
+    list->tail = NULL;
+}
+
+// Allocate a single new node to the list
+inline int kfmon_grow_list(kfmon_watch_list_t* list) {
+    kfmon_watch_node_t* prev = list->tail;
+    kfmon_watch_node_t* node = calloc(1, sizeof(*node));
+    if (!node) {
+        return KFMON_IPC_CALLOC_FAILURE;
+    }
+    list->count++;
+
+    // Update the head if this is the first node
+    if (!list->head) {
+        list->head = node;
+    }
+    // Update the tail pointer
+    list->tail = node;
+    // If there was a previous node, link the two together
+    if (prev) {
+        prev->next = node;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+// Given one of the error codes listed above, return with a formatted error message
+void* nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out);
+
 // Given one of the error codes listed above, return properly from an action. Success is silent.
 nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out);
 
@@ -75,7 +118,10 @@ nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err
 int nm_kfmon_simple_request(const char *restrict ipc_cmd, const char *restrict ipc_arg);
 
 // PoC list test action
-int nm_kfmon_list_request(const char *restrict foo);
+int nm_kfmon_poc_list_request(const char *restrict foo);
+
+// Handle a list request for the KFMon generator
+int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t* list);
 
 #ifdef __cplusplus
 }

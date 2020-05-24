@@ -84,9 +84,12 @@
 #     <location>   the menu to add the items to, same as for menu_item.
 #     <generator>  the generator to use to generate the options, one of:
 #                    _test - generates numbered items, for testing only
-#                    kfmon - adds items from kfmon (coming soon)
+#                    kfmon - adds items from kfmon
 #     <arg>        the argument passed to the generator (if needed):
 #                    _test - the number of items to generate (0-10)
+#                    kfmon - one or none of:
+#                              gui - only enumerate non-hidden active KFMon watches (this is the default)
+#                              all - enumerate *every* active KFMon watches
 #
 # For example, you might have a configuration file in KOBOeReader/.adds/nm/mystuff like:
 #
