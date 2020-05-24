@@ -104,8 +104,8 @@ static int handle_list_reply(int data_fd, void *data) {
         eot = true;
     }
 
-    // NOTE to self: syslog strips LF, you dummy.
-    NM_LOG("<<< Got a %zd bytes reply:\n%.*s", len, len, buf);
+    // Keep some minimal debug logging around, just in case...
+    NM_LOG("Got a %zd bytes reply from KFMon (%s an EoT marker)", len, eot ? "with" : "*without*");
     // Now that we're sure we didn't get a wonky reply from an unrelated command, parse the list
     // NOTE: Format is:
     //       id:filename:label or id:filename for watches without a label
@@ -117,12 +117,11 @@ static int handle_list_reply(int data_fd, void *data) {
     // Break the reply line by line
     while ((line = strsep(&p, "\n")) != NULL) {
         // Then parse each line
-        NM_LOG("Parsing line: %s\n", line);
+        NM_LOG("Parsing reply line: `%s`", line);
         // If it's the final line, its only content is a single NUL
         if (*line == '\0') {
             // NOTE: This might also simply be the end of a single-line read,
             //       in which case the NUL is thanks to calloc...
-            NM_LOG("Caught an empty line! EoT? %d", eot);
             break;
         }
         // NOTE: Simple syslog logging for now
@@ -131,20 +130,13 @@ static int handle_list_reply(int data_fd, void *data) {
             status = KFMON_IPC_LIST_PARSE_FAILURE;
             goto cleanup;
         }
-        NM_LOG("watch index: %s", watch_idx);
         char *filename = strsep(&line, ":");
         if (!filename) {
             status = KFMON_IPC_LIST_PARSE_FAILURE;
             goto cleanup;
         }
-        NM_LOG("filename: '%s'", filename);
         // Final separator is optional, if it's not there, there's no label, use the filename instead.
         char *label = strsep(&line, ":");
-        if (label) {
-            NM_LOG("label: '%s'", label);
-        } else {
-            NM_LOG("label -> filename");
-        }
 
         // Store that at the tail of the list
         kfmon_watch_list_t* list = (kfmon_watch_list_t*) data;
@@ -155,7 +147,6 @@ static int handle_list_reply(int data_fd, void *data) {
         }
         // Use it
         kfmon_watch_node_t* node = list->tail;
-        NM_LOG("New node at %p", node);
 
         node->watch.idx = (uint8_t) strtoul(watch_idx, NULL, 10);
         node->watch.filename = strdup(filename);

@@ -69,15 +69,9 @@ NM_GENERATOR_(kfmon) {
     *sz_out = list.count;
     nm_menu_item_t **items = calloc(list.count, sizeof(nm_menu_item_t*));
 
-    // Walk the list
-    NM_LOG("List has %zu nodes", list.count);
-    NM_LOG("Head is at %p", list.head);
-    NM_LOG("Tail is at %p", list.tail);
+    // Walk the list to populate the items array
     size_t i = 0;
     for (kfmon_watch_node_t* node = list.head; node != NULL; node = node->next) {
-        NM_LOG("Dumping node at %p", node);
-        NM_LOG("idx: %hhu // filename: %s // label: %s", node->watch.idx, node->watch.filename, node->watch.label);
-        NM_LOG("Populating item %zu", i);
         items[i] = calloc(1, sizeof(nm_menu_item_t));
         items[i]->action = calloc(1, sizeof(nm_menu_action_t));
         items[i]->lbl = strdup(node->watch.label);
