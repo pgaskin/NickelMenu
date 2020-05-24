@@ -37,7 +37,6 @@ void nm_action_result_free(nm_action_result_t *res);
     X(dbg_toast)      \
     X(kfmon)          \
     X(kfmon_id)       \
-    X(kfmon_list)     \
     X(nickel_setting) \
     X(nickel_extras)  \
     X(nickel_misc)    \

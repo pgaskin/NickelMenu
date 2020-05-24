@@ -328,57 +328,6 @@ int nm_kfmon_simple_request(const char *restrict ipc_cmd, const char *restrict i
     return status;
 }
 
-// PoC handling of a list request
-int nm_kfmon_poc_list_request(const char *restrict foo __attribute__((unused))) {
-    // Assume everything's peachy until shit happens...
-    int status = EXIT_SUCCESS;
-
-    int data_fd = -1;
-    // Attempt to connect to KFMon...
-    // As long as KFMon is up, has very little chance to fail, even if the connection backlog is full.
-    status = connect_to_kfmon_socket(&data_fd);
-    // If it failed, return early
-    if (status != EXIT_SUCCESS) {
-        return status;
-    }
-
-    // Attempt to send the specified command in full over the wire
-    status = send_ipc_command(data_fd, "list", NULL);
-    // If it failed, return early, after closing the socket
-    if (status != EXIT_SUCCESS) {
-        close(data_fd);
-        return status;
-    }
-
-    // We'll want to retrieve our watch list in there.
-    kfmon_watch_list_t list = { 0 };
-
-    // We'll be polling the socket for a reply, this'll make things neater, and allows us to abort on timeout,
-    // in the unlikely event there's already an IPC session being handled by KFMon,
-    // in which case the reply would be delayed by an undeterminate amount of time (i.e., until KFMon gets to it).
-    // Here, we'll want to timeout after 2s
-    ipc_handler_t handler = &handle_list_reply;
-    status = wait_for_replies(data_fd, 500, 4, handler, (void *) &list);
-    // NOTE: We happen to be done with the connection right now.
-    //       But if we still needed it, KFMON_IPC_POLL_FAILURE would warrant an early abort w/ a forced close().
-
-    // Walk the list
-    NM_LOG("List has %zu nodes", list.count);
-    NM_LOG("Head is at %p", list.head);
-    NM_LOG("Tail is at %p", list.tail);
-    for (kfmon_watch_node_t* node = list.head; node != NULL; node = node->next) {
-        NM_LOG("Dumping node at %p", node);
-        NM_LOG("idx: %hhu // filename: %s // label: %s", node->watch.idx, node->watch.filename, node->watch.label);
-    }
-
-    // Destroy it
-    kfmon_teardown_list(&list);
-
-    // Bye now!
-    close(data_fd);
-    return status;
-}
-
 // Handle a list request for the KFMon generator
 int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t* list) {
     // Assume everything's peachy until shit happens...

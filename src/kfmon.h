@@ -117,9 +117,6 @@ nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err
 // Send a simple KFMon IPC request, one where the reply is only used for its diagnostic value.
 int nm_kfmon_simple_request(const char *restrict ipc_cmd, const char *restrict ipc_arg);
 
-// PoC list test action
-int nm_kfmon_poc_list_request(const char *restrict foo);
-
 // Handle a list request for the KFMon generator
 int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t* list);
 
