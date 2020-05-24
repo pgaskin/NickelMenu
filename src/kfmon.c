@@ -116,14 +116,14 @@ static int handle_list_reply(int data_fd, void *data) {
     char *line = NULL;
     // Break the reply line by line
     while ((line = strsep(&p, "\n")) != NULL) {
-        // Then parse each line
-        NM_LOG("Parsing reply line: `%s`", line);
+        // Then parse each line...
         // If it's the final line, its only content is a single NUL
         if (*line == '\0') {
             // NOTE: This might also simply be the end of a single-line read,
             //       in which case the NUL is thanks to calloc...
             break;
         }
+        NM_LOG("Parsing reply line: `%s`", line);
         // NOTE: Simple syslog logging for now
         char *watch_idx = strsep(&line, ":");
         if (!watch_idx) {
