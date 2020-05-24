@@ -359,15 +359,6 @@ int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t* list
     // NOTE: We happen to be done with the connection right now.
     //       But if we still needed it, KFMON_IPC_POLL_FAILURE would warrant an early abort w/ a forced close().
 
-    // Walk the list
-    NM_LOG("List has %zu nodes", list->count);
-    NM_LOG("Head is at %p", list->head);
-    NM_LOG("Tail is at %p", list->tail);
-    for (kfmon_watch_node_t* node = list->head; node != NULL; node = node->next) {
-        NM_LOG("Dumping node at %p", node);
-        NM_LOG("idx: %hhu // filename: %s // label: %s", node->watch.idx, node->watch.filename, node->watch.label);
-    }
-
     // Bye now!
     close(data_fd);
     return status;
