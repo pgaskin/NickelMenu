@@ -78,14 +78,13 @@ NM_GENERATOR_(kfmon) {
         NM_LOG("Dumping node at %p", node);
         NM_LOG("idx: %hhu // filename: %s // label: %s", node->watch.idx, node->watch.filename, node->watch.label);
         NM_LOG("Populating item %zu", i);
-        items[i] = calloc(1, sizeof(nm_menu_item_t));
-        items[i]->action = calloc(1, sizeof(nm_menu_action_t));
-        items[i]->lbl = strdup(node->watch.label);
-        items[i]->action->act = NM_ACTION(kfmon);
-        items[i]->action->arg = strdup(node->watch.filename);
-        items[i]->action->on_failure = true;
-        items[i]->action->on_success = true;
-        i++;
+        nm_menu_item_t *item = items[i++] = calloc(1, sizeof(nm_menu_item_t));
+        item->action = calloc(1, sizeof(nm_menu_action_t));
+        item->lbl = strdup(node->watch.label);
+        item->action->act = NM_ACTION(kfmon);
+        item->action->arg = strdup(node->watch.filename);
+        item->action->on_failure = true;
+        item->action->on_success = true;
     }
 
     // Destroy the list now that we've dumped it into an array of nm_menu_item_t
