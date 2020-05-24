@@ -99,6 +99,7 @@
 #   menu_item :main   :Kernel Version  :cmd_output     :500:uname -a
 #   menu_item :main   :Sketch Pad      :nickel_extras  :sketch_pad
 #   menu_item :main   :Plato           :kfmon          :plato.png
+#   generator :main   :kfmon
 #   menu_item :reader :Invert Screen   :nickel_setting :invert
 #   menu_item :main   :IP Address      :cmd_output     :500:/sbin/ifconfig | /usr/bin/awk '/inet addr/{print substr($2,6)}'
 #   menu_item :main   :Telnet          :cmd_spawn      :quiet:/bin/mount -t devpts | /bin/grep -q /dev/pts || { /bin/mkdir -p /dev/pts && /bin/mount -t devpts devpts /dev/pts; }
