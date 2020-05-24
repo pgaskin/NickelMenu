@@ -1,0 +1,9 @@
+[B]Random facts, tips and tricks:[/B][LIST]
+[*] Unlike other methods, enabling invert screen through NickelMenu takes effect instantly.
+[*] You can use cmd_spawn to add an action to remove screenshots and prevent them from being imported.
+[*] rescan_books is useful for software which transfers books wirelessly (and if you chain it after cmd_output, it waits for it to complete first).
+[*] The config file ignores whitespace, so you can make everything nicely aligned if you want.
+[*] If you write tools and apps for Kobos, you can include a NickelMenu config file in the installation package, and it will be automatically picked up.
+[*] If you want to learn more about ELF injection, C++ vtables, Nickel's design, and so on, take a look at the source code on GitHub.
+[/LIST]
+More coming soon...
