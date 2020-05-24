@@ -11,6 +11,7 @@
 
 #include "action.h"
 #include "config.h"
+#include "generator.h"
 #include "menu.h"
 #include "util.h"
 
@@ -24,12 +25,15 @@
 
 typedef enum {
     NM_CONFIG_TYPE_MENU_ITEM = 1,
+    NM_CONFIG_TYPE_GENERATOR = 2,
 } nm_config_type_t;
 
 struct nm_config_t {
     nm_config_type_t type;
+    bool generated;
     union {
         nm_menu_item_t *menu_item;
+        nm_generator_t *generator;
     } value;
     nm_config_t *next;
 };
@@ -38,6 +42,14 @@ static void nm_config_push_menu_item(nm_config_t **cfg, nm_menu_item_t *it) {
     nm_config_t *tmp = calloc(1, sizeof(nm_config_t));
     tmp->type = NM_CONFIG_TYPE_MENU_ITEM;
     tmp->value.menu_item = it;
+    tmp->next = *cfg;
+    *cfg = tmp;
+}
+
+static void nm_config_push_generator(nm_config_t **cfg, nm_generator_t *it) {
+    nm_config_t *tmp = calloc(1, sizeof(nm_config_t));
+    tmp->type = NM_CONFIG_TYPE_GENERATOR;
+    tmp->value.generator = it;
     tmp->next = *cfg;
     *cfg = tmp;
 }
@@ -112,6 +124,7 @@ nm_config_t *nm_config_parse(char **err_out) {
                 if (it) nm_config_push_menu_item(&cfg, it);
                 it = calloc(1, sizeof(nm_menu_item_t));
                 cur_act = NULL;
+
                 // type: menu_item - field 2: location
                 char *c_loc = strtrim(strsep(&cur, ":"));
                 if (!c_loc) RETERR("file %s: line %d: field 2: expected location, got end of line", fn, line_n);
@@ -170,6 +183,35 @@ nm_config_t *nm_config_parse(char **err_out) {
                 if (!c_arg) RETERR("file %s: line %d: field 3: expected argument, got end of line\n", fn, line_n);
                 else action->arg = strdup(c_arg);
                 nm_config_push_action(&cur_act, action);
+            } else if (!strcmp(c_typ, "generator")) {
+                // type: generator
+                nm_generator_fn_t generate;
+                nm_menu_location_t loc;
+
+                // type: generator - field 2: location
+                char *c_loc = strtrim(strsep(&cur, ":"));
+                if (!c_loc) RETERR("file %s: line %d: field 2: expected location, got end of line", fn, line_n);
+                else if (!strcmp(c_loc, "main"))   loc = NM_MENU_LOCATION_MAIN_MENU;
+                else if (!strcmp(c_loc, "reader")) loc = NM_MENU_LOCATION_READER_MENU;
+                else RETERR("file %s: line %d: field 2: unknown location '%s'", fn, line_n, c_loc);
+
+                // type: generator - field 3: generator
+                char *c_gen = strtrim(strsep(&cur, ":"));
+                if (!c_gen) RETERR("file %s: line %d: field 3: expected generator, got end of line", fn, line_n);
+                #define X(name) else if (!strcmp(c_gen, #name)) generate = NM_GENERATOR(name);
+                NM_GENERATORS
+                #undef X
+                else RETERR("file %s: line %d: field 3: unknown generator '%s'", fn, line_n, c_gen);
+
+                // type: generator - field 4: argument (optional)
+                char *c_arg = strtrim(cur);
+
+                nm_generator_t *gen = calloc(1, sizeof(nm_generator_t));
+                gen->desc = strdup(c_gen);
+                gen->loc = loc;
+                gen->arg = strdup(c_arg ? c_arg : "");
+                gen->generate = generate;
+                nm_config_push_generator(&cfg, gen);
             } else RETERR("file %s: line %d: field 1: unknown type '%s'", fn, line_n, c_typ);
         }
         // Push the last menu item onto the config
@@ -202,7 +244,8 @@ nm_config_t *nm_config_parse(char **err_out) {
 
     size_t mm = 0, rm = 0;
     for (nm_config_t *cur = cfg; cur; cur = cur->next) {
-        if (cur->type == NM_CONFIG_TYPE_MENU_ITEM) {
+        switch (cur->type) {
+        case NM_CONFIG_TYPE_MENU_ITEM:
             NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl);
             for (nm_menu_action_t *cur_act = cur->value.menu_item->action; cur_act; cur_act = cur_act->next)
                 NM_LOG("...cfg(NM_CONFIG_TYPE_MENU_ITEM) (%s%s%s) : %p:%s", cur_act->on_success ? "on_success" : "", (cur_act->on_success && cur_act->on_failure) ? ", " : "", cur_act->on_failure ? "on_failure" : "", cur_act->act, cur_act->arg);
@@ -210,6 +253,10 @@ nm_config_t *nm_config_parse(char **err_out) {
                 case NM_MENU_LOCATION_MAIN_MENU:   mm++; break;
                 case NM_MENU_LOCATION_READER_MENU: rm++; break;
             }
+            break;
+        case NM_CONFIG_TYPE_GENERATOR:
+            NM_LOG("cfg(NM_CONFIG_TYPE_GENERATOR) : %d:%s(%p):%s", cur->value.generator->loc, cur->value.generator->desc, cur->value.generator->generate, cur->value.generator->arg);
+            break;
         }
     }
     NM_ASSERT(mm <= NM_CONFIG_MAX_MENU_ITEMS_PER_MENU, "too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
@@ -218,6 +265,61 @@ nm_config_t *nm_config_parse(char **err_out) {
     // return the head of the list
     NM_RETURN_OK(cfg);
     #undef NM_ERR_RET
+}
+
+void nm_config_generate(nm_config_t *cfg) {
+    NM_LOG("config: removing any previously generated items");
+    for (nm_config_t *prev = NULL, *cur = cfg; cur; cur = cur->next) {
+        if (prev && cur->generated) { // we can't get rid of the first item and it won't be generated anyways (plus doing it this way simplifies the loop)
+            prev->next = cur->next; // skip the generated item
+            cur->next = NULL; // so we only free that item
+            nm_config_free(cur);
+            cur = prev; // continue with the new current item
+        } else {
+            prev = cur; // the item was kept, so it's now the previous one
+        }
+    }
+
+    NM_LOG("config: running generators");
+    for (nm_config_t *cur = cfg; cur; cur = cur->next) {
+        if (cur->type == NM_CONFIG_TYPE_GENERATOR) {
+            NM_LOG("config: running generator %s:%s", cur->value.generator->desc, cur->value.generator->arg);
+
+            size_t sz;
+            nm_menu_item_t **items = nm_generator_do(cur->value.generator, &sz);
+            if (!items) {
+                NM_LOG("config: ... no items generated");
+                continue;
+            }
+
+            NM_LOG("config: ... %zu items generated", sz);
+            for (size_t i = 0; i < sz; i++) {
+                nm_config_t *tmp = calloc(1, sizeof(nm_config_t));
+                tmp->type = NM_CONFIG_TYPE_MENU_ITEM;
+                tmp->value.menu_item = items[i];
+                tmp->generated = true;
+                tmp->next = cur->next;
+                cur->next = tmp;
+            }
+            free(items);
+        }
+    }
+
+    NM_LOG("config: generated items");
+    for (nm_config_t *cur = cfg; cur; cur = cur->next) {
+        if (cur->generated) {
+            switch (cur->type) {
+            case NM_CONFIG_TYPE_MENU_ITEM:
+                NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl);
+                for (nm_menu_action_t *cur_act = cur->value.menu_item->action; cur_act; cur_act = cur_act->next)
+                    NM_LOG("...cfg(NM_CONFIG_TYPE_MENU_ITEM) (%s%s%s) : %p:%s", cur_act->on_success ? "on_success" : "", (cur_act->on_success && cur_act->on_failure) ? ", " : "", cur_act->on_failure ? "on_failure" : "", cur_act->act, cur_act->arg);
+                break;
+            case NM_CONFIG_TYPE_GENERATOR:
+                NM_LOG("cfg(NM_CONFIG_TYPE_GENERATOR) : %d:%s(%p):%s", cur->value.generator->loc, cur->value.generator->desc, cur->value.generator->generate, cur->value.generator->arg);
+                break;
+            }
+        }
+    }
 }
 
 nm_menu_item_t **nm_config_get_menu(nm_config_t *cfg, size_t *n_out) {
@@ -242,7 +344,8 @@ void nm_config_free(nm_config_t *cfg) {
     while (cfg) {
         nm_config_t *n = cfg->next;
 
-        if (cfg->type == NM_CONFIG_TYPE_MENU_ITEM) {
+        switch (cfg->type) {
+        case NM_CONFIG_TYPE_MENU_ITEM:
             free(cfg->value.menu_item->lbl);
             if (cfg->value.menu_item->action) {
                 nm_menu_action_t *cur = cfg->value.menu_item->action;
@@ -255,6 +358,12 @@ void nm_config_free(nm_config_t *cfg) {
                 }
             }
             free(cfg->value.menu_item);
+            break;
+        case NM_CONFIG_TYPE_GENERATOR:
+            free(cfg->value.generator->arg);
+            free(cfg->value.generator->desc);
+            free(cfg->value.generator);
+            break;
         }
         free(cfg);
 

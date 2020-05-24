@@ -37,10 +37,11 @@ inline char *strtrim(char *s){
 // NM_RETURN returns ret, and if ret is NM_ERR_RET and err_out is not NULL, it
 // writes the formatted error message to *err_out as a malloc'd string. The
 // arguments may or may not be evaluated more than once.
-#define NM_RETURN(ret, fmt, ...) ({                                                                    \
+#define NM_RETURN(ret, fmt, ...) _NM_RETURN(0, ret, fmt, ##__VA_ARGS__)
+#define _NM_RETURN(noerr, ret, fmt, ...) ({                                                                    \
     __typeof__(ret) _ret = (ret);                                                                      \
     if (err_out) {                                                                                     \
-        if (_ret == NM_ERR_RET) asprintf(err_out, fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__);  \
+        if (!noerr && _ret == NM_ERR_RET) asprintf(err_out, fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__);  \
         else *err_out = NULL;                                                                          \
     }                                                                                                  \
     return _ret;                                                                                       \
@@ -51,14 +52,14 @@ inline char *strtrim(char *s){
 // evaluated exactly once. The other arguments may or may not be evaluated one
 // or more times.
 #define NM_ASSERT(cond, fmt, ...) ({                                                         \
-    if (!(cond)) NM_RETURN(NM_ERR_RET, fmt " (assertion failed: %s)", ##__VA_ARGS__, #cond); \
+    if (!(cond)) _NM_RETURN(0, NM_ERR_RET, fmt " (assertion failed: %s)", ##__VA_ARGS__, #cond); \
 })
 
 // NM_RETURN_ERR is the same as NM_RETURN(NM_ERR_RET, fmt, ...).
-#define NM_RETURN_ERR(fmt, ...) NM_RETURN(NM_ERR_RET, fmt, ##__VA_ARGS__)
+#define NM_RETURN_ERR(fmt, ...) _NM_RETURN(0, NM_ERR_RET, fmt, ##__VA_ARGS__)
 
 // NM_RETURN_OK is the same as NM_RETURN(ret, "").
-#define NM_RETURN_OK(ret) NM_RETURN(ret, "")
+#define NM_RETURN_OK(ret) _NM_RETURN(1, ret, "")
 
 #ifdef __cplusplus
 }
