@@ -8,7 +8,6 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 #include "action.h"
-#include "util.h"
 
 // Path to KFMon's IPC Unix socket
 #define KFMON_IPC_SOCKET "/tmp/kfmon-ipc.ctl"
@@ -73,7 +72,6 @@ typedef int (*ipc_handler_t)(int, void *);
 inline void kfmon_teardown_list(kfmon_watch_list_t* list) {
     kfmon_watch_node_t* node = list->head;
     while (node) {
-        NM_LOG("Freeing node at %p", node);
         kfmon_watch_node_t* p = node->next;
         free(node->watch.filename);
         free(node->watch.label);
