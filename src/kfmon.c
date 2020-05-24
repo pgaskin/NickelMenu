@@ -406,7 +406,7 @@ int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t* list
     // in which case the reply would be delayed by an undeterminate amount of time (i.e., until KFMon gets to it).
     // Here, we'll want to timeout after 2s
     ipc_handler_t handler = &handle_list_reply;
-    status = wait_for_replies(data_fd, 500, 4, handler, (void *) &list);
+    status = wait_for_replies(data_fd, 500, 4, handler, (void *) list);
     // NOTE: We happen to be done with the connection right now.
     //       But if we still needed it, KFMON_IPC_POLL_FAILURE would warrant an early abort w/ a forced close().
 
