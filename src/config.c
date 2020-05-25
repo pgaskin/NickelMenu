@@ -15,14 +15,6 @@
 #include "menu.h"
 #include "util.h"
 
-#ifndef NM_CONFIG_DIR
-#define NM_CONFIG_DIR "/mnt/onboard/.adds/nm"
-#endif
-
-#ifndef NM_CONFIG_MAX_MENU_ITEMS_PER_MENU
-#define NM_CONFIG_MAX_MENU_ITEMS_PER_MENU 50
-#endif
-
 typedef enum {
     NM_CONFIG_TYPE_MENU_ITEM = 1,
     NM_CONFIG_TYPE_GENERATOR = 2,

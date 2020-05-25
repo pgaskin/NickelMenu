@@ -22,6 +22,13 @@ __attribute__((constructor)) void nm_init() {
     char *err;
 
     NM_LOG("version: " NM_VERSION);
+    #ifdef NM_UNINSTALL_CONFIGDIR
+    NM_LOG("feature: NM_UNINSTALL_CONFIGDIR: true");
+    #else
+    NM_LOG("feature: NM_UNINSTALL_CONFIGDIR: false");
+    #endif
+    NM_LOG("config dir: %s", NM_CONFIG_DIR);
+
     NM_LOG("init: creating failsafe");
     nm_failsafe_t *fs;
     if (!(fs = nm_failsafe_create(&err)) && err) {
@@ -31,12 +38,21 @@ __attribute__((constructor)) void nm_init() {
     }
 
     NM_LOG("init: checking for uninstall flag");
-    if (!access("/mnt/onboard/.adds/nm/uninstall", F_OK)) {
+    if (!access(NM_CONFIG_DIR "/uninstall", F_OK)) {
         NM_LOG("init: flag found, uninstalling");
         nm_failsafe_uninstall(fs);
-        unlink("/mnt/onboard/.adds/nm/uninstall");
+        unlink(NM_CONFIG_DIR "/uninstall");
         goto stop;
     }
+
+    #ifdef NM_UNINSTALL_CONFIGDIR
+    NM_LOG("init: NM_UNINSTALL_CONFIGDIR: checking if config dir exists");
+    if (access(NM_CONFIG_DIR, F_OK) && errno == ENOENT) {
+        NM_LOG("init: config dir does not exist, uninstalling");
+        nm_failsafe_uninstall(fs);
+        goto stop;
+    }
+    #endif
 
     NM_LOG("init: parsing config");
     size_t items_n;
