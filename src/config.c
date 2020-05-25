@@ -369,4 +369,4 @@ void nm_config_free(nm_config_t *cfg) {
 
         cfg = n;
     }
-};
+}
