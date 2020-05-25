@@ -14,6 +14,10 @@ typedef struct nm_config_t nm_config_t;
 // invalid action names for menu_item.
 nm_config_t *nm_config_parse(char **err_out);
 
+// nm_config_generate runs all generators synchronously and sequentially. Any
+// previously generated items are automatically removed.
+void nm_config_generate(nm_config_t *cfg);
+
 // nm_config_get_menu gets a malloc'd array of pointers to the menu items
 // defined in the config. These pointers will be valid until nm_config_free is
 // called.

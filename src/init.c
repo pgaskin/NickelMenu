@@ -57,9 +57,15 @@ __attribute__((constructor)) void nm_init() {
         items[0]->action->on_success = true;
 
         free(err);
-    } else if (!(items = nm_config_get_menu(cfg, &items_n))) {
-        NM_LOG("error: could not allocate memory, stopping");
-        goto stop_fs;
+    } else {
+        NM_LOG("init: generating items");
+        nm_config_generate(cfg);
+
+        NM_LOG("init: getting menu");
+        if (!(items = nm_config_get_menu(cfg, &items_n))) {
+            NM_LOG("error: could not allocate memory, stopping");
+            goto stop_fs;
+        }
     }
 
     NM_LOG("init: opening libnickel");

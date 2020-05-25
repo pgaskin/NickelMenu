@@ -24,7 +24,9 @@ compile_flags.txt
 /src/kfmon.o
 /src/action.o
 /src/dlhook.o
+/src/generator.o
 /src/action_c.o
+/src/generator_c.o
 
 /src/menu.o
 /src/action_cc.o

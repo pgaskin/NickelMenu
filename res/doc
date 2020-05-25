@@ -9,10 +9,11 @@
 #
 # Place your configuration files in this folder (/mnt/onboard/.adds/nm). They
 # can be named anything, and should consist of multiple lines either starting
-# with # for a comment, or in one of the the following formats:
+# with # for a comment, or in one of the the following formats (spaces around
+# fields are ignored):
 #
 #   menu_item:<location>:<label>:<action>:<arg>
-#     Adds a menu item (spaces around fields are ignored).
+#     Adds a menu item.
 #
 #     <location>  the menu to add the item to, one of:
 #                   main   - the menu in the top-left corner of the home screen
@@ -43,7 +44,7 @@
 #                                      lockscreen  - toggles PowerSettings.UnlockEnabled (4.12.12111+)
 #                                      screenshots - toggles FeatureSettings.Screenshots
 #                                      force_wifi  - toggles DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
-#                   nickel_extras - the mimetype of the plugin, or one of:
+#                   nickel_extras  - the mimetype of the plugin, or one of:
 #                                      web_browser
 #                                      unblock_it
 #                                      sketch_pad
@@ -75,6 +76,17 @@
 #     Any error message is only displayed if the action is the last one which
 #     was executed in the chain (not necessarily the last one in the config
 #     file).
+#
+#   generator:<location>:<generator>
+#   generator:<location>:<generator>:<arg>
+#     Generates menu items dynamically during startup.
+#
+#     <location>   the menu to add the items to, same as for menu_item.
+#     <generator>  the generator to use to generate the options, one of:
+#                    _test - generates numbered items, for testing only
+#                    kfmon - adds items from kfmon (coming soon)
+#     <arg>        the argument passed to the generator (if needed):
+#                    _test - the number of items to generate (0-10)
 #
 # For example, you might have a configuration file in KOBOeReader/.adds/nm/mystuff like:
 #
