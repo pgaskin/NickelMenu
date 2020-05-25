@@ -398,9 +398,9 @@ void* nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out) {
     #define NM_ERR_RET NULL
 
     switch (status) {
-        // NOTE: Should never be passed a succes status code!
+        // NOTE: Should never be passed a success status code!
         case KFMON_IPC_OK:
-            return NULL;
+            NM_RETURN_OK(NULL);
         // Fail w/ the right log message
         case KFMON_IPC_ETIMEDOUT:
             NM_RETURN_ERR("Timed out waiting for KFMon");
