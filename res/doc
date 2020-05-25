@@ -84,9 +84,12 @@
 #     <location>   the menu to add the items to, same as for menu_item.
 #     <generator>  the generator to use to generate the options, one of:
 #                    _test - generates numbered items, for testing only
-#                    kfmon - adds items from kfmon (coming soon)
+#                    kfmon - adds items from kfmon
 #     <arg>        the argument passed to the generator (if needed):
 #                    _test - the number of items to generate (0-10)
+#                    kfmon - one or none of:
+#                              gui - only enumerate non-hidden active KFMon watches (this is the default)
+#                              all - enumerate *every* active KFMon watches
 #
 # For example, you might have a configuration file in KOBOeReader/.adds/nm/mystuff like:
 #
@@ -96,6 +99,7 @@
 #   menu_item :main   :Kernel Version  :cmd_output     :500:uname -a
 #   menu_item :main   :Sketch Pad      :nickel_extras  :sketch_pad
 #   menu_item :main   :Plato           :kfmon          :plato.png
+#   generator :main   :kfmon
 #   menu_item :reader :Invert Screen   :nickel_setting :invert
 #   menu_item :main   :IP Address      :cmd_output     :500:/sbin/ifconfig | /usr/bin/awk '/inet addr/{print substr($2,6)}'
 #   menu_item :main   :Telnet          :cmd_spawn      :quiet:/bin/mount -t devpts | /bin/grep -q /dev/pts || { /bin/mkdir -p /dev/pts && /bin/mount -t devpts devpts /dev/pts; }

@@ -15,11 +15,10 @@
 #include "util.h"
 
 // Free all resources allocated by a list and its nodes
-static void teardown_list(kfmon_watch_list_t* list) {
-    kfmon_watch_node_t* node = list->head;
+inline void kfmon_teardown_list(kfmon_watch_list_t *list) {
+    kfmon_watch_node_t *node = list->head;
     while (node) {
-        NM_LOG("Freeing node at %p", node);
-        kfmon_watch_node_t* p = node->next;
+        kfmon_watch_node_t *p = node->next;
         free(node->watch.filename);
         free(node->watch.label);
         free(node);
@@ -31,9 +30,9 @@ static void teardown_list(kfmon_watch_list_t* list) {
 }
 
 // Allocate a single new node to the list
-static int grow_list(kfmon_watch_list_t* list) {
-    kfmon_watch_node_t* prev = list->tail;
-    kfmon_watch_node_t* node = calloc(1, sizeof(*node));
+inline int kfmon_grow_list(kfmon_watch_list_t *list) {
+    kfmon_watch_node_t *prev = list->tail;
+    kfmon_watch_node_t *node = calloc(1, sizeof(*node));
     if (!node) {
         return KFMON_IPC_CALLOC_FAILURE;
     }
@@ -71,21 +70,21 @@ static int handle_reply(int data_fd, void *data __attribute__((unused))) {
     }
 
     // Check the reply for failures
-    if (strncmp(buf, "ERR_INVALID_ID", 14) == 0) {
+    if (!strncmp(buf, "ERR_INVALID_ID", 14)) {
         return KFMON_IPC_ERR_INVALID_ID;
-    } else if (strncmp(buf, "WARN_ALREADY_RUNNING", 20) == 0) {
+    } else if (!strncmp(buf, "WARN_ALREADY_RUNNING", 20)) {
         return KFMON_IPC_WARN_ALREADY_RUNNING;
-    } else if (strncmp(buf, "WARN_SPAWN_BLOCKED", 18) == 0) {
+    } else if (!strncmp(buf, "WARN_SPAWN_BLOCKED", 18)) {
         return KFMON_IPC_WARN_SPAWN_BLOCKED;
-    } else if (strncmp(buf, "WARN_SPAWN_INHIBITED", 20) == 0) {
+    } else if (!strncmp(buf, "WARN_SPAWN_INHIBITED", 20)) {
         return KFMON_IPC_WARN_SPAWN_INHIBITED;
-    } else if (strncmp(buf, "ERR_REALLY_MALFORMED_CMD", 24) == 0) {
+    } else if (!strncmp(buf, "ERR_REALLY_MALFORMED_CMD", 24)) {
         return KFMON_IPC_ERR_REALLY_MALFORMED_CMD;
-    } else if (strncmp(buf, "ERR_MALFORMED_CMD", 17) == 0) {
+    } else if (!strncmp(buf, "ERR_MALFORMED_CMD", 17)) {
         return KFMON_IPC_ERR_MALFORMED_CMD;
-    } else if (strncmp(buf, "ERR_INVALID_CMD", 15) == 0) {
+    } else if (!strncmp(buf, "ERR_INVALID_CMD", 15)) {
         return KFMON_IPC_ERR_INVALID_CMD;
-    } else if (strncmp(buf, "OK", 2) == 0) {
+    } else if (!strncmp(buf, "OK", 2)) {
         return EXIT_SUCCESS;
     } else {
         return KFMON_IPC_UNKNOWN_REPLY;
@@ -122,12 +121,12 @@ static int handle_list_reply(int data_fd, void *data) {
     }
 
     // The only valid reply for list is... a list ;).
-    if (strncmp(buf, "ERR_INVALID_CMD", 15) == 0) {
+    if (!strncmp(buf, "ERR_INVALID_CMD", 15)) {
         status = KFMON_IPC_ERR_INVALID_CMD;
         goto cleanup;
-    } else if ((strncmp(buf, "WARN_", 5) == 0) ||
-               (strncmp(buf, "ERR_", 4) == 0) ||
-               (strncmp(buf, "OK", 2) == 0)) {
+    } else if ((!strncmp(buf, "WARN_", 5)) ||
+               (!strncmp(buf, "ERR_", 4)) ||
+               (!strncmp(buf, "OK", 2))) {
         status = KFMON_IPC_UNKNOWN_REPLY;
         goto cleanup;
     }
@@ -143,8 +142,8 @@ static int handle_list_reply(int data_fd, void *data) {
         eot = true;
     }
 
-    // NOTE to self: syslog strips LF, you dummy.
-    NM_LOG("<<< Got a %zd bytes reply:\n%.*s", len, len, buf);
+    // Keep some minimal debug logging around, just in case...
+    NM_LOG("Got a %zd bytes reply from KFMon (%s an EoT marker)", len, eot ? "with" : "*without*");
     // Now that we're sure we didn't get a wonky reply from an unrelated command, parse the list
     // NOTE: Format is:
     //       id:filename:label or id:filename for watches without a label
@@ -155,46 +154,37 @@ static int handle_list_reply(int data_fd, void *data) {
     char *line = NULL;
     // Break the reply line by line
     while ((line = strsep(&p, "\n")) != NULL) {
-        // Then parse each line
-        NM_LOG("Parsing line: %s\n", line);
+        // Then parse each line...
         // If it's the final line, its only content is a single NUL
         if (*line == '\0') {
             // NOTE: This might also simply be the end of a single-line read,
             //       in which case the NUL is thanks to calloc...
-            NM_LOG("Caught an empty line! EoT? %d", eot);
             break;
         }
+        NM_LOG("Parsing reply line: `%s`", line);
         // NOTE: Simple syslog logging for now
         char *watch_idx = strsep(&line, ":");
         if (!watch_idx) {
             status = KFMON_IPC_LIST_PARSE_FAILURE;
             goto cleanup;
         }
-        NM_LOG("watch index: %s", watch_idx);
         char *filename = strsep(&line, ":");
         if (!filename) {
             status = KFMON_IPC_LIST_PARSE_FAILURE;
             goto cleanup;
         }
-        NM_LOG("filename: '%s'", filename);
         // Final separator is optional, if it's not there, there's no label, use the filename instead.
         char *label = strsep(&line, ":");
-        if (label) {
-            NM_LOG("label: '%s'", label);
-        } else {
-            NM_LOG("label -> filename");
-        }
 
         // Store that at the tail of the list
-        kfmon_watch_list_t* list = (kfmon_watch_list_t*) data;
+        kfmon_watch_list_t *list = (kfmon_watch_list_t*) data;
         // Make room for a new node
-        if (grow_list(list) != EXIT_SUCCESS) {
+        if (kfmon_grow_list(list) != EXIT_SUCCESS) {
             status = KFMON_IPC_CALLOC_FAILURE;
             break;
         }
         // Use it
-        kfmon_watch_node_t* node = list->tail;
-        NM_LOG("New node at %p", node);
+        kfmon_watch_node_t *node = list->tail;
 
         node->watch.idx = (uint8_t) strtoul(watch_idx, NULL, 10);
         node->watch.filename = strdup(filename);
@@ -367,8 +357,8 @@ int nm_kfmon_simple_request(const char *restrict ipc_cmd, const char *restrict i
     return status;
 }
 
-// PoC handling of a list request
-int nm_kfmon_list_request(const char *restrict foo __attribute__((unused))) {
+// Handle a list request for the KFMon generator
+int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t *list) {
     // Assume everything's peachy until shit happens...
     int status = EXIT_SUCCESS;
 
@@ -382,36 +372,21 @@ int nm_kfmon_list_request(const char *restrict foo __attribute__((unused))) {
     }
 
     // Attempt to send the specified command in full over the wire
-    status = send_ipc_command(data_fd, "list", NULL);   // FIXME: switch to gui-list
+    status = send_ipc_command(data_fd, ipc_cmd, NULL);
     // If it failed, return early, after closing the socket
     if (status != EXIT_SUCCESS) {
         close(data_fd);
         return status;
     }
 
-    // We'll want to retrieve our watch list in there.
-    kfmon_watch_list_t list = { 0 };
-
     // We'll be polling the socket for a reply, this'll make things neater, and allows us to abort on timeout,
     // in the unlikely event there's already an IPC session being handled by KFMon,
     // in which case the reply would be delayed by an undeterminate amount of time (i.e., until KFMon gets to it).
     // Here, we'll want to timeout after 2s
     ipc_handler_t handler = &handle_list_reply;
-    status = wait_for_replies(data_fd, 500, 4, handler, (void *) &list);
+    status = wait_for_replies(data_fd, 500, 4, handler, (void *) list);
     // NOTE: We happen to be done with the connection right now.
     //       But if we still needed it, KFMON_IPC_POLL_FAILURE would warrant an early abort w/ a forced close().
-
-    // Walk the list
-    NM_LOG("List has %zu nodes", list.count);
-    NM_LOG("Head is at %p", list.head);
-    NM_LOG("Tail is at %p", list.tail);
-    for (kfmon_watch_node_t* node = list.head; node != NULL; node = node->next) {
-        NM_LOG("Dumping node at %p", node);
-        NM_LOG("idx: %hhu // filename: %s // label: %s", node->watch.idx, node->watch.filename, node->watch.label);
-    }
-
-    // Destroy it
-    teardown_list(&list);
 
     // Bye now!
     close(data_fd);
@@ -419,12 +394,13 @@ int nm_kfmon_list_request(const char *restrict foo __attribute__((unused))) {
 }
 
 // Giant ladder of fail
-nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out) {
+void *nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out) {
     #define NM_ERR_RET NULL
 
     switch (status) {
+        // NOTE: Should never be passed a success status code!
         case KFMON_IPC_OK:
-            NM_RETURN_OK(nm_action_result_silent());
+            NM_RETURN_OK(NULL);
         // Fail w/ the right log message
         case KFMON_IPC_ETIMEDOUT:
             NM_RETURN_ERR("Timed out waiting for KFMon");
@@ -474,6 +450,20 @@ nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err
         default:
             // Should never happen
             NM_RETURN_ERR("Something went wrong");
+    }
+
+    #undef NM_ERR_RET
+}
+
+nm_action_result_t *nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out) {
+    #define NM_ERR_RET NULL
+
+    switch (status) {
+        case KFMON_IPC_OK:
+            NM_RETURN_OK(nm_action_result_silent());
+        // Fail w/ the right log message
+        default:
+            return nm_kfmon_error_handler(status, err_out);
     }
 
     #undef NM_ERR_RET

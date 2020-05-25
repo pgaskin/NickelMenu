@@ -53,14 +53,14 @@ typedef struct {
 // A node in a linked list of watches
 typedef struct kfmon_watch_node {
     kfmon_watch_t watch;
-    struct kfmon_watch_node* next;
+    struct kfmon_watch_node *next;
 } kfmon_watch_node_t;
 
 // A control structure to keep track of a list of watches
 typedef struct {
     size_t count;
-    kfmon_watch_node_t* head;
-    kfmon_watch_node_t* tail;
+    kfmon_watch_node_t *head;
+    kfmon_watch_node_t *tail;
 } kfmon_watch_list_t;
 
 // Used as the reply handler in our polling loops.
@@ -68,14 +68,22 @@ typedef struct {
 // (e.g., a pointer to a kfmon_watch_list_t, or NULL if no storage is needed).
 typedef int (*ipc_handler_t)(int, void *);
 
+// Free all resources allocated by a list and its nodes
+void kfmon_teardown_list(kfmon_watch_list_t *list);
+// Allocate a single new node to the list
+int kfmon_grow_list(kfmon_watch_list_t *list);
+
+// Given one of the error codes listed above, return with a formatted error message
+void *nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out);
+
 // Given one of the error codes listed above, return properly from an action. Success is silent.
-nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out);
+nm_action_result_t *nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out);
 
 // Send a simple KFMon IPC request, one where the reply is only used for its diagnostic value.
 int nm_kfmon_simple_request(const char *restrict ipc_cmd, const char *restrict ipc_arg);
 
-// PoC list test action
-int nm_kfmon_list_request(const char *restrict foo);
+// Handle a list request for the KFMon generator
+int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t *list);
 
 #ifdef __cplusplus
 }
