@@ -182,6 +182,8 @@ nm_config_t *nm_config_parse(char **err_out) {
                 nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
 
                 if (!strcmp(c_typ, "chain")) {
+                    RETERR("file %s: line %d: field 1: the chain action has been renamed to chain_success", fn, line_n);
+                } else if (!strcmp(c_typ, "chain_success")) {
                     action->on_failure = false;
                     action->on_success = true;
                 } else if (!strcmp(c_typ, "chain_always")) {

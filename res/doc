@@ -63,7 +63,7 @@
 #                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
 #                                    It can be prefixed with "quiet:" to prevent the message box with the output from being displayed (i.e. you'd use this where you'd normally use >/dev/null 2>&1).
 #
-#   chain:<action>:<arg>
+#   chain_success:<action>:<arg>
 #   chain_failure:<action>:<arg>
 #   chain_always:<action>:<arg>
 #     Adds an action to the chain that began with the preceding menu_item.
@@ -103,10 +103,10 @@
 #   menu_item :reader :Invert Screen   :nickel_setting :invert
 #   menu_item :main   :IP Address      :cmd_output     :500:/sbin/ifconfig | /usr/bin/awk '/inet addr/{print substr($2,6)}'
 #   menu_item :main   :Telnet          :cmd_spawn      :quiet:/bin/mount -t devpts | /bin/grep -q /dev/pts || { /bin/mkdir -p /dev/pts && /bin/mount -t devpts devpts /dev/pts; }
-#     chain                            :cmd_spawn      :quiet:/usr/bin/pkill -f "^/usr/bin/tcpsvd -E 0.0.0.0 1023" || true && exec /usr/bin/tcpsvd -E 0.0.0.0 1023 /usr/sbin/telnetd -i -l /bin/login
-#     chain                            :dbg_toast      :Started Telnet server on port 1023.
+#     chain_success                    :cmd_spawn      :quiet:/usr/bin/pkill -f "^/usr/bin/tcpsvd -E 0.0.0.0 1023" || true && exec /usr/bin/tcpsvd -E 0.0.0.0 1023 /usr/sbin/telnetd -i -l /bin/login
+#     chain_success                    :dbg_toast      :Started Telnet server on port 1023.
 #   menu_item :main   :FTP             :cmd_spawn      :quiet:/usr/bin/pkill -f "^/usr/bin/tcpsvd -E 0.0.0.0 1021" || true && exec /usr/bin/tcpsvd -E 0.0.0.0 1021 /usr/sbin/ftpd -w -t 30 /mnt/onboard
-#     chain                            :dbg_toast      :Started FTP server for KOBOeReader partition on port 1021.
+#     chain_success                    :dbg_toast      :Started FTP server for KOBOeReader partition on port 1021.
 #   menu_item :main   :Import Books    :nickel_misc    :rescan_books_full
 #
 # You will need to reboot to see any changes.
