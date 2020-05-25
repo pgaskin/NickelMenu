@@ -162,7 +162,9 @@ extern "C" MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& 
                 }
                 free(err);
                 nm_action_result_t *res = cur->act(cur->arg, &err);
-                if (!(success = err == NULL)) {
+                if (err == NULL && res && res->type == NM_ACTION_RESULT_TYPE_SKIP) {
+                    NM_LOG("...not updating success flag (value=%d) for skip result", success);
+                } else if (!(success = err == NULL)) {
                     NM_LOG("...error: '%s'", err);
                     continue;
                 } else if (!res) {

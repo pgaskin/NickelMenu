@@ -31,7 +31,7 @@
 #                   nickel_extras  - opens one of the beta features
 #                   nickel_misc    - other stuff which isn't significant enough for its own category
 #                   power          - gracefully controls the power state
-#                   skip           - skips a number of actions after the current one (mainly useful for more complex conditional chains)
+#                   skip           - skips a number of actions after the current one (mainly useful for more complex conditional chains) (this action will not update the success/failure flag)
 #     <arg>       the argument passed to the action:
 #                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
 #                                    It can be prefixed with "quiet:" to prevent the toast with the process PID from being displayed.
