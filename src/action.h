@@ -8,11 +8,13 @@ typedef enum {
     NM_ACTION_RESULT_TYPE_SILENT = 0,
     NM_ACTION_RESULT_TYPE_MSG    = 1,
     NM_ACTION_RESULT_TYPE_TOAST  = 2,
+    NM_ACTION_RESULT_TYPE_SKIP   = 3, // for use by skip only
 } nm_action_result_type_t;
 
 typedef struct {
     nm_action_result_type_t type;
     char *msg;
+    int skip; // for use by skip only
 } nm_action_result_t;
 
 typedef nm_action_result_t *(*nm_action_fn_t)(const char *arg, char **err);
@@ -31,6 +33,8 @@ void nm_action_result_free(nm_action_result_t *res);
 #endif
 
 #define NM_ACTIONS    \
+    X(cmd_spawn)      \
+    X(cmd_output)     \
     X(dbg_syslog)     \
     X(dbg_error)      \
     X(dbg_msg)        \
@@ -41,8 +45,7 @@ void nm_action_result_free(nm_action_result_t *res);
     X(nickel_extras)  \
     X(nickel_misc)    \
     X(power)          \
-    X(cmd_spawn)      \
-    X(cmd_output)
+    X(skip)
 
 #define X(name) NM_ACTION_(name);
 NM_ACTIONS

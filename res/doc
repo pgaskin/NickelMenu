@@ -20,6 +20,8 @@
 #                   reader - the overflow menu in the reader
 #     <label>     the label to show on the menu item (must not contain :)
 #     <action>    the type of action to run, one of:
+#                   cmd_spawn      - starts another process or script in the background
+#                   cmd_output     - runs a command and displays the output
 #                   dbg_syslog     - writes a message to syslog (for testing)
 #                   dbg_error      - always returns an error (for testing)
 #                   dbg_msg        - shows a message (for testing)
@@ -29,9 +31,12 @@
 #                   nickel_extras  - opens one of the beta features
 #                   nickel_misc    - other stuff which isn't significant enough for its own category
 #                   power          - gracefully controls the power state
-#                   cmd_spawn      - starts another process or script in the background
-#                   cmd_output     - runs a command and displays the output
+#                   skip           - skips a number of actions after the current one (mainly useful for more complex conditional chains) (this action will not update the success/failure flag)
 #     <arg>       the argument passed to the action:
+#                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
+#                                    It can be prefixed with "quiet:" to prevent the toast with the process PID from being displayed.
+#                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
+#                                    It can be prefixed with "quiet:" to prevent the message box with the output from being displayed (i.e. you'd use this where you'd normally use >/dev/null 2>&1).
 #                   dbg_syslog     - the text to write
 #                   dbg_error      - the error message
 #                   dbg_msg        - the message
@@ -58,10 +63,7 @@
 #                   power          - one of:
 #                                      shutdown (4.13.12638+)
 #                                      reboot (4.13.12638+)
-#                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
-#                                    It can be prefixed with "quiet:" to prevent the toast with the process PID from being displayed.
-#                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
-#                                    It can be prefixed with "quiet:" to prevent the message box with the output from being displayed (i.e. you'd use this where you'd normally use >/dev/null 2>&1).
+#                   skip           - the number of actions to skip, or -1 to skip all remaining ones (i.e. end the chain)
 #
 #   chain_success:<action>:<arg>
 #   chain_failure:<action>:<arg>
