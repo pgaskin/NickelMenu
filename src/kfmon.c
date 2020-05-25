@@ -14,6 +14,44 @@
 #include "kfmon_helpers.h"
 #include "util.h"
 
+// Free all resources allocated by a list and its nodes
+inline void kfmon_teardown_list(kfmon_watch_list_t* list) {
+    kfmon_watch_node_t* node = list->head;
+    while (node) {
+        kfmon_watch_node_t* p = node->next;
+        free(node->watch.filename);
+        free(node->watch.label);
+        free(node);
+        node = p;
+    }
+    // Don't leave dangling pointers
+    list->head = NULL;
+    list->tail = NULL;
+}
+
+// Allocate a single new node to the list
+inline int kfmon_grow_list(kfmon_watch_list_t* list) {
+    kfmon_watch_node_t* prev = list->tail;
+    kfmon_watch_node_t* node = calloc(1, sizeof(*node));
+    if (!node) {
+        return KFMON_IPC_CALLOC_FAILURE;
+    }
+    list->count++;
+
+    // Update the head if this is the first node
+    if (!list->head) {
+        list->head = node;
+    }
+    // Update the tail pointer
+    list->tail = node;
+    // If there was a previous node, link the two together
+    if (prev) {
+        prev->next = node;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 // Handle replies from the IPC socket
 static int handle_reply(int data_fd, void *data __attribute__((unused))) {
     // Eh, recycle PIPE_BUF, it should be more than enough for our needs.

@@ -69,42 +69,9 @@ typedef struct {
 typedef int (*ipc_handler_t)(int, void *);
 
 // Free all resources allocated by a list and its nodes
-inline void kfmon_teardown_list(kfmon_watch_list_t* list) {
-    kfmon_watch_node_t* node = list->head;
-    while (node) {
-        kfmon_watch_node_t* p = node->next;
-        free(node->watch.filename);
-        free(node->watch.label);
-        free(node);
-        node = p;
-    }
-    // Don't leave dangling pointers
-    list->head = NULL;
-    list->tail = NULL;
-}
-
+void kfmon_teardown_list(kfmon_watch_list_t* list);
 // Allocate a single new node to the list
-inline int kfmon_grow_list(kfmon_watch_list_t* list) {
-    kfmon_watch_node_t* prev = list->tail;
-    kfmon_watch_node_t* node = calloc(1, sizeof(*node));
-    if (!node) {
-        return KFMON_IPC_CALLOC_FAILURE;
-    }
-    list->count++;
-
-    // Update the head if this is the first node
-    if (!list->head) {
-        list->head = node;
-    }
-    // Update the tail pointer
-    list->tail = node;
-    // If there was a previous node, link the two together
-    if (prev) {
-        prev->next = node;
-    }
-
-    return EXIT_SUCCESS;
-}
+int kfmon_grow_list(kfmon_watch_list_t* list);
 
 // Given one of the error codes listed above, return with a formatted error message
 void* nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out);
