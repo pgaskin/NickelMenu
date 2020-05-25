@@ -15,10 +15,10 @@
 #include "util.h"
 
 // Free all resources allocated by a list and its nodes
-inline void kfmon_teardown_list(kfmon_watch_list_t* list) {
-    kfmon_watch_node_t* node = list->head;
+inline void kfmon_teardown_list(kfmon_watch_list_t *list) {
+    kfmon_watch_node_t *node = list->head;
     while (node) {
-        kfmon_watch_node_t* p = node->next;
+        kfmon_watch_node_t *p = node->next;
         free(node->watch.filename);
         free(node->watch.label);
         free(node);
@@ -30,9 +30,9 @@ inline void kfmon_teardown_list(kfmon_watch_list_t* list) {
 }
 
 // Allocate a single new node to the list
-inline int kfmon_grow_list(kfmon_watch_list_t* list) {
-    kfmon_watch_node_t* prev = list->tail;
-    kfmon_watch_node_t* node = calloc(1, sizeof(*node));
+inline int kfmon_grow_list(kfmon_watch_list_t *list) {
+    kfmon_watch_node_t *prev = list->tail;
+    kfmon_watch_node_t *node = calloc(1, sizeof(*node));
     if (!node) {
         return KFMON_IPC_CALLOC_FAILURE;
     }
@@ -177,14 +177,14 @@ static int handle_list_reply(int data_fd, void *data) {
         char *label = strsep(&line, ":");
 
         // Store that at the tail of the list
-        kfmon_watch_list_t* list = (kfmon_watch_list_t*) data;
+        kfmon_watch_list_t *list = (kfmon_watch_list_t*) data;
         // Make room for a new node
         if (kfmon_grow_list(list) != EXIT_SUCCESS) {
             status = KFMON_IPC_CALLOC_FAILURE;
             break;
         }
         // Use it
-        kfmon_watch_node_t* node = list->tail;
+        kfmon_watch_node_t *node = list->tail;
 
         node->watch.idx = (uint8_t) strtoul(watch_idx, NULL, 10);
         node->watch.filename = strdup(filename);
@@ -358,7 +358,7 @@ int nm_kfmon_simple_request(const char *restrict ipc_cmd, const char *restrict i
 }
 
 // Handle a list request for the KFMon generator
-int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t* list) {
+int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t *list) {
     // Assume everything's peachy until shit happens...
     int status = EXIT_SUCCESS;
 
@@ -394,7 +394,7 @@ int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t* list
 }
 
 // Giant ladder of fail
-void* nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out) {
+void *nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out) {
     #define NM_ERR_RET NULL
 
     switch (status) {
@@ -455,7 +455,7 @@ void* nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out) {
     #undef NM_ERR_RET
 }
 
-nm_action_result_t* nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out) {
+nm_action_result_t *nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out) {
     #define NM_ERR_RET NULL
 
     switch (status) {

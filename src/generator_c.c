@@ -71,7 +71,7 @@ NM_GENERATOR_(kfmon) {
 
     // Walk the list to populate the items array
     size_t i = 0;
-    for (kfmon_watch_node_t* node = list.head; node != NULL; node = node->next) {
+    for (kfmon_watch_node_t *node = list.head; node != NULL; node = node->next) {
         items[i] = calloc(1, sizeof(nm_menu_item_t));
         items[i]->action = calloc(1, sizeof(nm_menu_action_t));
         items[i]->lbl = strdup(node->watch.label);
