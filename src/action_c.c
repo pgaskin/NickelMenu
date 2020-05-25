@@ -1,4 +1,5 @@
 #define _GNU_SOURCE // asprintf
+#include <limits.h>
 
 #include "action.h"
 #include "kfmon.h"
@@ -26,6 +27,21 @@ NM_ACTION_(dbg_msg) {
 NM_ACTION_(dbg_toast) {
     #define NM_ERR_RET NULL
     NM_RETURN_OK(nm_action_result_toast("%s", arg));
+    #undef NM_ERR_RET
+}
+
+NM_ACTION_(skip) {
+    #define NM_ERR_RET NULL
+
+    char *tmp;
+    long n = strtol(arg, &tmp, 10);
+    NM_ASSERT(*arg && !*tmp && n != 0 && n >= -1 && n < INT_MAX, "invalid count '%s': must be a nonzero integer or -1", arg);
+
+    nm_action_result_t *res = calloc(1, sizeof(nm_action_result_t));
+    res->type = NM_ACTION_RESULT_TYPE_SKIP;
+    res->skip = (int)(n);
+    NM_RETURN_OK(res);
+
     #undef NM_ERR_RET
 }
 
