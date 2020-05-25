@@ -1,4 +1,5 @@
 #define _GNU_SOURCE // asprintf
+#include <limits.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -12,7 +13,7 @@ nm_menu_item_t **nm_generator_do(nm_generator_t *gen, size_t *sz_out) {
     NM_LOG("generator: running generator (%s) (%s) (%d) (%p)", gen->desc, gen->arg, gen->loc, gen->generate);
 
     char *err;
-    size_t sz = -1; // this should always be set by generate upon success, but we'll initialize it just in case
+    size_t sz = (size_t)(-1); // this should always be set by generate upon success, but we'll initialize it just in case
     nm_menu_item_t **items = gen->generate(gen->arg, &sz, &err);
 
     if (err) {
@@ -34,7 +35,7 @@ nm_menu_item_t **nm_generator_do(nm_generator_t *gen, size_t *sz_out) {
     }
 
     if (items) {
-        if (sz == -1)
+        if (sz == (size_t)(-1))
             NM_LOG("generator: warning: size should have been set by generate, but wasn't");
         if (!sz)
             NM_LOG("generator: warning: items should be null when size is 0");
