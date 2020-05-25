@@ -98,7 +98,7 @@ nm_config_t *nm_config_parse(char **err_out) {
             fclose(cfgfile);                    \
             free(line);                         \
             closedir(cfgdir);                   \
-            NM_RETURN_ERR(fmt, ##__VA_ARGS__); \
+            NM_RETURN_ERR(fmt, ##__VA_ARGS__);  \
         } while (0)
 
         // parse each line

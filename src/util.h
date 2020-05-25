@@ -38,20 +38,20 @@ inline char *strtrim(char *s){
 // writes the formatted error message to *err_out as a malloc'd string. The
 // arguments may or may not be evaluated more than once.
 #define NM_RETURN(ret, fmt, ...) _NM_RETURN(0, ret, fmt, ##__VA_ARGS__)
-#define _NM_RETURN(noerr, ret, fmt, ...) ({                                                                    \
-    __typeof__(ret) _ret = (ret);                                                                      \
-    if (err_out) {                                                                                     \
-        if (!noerr && _ret == NM_ERR_RET) asprintf(err_out, fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__);  \
-        else *err_out = NULL;                                                                          \
-    }                                                                                                  \
-    return _ret;                                                                                       \
+#define _NM_RETURN(noerr, ret, fmt, ...) ({                                                                     \
+    __typeof__(ret) _ret = (ret);                                                                               \
+    if (err_out) {                                                                                              \
+        if (!noerr && _ret == NM_ERR_RET) asprintf(err_out, fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__); \
+        else *err_out = NULL;                                                                                   \
+    }                                                                                                           \
+    return _ret;                                                                                                \
 })
 
 // NM_ASSERT is like assert, but it writes the formatted error message to
 // err_out as a malloc'd string, and returns NM_ERR_RET. Cond will always be
 // evaluated exactly once. The other arguments may or may not be evaluated one
 // or more times.
-#define NM_ASSERT(cond, fmt, ...) ({                                                         \
+#define NM_ASSERT(cond, fmt, ...) ({                                                             \
     if (!(cond)) _NM_RETURN(0, NM_ERR_RET, fmt " (assertion failed: %s)", ##__VA_ARGS__, #cond); \
 })
 
