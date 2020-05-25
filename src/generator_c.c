@@ -41,11 +41,11 @@ NM_GENERATOR_(kfmon) {
     #define NM_ERR_RET NULL
 
     // Default with no arg or an empty arg is to request a gui-listing
-    char *kfmon_cmd = NULL;
+    const char *kfmon_cmd = NULL;
     if (!arg || !*arg || strcmp(arg, "gui") == 0) {
-        kfmon_cmd = strdupa("gui-list");
+        kfmon_cmd = "gui-list";
     } else if (strcmp(arg, "all") == 0) {
-        kfmon_cmd = strdupa("list");
+        kfmon_cmd = "list";
     } else {
         NM_RETURN_ERR("invalid argument '%s': if specified, must be either gui or all", arg);
     }
