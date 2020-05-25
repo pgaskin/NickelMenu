@@ -89,6 +89,28 @@ nm_config_t *nm_config_parse(char **err_out) {
             continue;
         }
 
+        // skip special files, including:
+        // - dotfiles
+        // - vim: .*~, .*.s?? (unix only, usually swp or swo), *.swp, *.swo
+        // - gedit: .*~
+        // - emacs: .*~, #*#
+        // - kate: .*.kate-swp
+        // - macOS: .DS_Store*, .Spotlight-V*, ._*
+        // - Windows: [Tt]humbs.db, desktop.ini
+        char *bn = dirent->d_name;
+        char *ex = strrchr(bn, '.');
+        ex = (ex && ex != bn && bn[0] != '.') ? ex : NULL;
+        char lc = bn[strlen(bn)-1];
+        if ((bn[0] == '.') ||
+            (lc == '~') ||
+            (bn[0] == '#' && lc == '#') ||
+            (ex && (!strcmp(ex, ".swo") || !strcmp(ex, ".swp"))) ||
+            (!strcmp(&bn[1], "humbs.db") && tolower(bn[0]) == 't') ||
+            (!strcmp(bn, "desktop.ini"))) {
+            NM_LOG("config: skipping %s because it's a special file", fn);
+            continue;
+        }
+
         // open the config file
         NM_LOG("config: reading config file %s", fn);
         FILE *cfgfile;
