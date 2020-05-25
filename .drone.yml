@@ -1,0 +1,62 @@
+kind: pipeline
+type: docker
+name: NickelMenu
+
+trigger:
+  event: [push, pull_request, tag]
+
+steps:
+- name: build
+  image: docker.io/geek1011/nickeltc:1.0
+  when:
+    event: [push, pull_request, tag]
+  commands:
+  - make all koboroot
+  - mkdir out && mv KoboRoot.tgz src/libnm.so out/
+- name: test-syms
+  image: golang:1.14
+  when:
+    event: [push, pull_request, tag]
+  commands:
+  - cd test/syms && go build -o ../../test.syms . && cd ../..
+  - cd src && ../test.syms && cd ..
+- name: upload-build
+  image: plugins/s3
+  when:
+    event: [push, tag]
+  settings:
+    endpoint: https://s3.geek1011.net
+    bucket: nickelmenu
+    access_key: nickelmenu
+    secret_key: {from_secret: S3_SECRET_NICKELMENU}
+    target: artifacts/build/${DRONE_BUILD_NUMBER}
+    source: out/*
+    strip_prefix: out/
+  depends_on: [build]
+- name: upload-tag
+  image: plugins/s3
+  when:
+    event: [tag]
+  settings:
+    bucket: nickelmenu
+    access_key: nickelmenu
+    secret_key: {from_secret: S3_SECRET_NICKELMENU}
+    target: artifacts/tag/${DRONE_TAG}
+    source: out/*
+    strip_prefix: out/
+    when:
+      event: [tag]
+  depends_on: [build]
+- name: upload-commit
+  image: plugins/s3
+  when:
+    event: [push, tag]
+  settings:
+    endpoint: https://s3.geek1011.net
+    bucket: nickelmenu
+    access_key: nickelmenu
+    secret_key: {from_secret: S3_SECRET_NICKELMENU}
+    target: artifacts/commit/${DRONE_COMMIT}
+    source: out/*
+    strip_prefix: out/
+  depends_on: [build]
