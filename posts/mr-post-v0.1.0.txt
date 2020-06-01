@@ -13,4 +13,4 @@ This release is the first major feature update for NickelMenu.
 [*] A few memory leaks have been fixed.
 [*] A new build option has been added for @NiLuJe's one-click packages for Plato/KOReader to automatically uninstall NickelMenu when deleting the configuration directory.
 [/LIST]
-See the [URL="https://github.com/geek1011/NickelMenu/release/v0.1.0"]release[/URL] on GitHub for more details.
+See the [URL="https://github.com/geek1011/NickelMenu/releases/v0.1.0"]release[/URL] on GitHub for more details.
