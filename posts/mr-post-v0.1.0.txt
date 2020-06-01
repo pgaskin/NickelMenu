@@ -1,0 +1,16 @@
+[B][SIZE=5]NickelMenu v0.1.0[/SIZE][/B]
+
+This release is the first major feature update for NickelMenu.
+[LIST]
+[*] You can now execute chained actions depending on the result of the previous one using `chain_always`, `chain_success` or `chain_failure` ([URL="https://github.com/geek1011/NickelMenu/issues/11"]#11[/URL]).
+[*] To make usage more clear, `chain` has been deprecated in favour of `chain_success` ([URL="https://github.com/geek1011/NickelMenu/issues/33"]#33[/URL]).
+[*] You can now wait for a command to execute without showing the output with the new `quiet` option for `cmd_output` ([URL="https://github.com/geek1011/NickelMenu/issues/9"]#9[/URL]).
+[*] NickelMenu now supports dynamically generated menu items ([URL="https://github.com/geek1011/NickelMenu/issues/4"]#4[/URL]).
+[*] You can now automatically generate menu items for KFMon launchers using the new `kfmon` generator ([URL="https://github.com/geek1011/NickelMenu/issues/29"]#29[/URL]).
+[*] Special hidden files are now ignored during configuration file parsing ([URL="https://github.com/geek1011/NickelMenu/issues/27"]#27[/URL]).
+[*] More examples which make use of the new features have been added to the documentation.
+[*] The current version is now written to the log.
+[*] A few memory leaks have been fixed.
+[*] A new build option has been added for @NiLuJe's one-click packages for Plato/KOReader to automatically uninstall NickelMenu when deleting the configuration directory.
+[/LIST]
+See the [URL="https://github.com/geek1011/NickelMenu/release/v0.1.0"]release[/URL] on GitHub for more details.

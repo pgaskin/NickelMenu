@@ -1,0 +1,10 @@
+[B][SIZE=5]NickelMenu v0.0.3[/SIZE][/B]
+
+This release contains minor bugfixes and improvements.
+[LIST]
+[*] Main menu items are now inserted above the `Settings` item rather than `Help`.
+[*] The separators between main menu items now have consistent coloring with the other items.
+[*] Additional whitespace around the quiet and timeout arguments for `cmd_spawn`/`cmd_output` is now normalized.
+[*] An example for starting Telnet/FTP has been added to the documentation.
+[/LIST]
+See the [URL="https://github.com/geek1011/NickelMenu/release/v0.0.3"]release[/URL] on GitHub for more details.

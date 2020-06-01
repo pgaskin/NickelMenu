@@ -23,15 +23,15 @@ ___
 [*]   Nickel extras (nickel_extras:{web_browser,unblock_it,sketch_pad,solitaire,sudoku,word_scramble}).
 [*]   Other Nickel stuff (nickel_misc:{force_usb_connection,rescan_books,rescan_books_full}).
 [*]   Gracefully exit Nickel (power:{shutdown,reboot})
-[*]   Launch system commands and optionally display the output (cmd_spawn{,:quiet},cmd_output).
+[*]   Launch system commands and optionally display the output (cmd_spawn{,:quiet},cmd_output:timeout{,:quiet}).
 [*]   KFMon (kfmon, kfmon_id).
 [/LIST]
-[*] Action chaining.
+[*] Action chaining (chain_{success,failure,always}).
+[*] Dynamically generated menu items (generator:kfmon).
 [*] Simple configuration format with support for multiple configuration files.
 [*] Comprehensive logging to syslog (view over telnet or SSH with logread, or enable developer options and see the syslog files in KOBOeReader/.kobo).
 [*] No system files are ever touched directly, and no patching is required.
 [/LIST][B]Future features:[/B][LIST]
-[*] Automatically generate items for actions like kfmon.
 [*] Reload configuration files without a reboot.
 [*] More actions and settings.
 [*] Log viewer.

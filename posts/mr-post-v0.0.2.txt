@@ -1,0 +1,13 @@
+[B][SIZE=5]NickelMenu v0.0.2[/SIZE][/B]
+
+This release contains minor features and bugfixes.
+[LIST]
+[*] There are new `power:shutdown` and `power:reboot` actions to gracefully exit Nickel on firmware 4.13.12638+.
+[*] The `cmd_spawn` action now supports a `quiet:` option to prevent the PID from being displayed after the command has been launched.
+[*] The failsafe timeout has been halved again to 5 seconds.
+[*] A bug where the default menu item wouldn't do anything has been fixed.
+[*] The `nickel_setting` action now supports firmware versions 4.12.12111 and older.
+[*] There are various improvements to the documentation.
+[*] Internally, NickelMenu has switched to the [url="https://github.com/geek1011/NickelTC"]new toolchain builds[/url], and now has automatic checking for symbol compatibility between firmware versions.
+[/LIST]
+See the [URL="https://github.com/geek1011/NickelMenu/release/v0.0.2"]release[/URL] on GitHub for more details.
