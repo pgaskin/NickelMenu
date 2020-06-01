@@ -11,8 +11,18 @@ steps:
   when:
     event: [push, pull_request, tag]
   commands:
+  - make clean
   - make all koboroot
   - mkdir out && mv KoboRoot.tgz src/libnm.so out/
+- name: build-NM_UNINSTALL_CONFIGDIR
+  image: docker.io/geek1011/nickeltc:1.0
+  when:
+    event: [push, pull_request, tag]
+  commands:
+  - make clean
+  - make all koboroot NM_UNINSTALL_CONFIGDIR=1
+  - mkdir out/with-NM_UNINSTALL_CONFIGDIR && mv KoboRoot.tgz src/libnm.so out/with-NM_UNINSTALL_CONFIGDIR/
+  depends_on: [build]
 - name: test-syms
   image: golang:1.14
   when:
@@ -30,9 +40,9 @@ steps:
     access_key: nickelmenu
     secret_key: {from_secret: S3_SECRET_NICKELMENU}
     target: artifacts/build/${DRONE_BUILD_NUMBER}
-    source: out/*
+    source: out/**/*
     strip_prefix: out/
-  depends_on: [build]
+  depends_on: [build, build-NM_UNINSTALL_CONFIGDIR]
 - name: upload-tag
   image: plugins/s3
   when:
@@ -42,11 +52,9 @@ steps:
     access_key: nickelmenu
     secret_key: {from_secret: S3_SECRET_NICKELMENU}
     target: artifacts/tag/${DRONE_TAG}
-    source: out/*
+    source: out/**/*
     strip_prefix: out/
-    when:
-      event: [tag]
-  depends_on: [build]
+  depends_on: [build, build-NM_UNINSTALL_CONFIGDIR]
 - name: upload-commit
   image: plugins/s3
   when:
@@ -57,6 +65,6 @@ steps:
     access_key: nickelmenu
     secret_key: {from_secret: S3_SECRET_NICKELMENU}
     target: artifacts/commit/${DRONE_COMMIT}
-    source: out/*
+    source: out/**/*
     strip_prefix: out/
-  depends_on: [build]
+  depends_on: [build, build-NM_UNINSTALL_CONFIGDIR]

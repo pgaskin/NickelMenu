@@ -43,7 +43,14 @@ override LDFLAGS  += -Wl,--no-undefined -Wl,-rpath,/usr/local/Kobo -Wl,-rpath,/u
 NM_VERSION := $(shell git describe --tags --always --dirty)
 # Only use it if we got something useful out of git describe...
 ifdef NM_VERSION
-	override CPPFLAGS += -DNM_VERSION='"$(NM_VERSION)"'
+ override CPPFLAGS += -DNM_VERSION='"$(NM_VERSION)"'
+endif
+
+ifeq ($(NM_UNINSTALL_CONFIGDIR),1)
+ $(info -- NM_UNINSTALL_CONFIGDIR... enabled)
+ override CPPFLAGS += -DNM_UNINSTALL_CONFIGDIR
+else
+ $(info -- NM_UNINSTALL_CONFIGDIR... disabled)
 endif
 endif
 

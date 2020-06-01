@@ -7,6 +7,14 @@ extern "C" {
 #include <stdbool.h>
 #include "menu.h"
 
+#ifndef NM_CONFIG_DIR
+#define NM_CONFIG_DIR "/mnt/onboard/.adds/nm"
+#endif
+
+#ifndef NM_CONFIG_MAX_MENU_ITEMS_PER_MENU
+#define NM_CONFIG_MAX_MENU_ITEMS_PER_MENU 50
+#endif
+
 typedef struct nm_config_t nm_config_t;
 
 // nm_config_parse parses the configuration files in /mnt/onboard/.adds/nm.
