@@ -44,6 +44,7 @@ void nm_action_result_free(nm_action_result_t *res);
     X(nickel_setting) \
     X(nickel_extras)  \
     X(nickel_misc)    \
+    X(nickel_open)    \
     X(power)          \
     X(skip)
 
