@@ -51,6 +51,77 @@ typedef void BrowserWorkflowManager;
 typedef void N3SettingsExtrasController;
 typedef void N3PowerWorkflowManager;
 
+NM_ACTION_(nickel_open) {
+    #define NM_ERR_RET nullptr
+    char *tmp1 = strdupa(arg); // strsep and strtrim will modify it
+    char *arg1 = strtrim(strsep(&tmp1, ":"));
+    char *arg2 = strtrim(tmp1);
+    NM_ASSERT(arg2, "could not find a : in the argument");
+
+    const char *sym_c = NULL; // *NavMixin constructor (subclass of QObject)
+    const char *sym_d = NULL; // *NavMixin destructor (D1, not D0 because it also tries to call delete)
+    const char *sym_f = NULL; // *NavMixin::* function
+
+    if (!strcmp(arg1, "discover")) {
+        sym_c = "_ZN16DiscoverNavMixinC1Ev"; //libnickel 4.6 * _ZN16DiscoverNavMixinC1Ev
+        sym_d = "_ZN16DiscoverNavMixinD1Ev"; //libnickel 4.6 * _ZN16DiscoverNavMixinD1Ev
+
+        if      (!strcmp(arg2, "storefront")) sym_f = "_ZN16DiscoverNavMixin10storefrontEv"; //libnickel 4.6 * _ZN16DiscoverNavMixin10storefrontEv
+        else if (!strcmp(arg2, "wishlist"))   sym_f = "_ZN16DiscoverNavMixin8wishlistEv";    //libnickel 4.6 * _ZN16DiscoverNavMixin8wishlistEv
+    } else if (!strcmp(arg1, "library")) {
+        sym_c = "_ZN15LibraryNavMixinC1Ev"; //libnickel 4.6 * _ZN15LibraryNavMixinC1Ev
+        sym_d = "_ZN15LibraryNavMixinD1Ev"; //libnickel 4.6 * _ZN15LibraryNavMixinD1Ev
+
+        if      (!strcmp(arg2, "library"))  sym_f = "_ZN15LibraryNavMixin11showLibraryEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showLibraryEv
+        else if (!strcmp(arg2, "library2")) sym_f = "_ZN15LibraryNavMixin18showLastLibraryTabEv";      //libnickel 4.6 * _ZN15LibraryNavMixin18showLastLibraryTabEv
+        else if (!strcmp(arg2, "all"))      sym_f = "_ZN15LibraryNavMixin23showAllItemsWithoutSyncEv"; //libnickel 4.6 * _ZN15LibraryNavMixin23showAllItemsWithoutSyncEv
+        else if (!strcmp(arg2, "authors"))  sym_f = "_ZN15LibraryNavMixin11showAuthorsEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showAuthorsEv
+        else if (!strcmp(arg2, "series"))   sym_f = "_ZN15LibraryNavMixin10showSeriesEv";              //libnickel 4.20.14601 * _ZN15LibraryNavMixin10showSeriesEv
+        else if (!strcmp(arg2, "shelves"))  sym_f = "_ZN15LibraryNavMixin11showShelvesEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showShelvesEv
+        else if (!strcmp(arg2, "pocket"))   sym_f = "_ZN15LibraryNavMixin17showPocketLibraryEv";       //libnickel 4.6 * _ZN15LibraryNavMixin17showPocketLibraryEv
+        else if (!strcmp(arg2, "dropbox"))  sym_f = "_ZN15LibraryNavMixin11showDropboxEv";             //libnickel 4.18.13737 * _ZN15LibraryNavMixin11showDropboxEv
+    } else if (!strcmp(arg1, "reading_life")) {
+        sym_c = "_ZN19ReadingLifeNavMixinC1Ev"; //libnickel 4.6 * _ZN19ReadingLifeNavMixinC1Ev
+        sym_d = "_ZN19ReadingLifeNavMixinD1Ev"; //libnickel 4.6 * _ZN19ReadingLifeNavMixinD1Ev
+
+        if      (!strcmp(arg2, "reading_life")) sym_f = "_ZN19ReadingLifeNavMixin14chooseActivityEv"; //libnickel 4.6 * _ZN19ReadingLifeNavMixin14chooseActivityEv
+        else if (!strcmp(arg2, "stats"))        sym_f = "_ZN19ReadingLifeNavMixin5statsEv";           //libnickel 4.6 * _ZN19ReadingLifeNavMixin5statsEv
+        else if (!strcmp(arg2, "awards"))       sym_f = "_ZN19ReadingLifeNavMixin6awardsEv";          //libnickel 4.6 * _ZN19ReadingLifeNavMixin6awardsEv
+        else if (!strcmp(arg2, "words"))        sym_f = "_ZN19ReadingLifeNavMixin7myWordsEv";         //libnickel 4.6 * _ZN19ReadingLifeNavMixin7myWordsEv
+    } else if (!strcmp(arg1, "store")) {
+        sym_c = "_ZN13StoreNavMixinC1Ev"; //libnickel 4.6 * _ZN13StoreNavMixinC1Ev
+        sym_d = "_ZN13StoreNavMixinD1Ev"; //libnickel 4.6 * _ZN13StoreNavMixinD1Ev
+
+        if      (!strcmp(arg2, "overdrive")) sym_f = "_ZN13StoreNavMixin22overDriveFeaturedListsEv"; //libnickel 4.10.11655 * _ZN13StoreNavMixin22overDriveFeaturedListsEv
+        else if (!strcmp(arg2, "search"))    sym_f = "_ZN13StoreNavMixin6searchEv";                  //libnickel 4.6 * _ZN13StoreNavMixin6searchEv
+    }
+
+    NM_ASSERT(sym_c, "unknown category '%s' (in '%s:%s')", arg1, arg1, arg2);
+    NM_ASSERT(sym_d, "destructor not specified (this is a bug)");
+    NM_ASSERT(sym_f, "unknown view '%s' (in '%s:%s')", arg2, arg1, arg2);
+
+    void (*fn_c)(QObject *_this);
+    void (*fn_d)(QObject *_this);
+    void (*fn_f)(QObject *_this);
+
+    reinterpret_cast<void*&>(fn_c) = dlsym(RTLD_DEFAULT, sym_c);
+    reinterpret_cast<void*&>(fn_d) = dlsym(RTLD_DEFAULT, sym_d);
+    reinterpret_cast<void*&>(fn_f) = dlsym(RTLD_DEFAULT, sym_f);
+
+    NM_ASSERT(fn_c, "could not find constructor %s (is your firmware too old?)", sym_c);
+    NM_ASSERT(fn_d, "could not find destructor %s (is your firmware too old?)", sym_d);
+    NM_ASSERT(fn_f, "could not find function %s (is your firmware too old?)", sym_f);
+    NM_LOG("c: %s = %p; d: %s = %p; f: %s = %p", sym_c, fn_c, sym_d, fn_d, sym_f, fn_f);
+
+    QObject obj(nullptr);
+    fn_c(&obj);
+    fn_f(&obj);
+    fn_d(&obj);
+
+    NM_RETURN_OK(nm_action_result_silent());
+    #undef NM_ERR_RET
+}
+
 NM_ACTION_(nickel_setting) {
     #define NM_ERR_RET nullptr
 
