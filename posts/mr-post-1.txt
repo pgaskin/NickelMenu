@@ -21,6 +21,7 @@ ___
 [*]   Debug messages (dbg_syslog, dbg_error, dbg_msg, dbg_toast).
 [*]   Nickel settings (nickel_setting:{invert,lockscreen,screenshots,force_wifi}).
 [*]   Nickel extras (nickel_extras:{web_browser,unblock_it,sketch_pad,solitaire,sudoku,word_scramble}).
+[*]   Nickel views (nickel_open:{discover:storefront,discover:wishlist,library:library,library:library2,library:all,library:authors,library:series,library:shelves,library:pocket,library:dropbox,reading_life:reading_life,reading_life:stats,reading_life:awards,reading_life:words,store:overdrive,store:search}).
 [*]   Other Nickel stuff (nickel_misc:{force_usb_connection,rescan_books,rescan_books_full}).
 [*]   Gracefully exit Nickel (power:{shutdown,reboot})
 [*]   Launch system commands and optionally display the output (cmd_spawn{,:quiet},cmd_output:timeout{,:quiet}).

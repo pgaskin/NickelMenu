@@ -1,0 +1,21 @@
+[B][SIZE=5]NickelMenu v0.1.1[/SIZE][/B]
+
+This release adds a new `nickel_open` action, which allows you to replicate the behavior of the default menu items (Books, Articles, Collections, etc) plus a few additional actions.
+[CODE]nickel_open - one of:
+    discover:storefront       - Kobo Store
+    discover:wishlist         - Wishlist
+    library:library           - My Books (with last filter)
+    library:library2          - My Books (with last tab and filter)
+    library:all               - Books
+    library:authors           - Authors
+    library:series            - Series (4.20.14601+)
+    library:shelves           - Collections
+    library:pocket            - Articles
+    library:dropbox           - Dropbox (4.18.13737+)
+    reading_life:reading_life - Activity (with last tab)
+    reading_life:stats        - Activity
+    reading_life:awards       - Awards
+    reading_life:words        - My Words
+    store:overdrive           - OverDrive (4.10.11655+) (note: if you don't have an active OverDrive account, it will give you a "Network Error")
+    store:search              - Search[/CODE]
+See the [URL="https://github.com/geek1011/NickelMenu/releases/v0.1.1"]release[/URL] on GitHub for more details.
