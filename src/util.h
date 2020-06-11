@@ -18,6 +18,10 @@ extern "C" {
 #define NM_VERSION "dev"
 #endif
 
+#ifndef NM_LOG_NAME
+#define NM_LOG_NAME "NickelMenu"
+#endif
+
 // strtrim trims ASCII whitespace in-place (i.e. don't give it a string literal)
 // from the left/right of the string.
 inline char *strtrim(char *s){
@@ -32,7 +36,7 @@ inline char *strtrim(char *s){
 // A bunch of useful macros to simplify error handling and logging.
 
 // NM_LOG writes a log message.
-#define NM_LOG(fmt, ...) syslog(LOG_DEBUG, "(NickelMenu) " fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__)
+#define NM_LOG(fmt, ...) syslog(LOG_DEBUG, "(" NM_LOG_NAME ") " fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__)
 
 // NM_RETURN returns ret, and if ret is NM_ERR_RET and err_out is not NULL, it
 // writes the formatted error message to *err_out as a malloc'd string. The
