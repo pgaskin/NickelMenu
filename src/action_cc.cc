@@ -355,7 +355,14 @@ NM_ACTION_(nickel_extras) {
 
 NM_ACTION_(nickel_misc) {
     #define NM_ERR_RET nullptr
-    if (!strcmp(arg, "rescan_books")) {
+    if (!strcmp(arg, "home")) {
+        //libnickel 4.6 * _ZN19StatusBarController4homeEv
+        void (*StatusBarController_home)();
+        reinterpret_cast<void*&>(StatusBarController_home) = dlsym(RTLD_DEFAULT, "_ZN19StatusBarController4homeEv");
+        NM_ASSERT(StatusBarController_home, "could not dlsym StatusBarController::home");
+
+        StatusBarController_home();
+    } else if (!strcmp(arg, "rescan_books")) {
         //libnickel 4.13.12638 * _ZN19PlugWorkflowManager14sharedInstanceEv
         PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
         reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");

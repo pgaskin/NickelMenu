@@ -58,6 +58,7 @@
 #                                      sudoku
 #                                      word_scramble
 #                   nickel_misc    - one of:
+#                                      home                 - goes to the home screen
 #                                      force_usb_connection - forces a usb connection dialog to be shown
 #                                      rescan_books         - forces nickel to rescan books (4.13.12638+)
 #                                      rescan_books_full    - forces a full usb connect/disconnect cycle (4.13.12638+)
