@@ -109,7 +109,7 @@
 #                    _test - the number of items to generate (0-10)
 #                    kfmon - one or none of:
 #                              gui - only enumerate non-hidden active KFMon watches (this is the default)
-#                              all - enumerate *every* active KFMon watches
+#                              all - enumerate *every* active KFMon watch
 #
 # For example, you might have a configuration file in KOBOeReader/.adds/nm/mystuff like:
 #
