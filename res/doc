@@ -84,8 +84,8 @@
 #                                      autoconnect        - attempts to enable and connect to wifi (similar to what happens when you open a link)
 #                                      autoconnect_silent - attempts to connect to wifi in the background (does nothing if wifi is disabled, the battery is low, is already connected, or there aren't any known networks in range) (no errors are shown) (similar to what happens when you turn on the Kobo)
 #                                      enable             - enables WiFi (but doesn't necessarily connect to it)
-#                                      disable            - disables WiFi (but doesn't necessarily connect to it)
-#                                      toggle             - disables WiFi (but doesn't necessarily connect to it)
+#                                      disable            - disables WiFi
+#                                      toggle             - toggles WiFi (but doesn't necessarily connect to it)
 #                   power          - one of:
 #                                      shutdown (4.13.12638+)
 #                                      reboot (4.13.12638+)
