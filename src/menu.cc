@@ -105,6 +105,19 @@ extern "C" int nm_menu_hook(void *libnickel, nm_menu_item_t **items, size_t item
     #undef NM_ERR_RET
 }
 
+// AbstractNickelMenuController_createAction_before wraps
+// AbstractNickelMenuController::createAction to use the correct separator for
+// the menu location and to match the behaviour of QMenu::insertAction instead
+// of QMenu::addAction.
+QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_menu_location_t loc, bool last_in_group, void *_this, QMenu *menu, QWidget *widget, bool close, bool enabled, bool separator);
+
+// nm_menu_item_do runs a nm_menu_item_t and must be called from the thread of a
+// signal handler.
+void nm_menu_item_do(nm_menu_item_t *it);
+
+// _nm_menu_inject handles the QMenu::aboutToShow signal and injects menu items.
+void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at);
+
 extern "C" MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& label, bool checkable, bool checked, QString const& thingy) {
     NM_LOG("AbstractNickelMenuController::createMenuTextItem(%p, `%s`, %d, %d, `%s`)", menu, qPrintable(label), checkable, checked, qPrintable(thingy));
 
@@ -112,99 +125,171 @@ extern "C" MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& 
     QString trrm = QCoreApplication::translate("DictionaryActionProxy", "Dictionary");
     NM_LOG("Comparing against '%s', '%s'", qPrintable(trmm), qPrintable(trrm));
 
-    bool ismm, isrm; // only one will be true
-    if ((ismm = (label == trmm) && !checkable))
+    nm_menu_location_t loc = {};
+    if (label == trmm && !checkable) {
         NM_LOG("Intercepting main menu (label=Settings, checkable=false)...");
-    if ((isrm = (label == trrm) && !checkable))
+        loc = NM_MENU_LOCATION_MAIN_MENU;
+    } else if (label == trrm && !checkable) {
         NM_LOG("Intercepting reader menu (label=Dictionary, checkable=false)...");
+        loc = NM_MENU_LOCATION_READER_MENU;
+    }
+
+    if (loc)
+        QObject::connect(menu, &QMenu::aboutToShow, std::bind(_nm_menu_inject, _this, menu, loc, menu->actions().count()));
+
+    return AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, label, checkable, checked, thingy);
+}
+
+void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
+    NM_LOG("inject %d @ %d", loc, at);
+
+    NM_LOG("getting insertion point");
+
+    auto actions = menu->actions();
+    auto before = at < actions.count()
+        ? actions.at(at)
+        : nullptr;
+
+    if (before == nullptr)
+        NM_LOG("it seems the original item to add new ones before was never actually added to the menu (number of items when the action was created is %d, current is %d), appending to end instead", at, actions.count());
+
+    NM_LOG("checking for old items");
+
+    for (auto action : actions) {
+        if (action->property("nm_action") == true) {
+            return; // already added
+            /*menu->removeAction(action);
+            delete action;*/
+        }
+    }
+
+    NM_LOG("injecting new items");
+
+    // if it segfaults in createMenuTextItem, it's likely because
+    // AbstractNickelMenuController is invalid, which shouldn't happen while the
+    // menu which we added the signal from still can be shown... (but
+    // theoretically, it's possible)
 
     for (size_t i = 0; i < _items_n; i++) {
         nm_menu_item_t *it = _items[i];
-        if (it->loc == NM_MENU_LOCATION_MAIN_MENU && !ismm)
-            continue;
-        if (it->loc == NM_MENU_LOCATION_READER_MENU && !isrm)
+        if (it->loc != loc)
             continue;
 
-        NM_LOG("Adding item '%s'...", it->lbl);
+        NM_LOG("adding items '%s'...", it->lbl);
 
-        MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, QString::fromUtf8(it->lbl), false, false, "");
-        QAction* action;
-        if (ismm && LightMenuSeparator_LightMenuSeparator && BoldMenuSeparator_BoldMenuSeparator) {
-            action = AbstractNickelMenuController_createAction(_this, menu, item, true, true, false);
+        MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(nmc, menu, QString::fromUtf8(it->lbl), false, false, "");
+        QAction* action = AbstractNickelMenuController_createAction_before(before, loc, i == _items_n-1, nmc, menu, item, true, true, true);
+
+        action->setProperty("nm_action", true);
+        QObject::connect(action, &QAction::triggered, [it](bool){
+            NM_LOG("item '%s' pressed...", it->lbl);
+            nm_menu_item_do(it);
+            NM_LOG("done");
+        }); // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
+    }
+}
+
+void nm_menu_item_do(nm_menu_item_t *it) {
+    char *err = NULL;
+    bool success = true;
+    int skip = 0;
+
+    for (nm_menu_action_t *cur = it->action; cur; cur = cur->next) {
+        NM_LOG("action %p with argument %s : ", cur->act, cur->arg);
+        NM_LOG("...success=%d ; on_success=%d on_failure=%d skip=%d", success, cur->on_success, cur->on_failure, skip);
+
+        if (skip != 0) {
+            NM_LOG("...skipping action due to skip flag (remaining=%d)", skip);
+            if (skip > 0)
+                skip--;
+            continue;
+        } else if (!((success && cur->on_success) || (!success && cur->on_failure))) {
+            NM_LOG("...skipping action due to condition flags");
+            continue;
+        }
+
+        free(err); // free the previous error if it is not NULL (so the last error can be saved for later)
+
+        nm_action_result_t *res = cur->act(cur->arg, &err);
+        if (err == NULL && res && res->type == NM_ACTION_RESULT_TYPE_SKIP) {
+            NM_LOG("...not updating success flag (value=%d) for skip result", success);
+        } else if (!(success = err == NULL)) {
+            NM_LOG("...error: '%s'", err);
+            continue;
+        } else if (!res) {
+            NM_LOG("...warning: you should have returned a result with type silent, not null, upon success");
+            continue;
+        }
+
+        NM_LOG("...result: type=%d msg='%s', handling...", res->type, res->msg);
+
+        MainWindowController *mwc;
+        switch (res->type) {
+        case NM_ACTION_RESULT_TYPE_SILENT:
+            break;
+        case NM_ACTION_RESULT_TYPE_MSG:
+            ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QLatin1String(res->msg));
+            break;
+        case NM_ACTION_RESULT_TYPE_TOAST:
+            mwc = MainWindowController_sharedInstance();
+            if (!mwc) {
+                NM_LOG("toast: could not get shared main window controller pointer");
+                break;
+            }
+            MainWindowController_toast(mwc, QLatin1String(res->msg), QStringLiteral(""), 1500);
+            break;
+        case NM_ACTION_RESULT_TYPE_SKIP:
+            skip = res->skip;
+            break;
+        }
+
+        if (skip == -1)
+            NM_LOG("...skipping remaining actions");
+        else if (skip != 0)
+            NM_LOG("...skipping next %d actions", skip);
+
+        nm_action_result_free(res);
+    }
+
+    if (err) {
+        NM_LOG("last action returned error %s", err);
+        ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
+        free(err);
+    }
+}
+
+QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_menu_location_t loc, bool last_in_group, void *_this, QMenu *menu, QWidget *widget, bool close, bool enabled, bool separator) {
+    int n = menu->actions().count();
+    QAction* action = AbstractNickelMenuController_createAction(_this, menu, widget, /*close*/false, enabled, /*separator*/false);
+
+    if (!menu->actions().contains(action)) {
+        NM_LOG("could not find added action at end of menu (note: old count is %d, new is %d), not moving it to the right spot or adding separator", n, menu->actions().count());
+        return action;
+    }
+
+    if (before != nullptr) {
+        menu->removeAction(action);
+        menu->insertAction(before, action);
+    }
+
+    if (close) {
+        // we can't use the signal which createAction can create, as it gets lost when moving the item
+        QWidget::connect(action, &QAction::triggered, [=](bool){ menu->hide(); });
+    }
+
+    if (separator) {
+        // if it's the main menu, we generally want to use a custom separator
+        if (loc == NM_MENU_LOCATION_MAIN_MENU && LightMenuSeparator_LightMenuSeparator && BoldMenuSeparator_BoldMenuSeparator) {
             QAction *lsp = reinterpret_cast<QAction*>(calloc(1, 32)); // it's actually 8 as of 14622, but better to be safe
-            (i == _items_n-1
+            (last_in_group
                 ? BoldMenuSeparator_BoldMenuSeparator
                 : LightMenuSeparator_LightMenuSeparator
             )(lsp, reinterpret_cast<QWidget*>(_this));
-            menu->addAction(lsp);
+            menu->insertAction(before, lsp);
         } else {
-            action = AbstractNickelMenuController_createAction(_this, menu, item, true, true, true);
+            menu->insertSeparator(before);
         }
-
-        // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
-        QObject::connect(action, &QAction::triggered, std::function<void(bool)>([it](bool){
-            NM_LOG("item '%s' pressed...", it->lbl);
-            char *err = NULL;
-            bool success = true;
-            int skip = 0;
-            for (nm_menu_action_t *cur = it->action; cur; cur = cur->next) {
-                NM_LOG("action %p with argument %s : ", cur->act, cur->arg);
-                NM_LOG("...success=%d ; on_success=%d on_failure=%d skip=%d", success, cur->on_success, cur->on_failure, skip);
-                if (skip) {
-                    NM_LOG("...skipping action due to skip flag (remaining=%d)", skip);
-                    if (skip > 0)
-                        skip--;
-                    continue;
-                }
-                if (!((success && cur->on_success) || (!success && cur->on_failure))) {
-                    NM_LOG("...skipping action due to condition flags");
-                    continue;
-                }
-                free(err);
-                nm_action_result_t *res = cur->act(cur->arg, &err);
-                if (err == NULL && res && res->type == NM_ACTION_RESULT_TYPE_SKIP) {
-                    NM_LOG("...not updating success flag (value=%d) for skip result", success);
-                } else if (!(success = err == NULL)) {
-                    NM_LOG("...error: '%s'", err);
-                    continue;
-                } else if (!res) {
-                    NM_LOG("...warning: you should have returned a result with type silent, not null, upon success");
-                    continue;
-                }
-                NM_LOG("...result: type=%d msg='%s', handling...", res->type, res->msg);
-                MainWindowController *mwc;
-                switch (res->type) {
-                case NM_ACTION_RESULT_TYPE_SILENT:
-                    break;
-                case NM_ACTION_RESULT_TYPE_MSG:
-                    ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QLatin1String(res->msg));
-                    break;
-                case NM_ACTION_RESULT_TYPE_TOAST:
-                    mwc = MainWindowController_sharedInstance();
-                    if (!mwc) {
-                        NM_LOG("toast: could not get shared main window controller pointer");
-                        break;
-                    }
-                    MainWindowController_toast(mwc, QLatin1String(res->msg), QStringLiteral(""), 1500);
-                    break;
-                case NM_ACTION_RESULT_TYPE_SKIP:
-                    skip = res->skip;
-                    if (skip == -1)
-                        NM_LOG("...skipping remaining actions");
-                    else
-                        NM_LOG("...skipping next %d actions", skip);
-                    break;
-                }
-                nm_action_result_free(res);
-            }
-            if (err) {
-                NM_LOG("last action returned error %s", err);
-                ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
-                free(err);
-            }
-            NM_LOG("done");
-        }));
     }
 
-    return AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, label, checkable, checked, thingy);
+    return action;
 }
