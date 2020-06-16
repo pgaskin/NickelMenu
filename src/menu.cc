@@ -181,13 +181,15 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
         QAction* action = AbstractNickelMenuController_createAction_before(before, loc, i == _items_n-1, nmc, menu, item, true, true, true);
 
         action->setProperty("nm_action", true);
-        QObject::connect(action, &QAction::triggered, [it](bool){ nm_menu_item_do(it); }); // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
+        QObject::connect(action, &QAction::triggered, [it](bool){
+            NM_LOG("item '%s' pressed...", it->lbl);
+            nm_menu_item_do(it);
+            NM_LOG("done");
+        }); // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
     }
 }
 
 void nm_menu_item_do(nm_menu_item_t *it) {
-    NM_LOG("item '%s' pressed...", it->lbl);
-
     char *err = NULL;
     bool success = true;
     int skip = 0;
@@ -254,8 +256,6 @@ void nm_menu_item_do(nm_menu_item_t *it) {
         ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
         free(err);
     }
-
-    NM_LOG("done");
 }
 
 QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_menu_location_t loc, bool last_in_group, void *_this, QMenu *menu, QWidget *widget, bool close, bool enabled, bool separator) {
