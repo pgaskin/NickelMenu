@@ -50,6 +50,7 @@ typedef void PlugWorkflowManager;
 typedef void BrowserWorkflowManager;
 typedef void N3SettingsExtrasController;
 typedef void N3PowerWorkflowManager;
+typedef void N3WirelessWorkflowManager;
 
 NM_ACTION_(nickel_open) {
     #define NM_ERR_RET nullptr
@@ -447,6 +448,62 @@ NM_ACTION_(power) {
     } else {
         NM_RETURN_ERR("unknown power action '%s'", arg);
     }
+    NM_RETURN_OK(nm_action_result_silent());
+    #undef NM_ERR_RET
+}
+
+NM_ACTION_(nickel_wifi) {
+    #define NM_ERR_RET nullptr
+
+    //libnickel 4.6 * _ZN23N3WirelessWorkflowManager14sharedInstanceEv
+    N3WirelessWorkflowManager *(*N3WirelessWorkflowManager_sharedInstance)();
+    reinterpret_cast<void*&>(N3WirelessWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager14sharedInstanceEv");
+    NM_ASSERT(N3WirelessWorkflowManager_sharedInstance, "could not dlsym N3WirelessWorkflowManager::sharedInstance");
+    
+    N3WirelessWorkflowManager *wfm = N3WirelessWorkflowManager_sharedInstance();
+    NM_ASSERT(wfm, "could not get shared wireless manager pointer");
+
+    if (!strcmp(arg, "autoconnect")) {
+        //libnickel 4.6 * _ZN23WirelessWorkflowManager15connectWirelessEbb
+        void (*N3WirelessWorkflowManager_connectWireless)(N3WirelessWorkflowManager*, bool, bool); // I haven't looked into what the params are for, so I'm just using what the browser uses when opening it
+        reinterpret_cast<void*&>(N3WirelessWorkflowManager_connectWireless) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager15connectWirelessEbb");
+        NM_ASSERT(N3WirelessWorkflowManager_connectWireless, "could not dlsym N3WirelessWorkflowManager::connectWireless");
+
+        N3WirelessWorkflowManager_connectWireless(wfm, true, false);
+    } else if (!strcmp(arg, "autoconnect_silent")) {
+        //libnickel 4.6 * _ZN23WirelessWorkflowManager23connectWirelessSilentlyEv
+        void (*N3WirelessWorkflowManager_connectWirelessSilently)(N3WirelessWorkflowManager*);
+        reinterpret_cast<void*&>(N3WirelessWorkflowManager_connectWirelessSilently) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager23connectWirelessSilentlyEv");
+        NM_ASSERT(N3WirelessWorkflowManager_connectWirelessSilently, "could not dlsym N3WirelessWorkflowManager::connectWirelessSilently");
+
+        N3WirelessWorkflowManager_connectWirelessSilently(wfm);
+    } else if (!strcmp(arg, "enable") || !strcmp(arg, "disable") || !strcmp(arg, "toggle")) {
+        //libnickel 4.6 * _ZN23WirelessWorkflowManager14isAirplaneModeEv
+        bool (*N3WirelessWorkflowManager_isAirplaneMode)(N3WirelessWorkflowManager*);
+        reinterpret_cast<void*&>(N3WirelessWorkflowManager_isAirplaneMode) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager14isAirplaneModeEv");
+        NM_ASSERT(N3WirelessWorkflowManager_isAirplaneMode, "could not dlsym N3WirelessWorkflowManager::isAirplaneMode");
+
+        bool e = N3WirelessWorkflowManager_isAirplaneMode(wfm);
+        NM_LOG("wifi disabled: %d", e);
+
+        //libnickel 4.6 * _ZN23WirelessWorkflowManager15setAirplaneModeEb
+        void (*N3WirelessWorkflowManager_setAirplaneMode)(N3WirelessWorkflowManager*, bool);
+        reinterpret_cast<void*&>(N3WirelessWorkflowManager_setAirplaneMode) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager15setAirplaneModeEb");
+        NM_ASSERT(N3WirelessWorkflowManager_setAirplaneMode, "could not dlsym N3WirelessWorkflowManager::setAirplaneMode");
+
+        if (!strcmp(arg, "enable")) {
+            if (e)
+                N3WirelessWorkflowManager_setAirplaneMode(wfm, false);
+        } else if (!strcmp(arg, "disable")) {
+            if (!e)
+                N3WirelessWorkflowManager_setAirplaneMode(wfm, true);
+        } else if (!strcmp(arg, "toggle")) {
+            N3WirelessWorkflowManager_setAirplaneMode(wfm, !e);
+        }
+    } else {
+        NM_RETURN_ERR("unknown wifi action '%s'", arg);
+    }
+
     NM_RETURN_OK(nm_action_result_silent());
     #undef NM_ERR_RET
 }
