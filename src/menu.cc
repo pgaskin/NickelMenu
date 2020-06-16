@@ -187,23 +187,27 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
 
 void nm_menu_item_do(nm_menu_item_t *it) {
     NM_LOG("item '%s' pressed...", it->lbl);
+
     char *err = NULL;
     bool success = true;
     int skip = 0;
+
     for (nm_menu_action_t *cur = it->action; cur; cur = cur->next) {
         NM_LOG("action %p with argument %s : ", cur->act, cur->arg);
         NM_LOG("...success=%d ; on_success=%d on_failure=%d skip=%d", success, cur->on_success, cur->on_failure, skip);
-        if (skip) {
+
+        if (skip != 0) {
             NM_LOG("...skipping action due to skip flag (remaining=%d)", skip);
             if (skip > 0)
                 skip--;
             continue;
-        }
-        if (!((success && cur->on_success) || (!success && cur->on_failure))) {
+        } else if (!((success && cur->on_success) || (!success && cur->on_failure))) {
             NM_LOG("...skipping action due to condition flags");
             continue;
         }
-        free(err);
+
+        free(err); // free the previous error if it is not NULL (so the last error can be saved for later)
+
         nm_action_result_t *res = cur->act(cur->arg, &err);
         if (err == NULL && res && res->type == NM_ACTION_RESULT_TYPE_SKIP) {
             NM_LOG("...not updating success flag (value=%d) for skip result", success);
@@ -214,7 +218,9 @@ void nm_menu_item_do(nm_menu_item_t *it) {
             NM_LOG("...warning: you should have returned a result with type silent, not null, upon success");
             continue;
         }
+
         NM_LOG("...result: type=%d msg='%s', handling...", res->type, res->msg);
+
         MainWindowController *mwc;
         switch (res->type) {
         case NM_ACTION_RESULT_TYPE_SILENT:
@@ -232,19 +238,23 @@ void nm_menu_item_do(nm_menu_item_t *it) {
             break;
         case NM_ACTION_RESULT_TYPE_SKIP:
             skip = res->skip;
-            if (skip == -1)
-                NM_LOG("...skipping remaining actions");
-            else
-                NM_LOG("...skipping next %d actions", skip);
             break;
         }
+
+        if (skip == -1)
+            NM_LOG("...skipping remaining actions");
+        else if (skip != 0)
+            NM_LOG("...skipping next %d actions", skip);
+
         nm_action_result_free(res);
     }
+
     if (err) {
         NM_LOG("last action returned error %s", err);
         ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
         free(err);
     }
+
     NM_LOG("done");
 }
 
