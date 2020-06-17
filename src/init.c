@@ -30,6 +30,7 @@ __attribute__((constructor)) void nm_init() {
     NM_LOG("config dir: %s", NM_CONFIG_DIR);
 
     NM_LOG("init: creating failsafe");
+
     nm_failsafe_t *fs;
     if (!(fs = nm_failsafe_create(&err)) && err) {
         NM_LOG("error: could not create failsafe: %s, stopping", err);
@@ -38,6 +39,7 @@ __attribute__((constructor)) void nm_init() {
     }
 
     NM_LOG("init: checking for uninstall flag");
+
     if (!access(NM_CONFIG_DIR "/uninstall", F_OK)) {
         NM_LOG("init: flag found, uninstalling");
         nm_failsafe_uninstall(fs);
@@ -47,6 +49,7 @@ __attribute__((constructor)) void nm_init() {
 
     #ifdef NM_UNINSTALL_CONFIGDIR
     NM_LOG("init: NM_UNINSTALL_CONFIGDIR: checking if config dir exists");
+
     if (access(NM_CONFIG_DIR, F_OK) && errno == ENOENT) {
         NM_LOG("init: config dir does not exist, uninstalling");
         nm_failsafe_uninstall(fs);
@@ -54,11 +57,25 @@ __attribute__((constructor)) void nm_init() {
     }
     #endif
 
+    NM_LOG("init: finding config files");
+
+    nm_config_file_t *files = nm_config_files(&err);
+    if (err) {
+        NM_LOG("init: could not scan for config files: %s", err);
+        free(err);
+        return;
+    }
+
     NM_LOG("init: parsing config");
+
     size_t items_n;
     nm_menu_item_t **items;
     nm_config_t *cfg;
-    if (!(cfg = nm_config_parse(&err)) && err) {
+
+    cfg = nm_config_parse(files, &err);
+    nm_config_files_free(files);
+
+    if (!cfg && err) {
         NM_LOG("error: could not parse config: %s, creating error item in main menu instead", err);
 
         items_n  = 1;
@@ -85,6 +102,7 @@ __attribute__((constructor)) void nm_init() {
     }
 
     NM_LOG("init: opening libnickel");
+
     void *libnickel = dlopen("libnickel.so.1.0.0", RTLD_LAZY|RTLD_NODELETE);
     if (!libnickel) {
         NM_LOG("error: could not dlopen libnickel, stopping");
@@ -92,6 +110,7 @@ __attribute__((constructor)) void nm_init() {
     }
 
     NM_LOG("init: hooking libnickel");
+
     if (nm_menu_hook(libnickel, items, items_n, &err) && err) {
         NM_LOG("error: could not hook libnickel: %s, stopping", err);
         free(err);
