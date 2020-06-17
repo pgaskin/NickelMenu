@@ -109,14 +109,14 @@ extern "C" int nm_menu_hook(void *libnickel, nm_menu_item_t **items, size_t item
 // AbstractNickelMenuController::createAction to use the correct separator for
 // the menu location and to match the behaviour of QMenu::insertAction instead
 // of QMenu::addAction.
-QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_menu_location_t loc, bool last_in_group, void *_this, QMenu *menu, QWidget *widget, bool close, bool enabled, bool separator);
+NM_PRIVATE QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_menu_location_t loc, bool last_in_group, void *_this, QMenu *menu, QWidget *widget, bool close, bool enabled, bool separator);
 
 // nm_menu_item_do runs a nm_menu_item_t and must be called from the thread of a
 // signal handler.
-void nm_menu_item_do(nm_menu_item_t *it);
+NM_PRIVATE void nm_menu_item_do(nm_menu_item_t *it);
 
 // _nm_menu_inject handles the QMenu::aboutToShow signal and injects menu items.
-void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at);
+NM_PRIVATE void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at);
 
 extern "C" NM_PUBLIC MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& label, bool checkable, bool checked, QString const& thingy) {
     NM_LOG("AbstractNickelMenuController::createMenuTextItem(%p, `%s`, %d, %d, `%s`)", menu, qPrintable(label), checkable, checked, qPrintable(thingy));
