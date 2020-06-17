@@ -13,7 +13,7 @@
 #include "menu.h"
 #include "util.h"
 
-__attribute__((constructor)) void nm_init() {
+__attribute__((constructor)) NM_PRIVATE void nm_init() {
     // for if it's been loaded with LD_PRELOAD rather than as a Qt plugin
     if (strcmp(program_invocation_short_name, "nickel"))
         if (!(getenv("LIBNM_FORCE") && !strcmp(getenv("LIBNM_FORCE"), "true")))

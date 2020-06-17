@@ -6,8 +6,8 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stddef.h>
-
 #include "action.h"
+#include "visibility.h"
 
 typedef enum {
     NM_MENU_LOCATION_MAIN_MENU   = 1,
@@ -33,7 +33,7 @@ typedef struct {
 // error message on error. The provided configuration and all pointers it
 // references must remain valid for the lifetime of the program (i.e. not stack
 // allocated). It MUST NOT be called more than once.
-int nm_menu_hook(void *libnickel, nm_menu_item_t **items, size_t items_n, char **err_out);
+NM_PRIVATE int nm_menu_hook(void *libnickel, nm_menu_item_t **items, size_t items_n, char **err_out);
 
 #ifdef __cplusplus
 }

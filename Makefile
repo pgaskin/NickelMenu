@@ -3,6 +3,7 @@ MOC            = moc
 CC             = $(CROSS_COMPILE)gcc
 CXX            = $(CROSS_COMPILE)g++
 PKG_CONFIG     = $(CROSS_COMPILE)pkg-config
+STRIP          = $(CROSS_COMPILE)strip
 
 DESTDIR =
 
@@ -74,6 +75,9 @@ export GITIGNORE_HEAD
 
 all: src/libnm.so
 
+strip: src/libnm.so
+	$(STRIP) --strip-unneeded $(CURDIR)/src/libnm.so
+
 clean:
 	rm -f $(GENERATED)
 
@@ -90,11 +94,11 @@ install:
 koboroot:
 	tar cvzf KoboRoot.tgz --show-transformed --owner=root --group=root --mode="u=rwX,go=rX" --transform="s,src/libnm.so,./usr/local/Kobo/imageformats/libnm.so," --transform="s,res/doc,./mnt/onboard/.adds/nm/doc," src/libnm.so res/doc
 
-.PHONY: all clean gitignore install koboroot
+.PHONY: all strip clean gitignore install koboroot
 override GENERATED += KoboRoot.tgz
 
-src/libnm.so: override CFLAGS   += $(PTHREAD_CFLAGS) -fPIC
-src/libnm.so: override CXXFLAGS += $(PTHREAD_CFLAGS) $(QT5CORE_CFLAGS) $(QT5WIDGETS_CFLAGS) -fPIC
+src/libnm.so: override CFLAGS   += $(PTHREAD_CFLAGS) -fvisibility=hidden -fPIC
+src/libnm.so: override CXXFLAGS += $(PTHREAD_CFLAGS) $(QT5CORE_CFLAGS) $(QT5WIDGETS_CFLAGS) -fvisibility=hidden -fPIC
 src/libnm.so: override LDFLAGS  += $(PTHREAD_LIBS) $(QT5CORE_LIBS) $(QT5WIDGETS_LIBS) -ldl -Wl,-soname,libnm.so
 src/libnm.so: src/qtplugin.o src/init.o src/config.o src/dlhook.o src/failsafe.o src/menu.o src/kfmon.o src/action.o src/action_c.o src/action_cc.o src/generator.o src/generator_c.o
 

@@ -4,6 +4,8 @@
 extern "C" {
 #endif
 
+#include "visibility.h"
+
 typedef enum {
     NM_ACTION_RESULT_TYPE_SILENT = 0,
     NM_ACTION_RESULT_TYPE_MSG    = 1,
@@ -19,17 +21,17 @@ typedef struct {
 
 typedef nm_action_result_t *(*nm_action_fn_t)(const char *arg, char **err);
 
-nm_action_result_t *nm_action_result_silent();
-nm_action_result_t *nm_action_result_msg(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-nm_action_result_t *nm_action_result_toast(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-void nm_action_result_free(nm_action_result_t *res);
+NM_PRIVATE nm_action_result_t *nm_action_result_silent();
+NM_PRIVATE nm_action_result_t *nm_action_result_msg(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+NM_PRIVATE nm_action_result_t *nm_action_result_toast(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+NM_PRIVATE void nm_action_result_free(nm_action_result_t *res);
 
 #define NM_ACTION(name) nm_action_##name
 
 #ifdef __cplusplus
-#define NM_ACTION_(name) extern "C" nm_action_result_t *NM_ACTION(name)(const char *arg, char **err_out)
+#define NM_ACTION_(name) extern "C" NM_PRIVATE nm_action_result_t *NM_ACTION(name)(const char *arg, char **err_out)
 #else
-#define NM_ACTION_(name) nm_action_result_t *NM_ACTION(name)(const char *arg, char **err_out)
+#define NM_ACTION_(name) NM_PRIVATE nm_action_result_t *NM_ACTION(name)(const char *arg, char **err_out)
 #endif
 
 #define NM_ACTIONS    \

@@ -4,6 +4,8 @@
 extern "C" {
 #endif
 
+#include "visibility.h"
+
 // nm_failsafe_t is a failsafe mechanism for injected shared libraries. It
 // works by moving it to a temporary file (so it won't get loaded the next time)
 // and dlopening itself (to prevent it from being unloaded if it is dlclose'd by
@@ -12,16 +14,16 @@ extern "C" {
 typedef struct nm_failsafe_t nm_failsafe_t;
 
 // nm_failsafe_create allocates and arms a failsafe mechanism for the currently
-// dlopen'd or LD_PRELOAD'd library. 
-nm_failsafe_t *nm_failsafe_create(char **err_out);
+// dlopen'd or LD_PRELOAD'd library.
+NM_PRIVATE nm_failsafe_t *nm_failsafe_create(char **err_out);
 
 // nm_failsafe_destroy starts a pthread which disarms and frees the failsafe
 // after a delay. The nm_failsafe_t must not be used afterwards.
-void nm_failsafe_destroy(nm_failsafe_t *fs, int delay);
+NM_PRIVATE void nm_failsafe_destroy(nm_failsafe_t *fs, int delay);
 
 // nm_failsafe_uninstall uninstalls the lib. The nm_failsafe_t must not be
 // used afterwards.
-void nm_failsafe_uninstall(nm_failsafe_t *fs);
+NM_PRIVATE void nm_failsafe_uninstall(nm_failsafe_t *fs);
 
 #ifdef __cplusplus
 }

@@ -8,6 +8,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 #include "action.h"
+#include "visibility.h"
 
 // Path to KFMon's IPC Unix socket
 #define KFMON_IPC_SOCKET "/tmp/kfmon-ipc.ctl"
@@ -69,21 +70,21 @@ typedef struct {
 typedef int (*ipc_handler_t)(int, void *);
 
 // Free all resources allocated by a list and its nodes
-void kfmon_teardown_list(kfmon_watch_list_t *list);
+NM_PRIVATE void kfmon_teardown_list(kfmon_watch_list_t *list);
 // Allocate a single new node to the list
-int kfmon_grow_list(kfmon_watch_list_t *list);
+NM_PRIVATE int kfmon_grow_list(kfmon_watch_list_t *list);
 
 // Given one of the error codes listed above, return with a formatted error message
-void *nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out);
+NM_PRIVATE void *nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out);
 
 // Given one of the error codes listed above, return properly from an action. Success is silent.
-nm_action_result_t *nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out);
+NM_PRIVATE nm_action_result_t *nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out);
 
 // Send a simple KFMon IPC request, one where the reply is only used for its diagnostic value.
-int nm_kfmon_simple_request(const char *restrict ipc_cmd, const char *restrict ipc_arg);
+NM_PRIVATE int nm_kfmon_simple_request(const char *restrict ipc_cmd, const char *restrict ipc_arg);
 
 // Handle a list request for the KFMon generator
-int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t *list);
+NM_PRIVATE int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t *list);
 
 #ifdef __cplusplus
 }
