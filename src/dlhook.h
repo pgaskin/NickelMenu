@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-#include "visibility.h"
+#include "util.h"
 
 // nm_dlhook takes a lib handle from dlopen and redirects the specified symbol
 // to another, returning a pointer to the original one. Only calls from within

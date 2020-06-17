@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-#include "visibility.h"
+#include "util.h"
 
 // nm_failsafe_t is a failsafe mechanism for injected shared libraries. It
 // works by moving it to a temporary file (so it won't get loaded the next time)

@@ -22,6 +22,10 @@ extern "C" {
 #define NM_LOG_NAME "NickelMenu"
 #endif
 
+// Symbol visibility
+#define NM_PUBLIC  __attribute__((visibility("default")))
+#define NM_PRIVATE __attribute__((visibility("hidden")))
+
 // strtrim trims ASCII whitespace in-place (i.e. don't give it a string literal)
 // from the left/right of the string.
 inline char *strtrim(char *s) {
