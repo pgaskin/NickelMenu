@@ -6,7 +6,6 @@ extern "C" {
 
 #include <stddef.h>
 #include "menu.h"
-#include "visibility.h"
 
 // nm_generator_fn_t generates menu items. It must return a malloc'd array of
 // pointers to malloc'd nm_menu_item_t's, and write the number of items to
@@ -25,14 +24,14 @@ typedef struct {
 
 // nm_generator_do runs a generator and returns the generated items, if any, or
 // an item which shows the error returned by the generator.
-NM_PRIVATE nm_menu_item_t **nm_generator_do(nm_generator_t *gen, size_t *sz_out);
+nm_menu_item_t **nm_generator_do(nm_generator_t *gen, size_t *sz_out);
 
 #define NM_GENERATOR(name) nm_generator_##name
 
 #ifdef __cplusplus
-#define NM_GENERATOR_(name) extern "C" NM_PRIVATE nm_menu_item_t **NM_GENERATOR(name)(const char *arg, size_t *sz_out, char **err_out)
+#define NM_GENERATOR_(name) extern "C" nm_menu_item_t **NM_GENERATOR(name)(const char *arg, size_t *sz_out, char **err_out)
 #else
-#define NM_GENERATOR_(name) NM_PRIVATE nm_menu_item_t **NM_GENERATOR(name)(const char *arg, size_t *sz_out, char **err_out)
+#define NM_GENERATOR_(name) nm_menu_item_t **NM_GENERATOR(name)(const char *arg, size_t *sz_out, char **err_out)
 #endif
 
 #define NM_GENERATORS \
