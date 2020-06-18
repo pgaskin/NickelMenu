@@ -45,10 +45,8 @@ nm_failsafe_t *nm_failsafe_create(char **err_out) {
 static void *_nm_failsafe_destroy(void* _fs) {
     nm_failsafe_t *fs = (nm_failsafe_t*)(_fs);
 
-    if (fs->delay) {
-        NM_LOG("failsafe: restoring after %d seconds", fs->delay);
-        sleep(fs->delay);
-    }
+    NM_LOG("failsafe: restoring after %d seconds", fs->delay);
+    sleep(fs->delay);
 
     NM_LOG("failsafe: renaming %s to %s", fs->tmp, fs->orig);
     if (rename(fs->tmp, fs->orig))
@@ -64,11 +62,6 @@ static void *_nm_failsafe_destroy(void* _fs) {
 
 void nm_failsafe_destroy(nm_failsafe_t *fs, int delay) {
     fs->delay = delay;
-
-    if (!fs->delay) {
-        _nm_failsafe_destroy(fs);
-        return;
-    }
 
     NM_LOG("failsafe: scheduling restore");
 
