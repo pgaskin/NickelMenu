@@ -65,13 +65,15 @@ __attribute__((constructor)) void nm_init() {
         NM_LOG("init: error parsing config, will show a menu item with the error: %s", err);
     }
 
-    size_t ntmp;
+    size_t ntmp = -1;
     if (!upd) {
         NM_LOG("init: no config file changes detected for initial config update (it should always return an error or update), stopping (this is a bug; err should have been returned instead)");
         return;
-    } else if (nm_global_config_items(&ntmp)) {
+    } else if (!nm_global_config_items(&ntmp)) {
         NM_LOG("init: warning: no menu items returned by nm_global_config_items, ignoring for now (this is a bug; it should always have a menu item whether the default, an error, or the actual config)");
-    } else if (nm_global_config_items(&ntmp)) {
+    } else if (ntmp == -1) {
+        NM_LOG("init: warning: no size returned by nm_global_config_items, ignoring for now (this is a bug)");
+    } else if (!ntmp) {
         NM_LOG("init: warning: size returned by nm_global_config_items is 0, ignoring for now (this is a bug; it should always have a menu item whether the default, an error, or the actual config)");
     }
 
