@@ -89,13 +89,18 @@ nm_config_file_t *nm_config_files(char **err_out) {
     #undef NM_ERR_RET
 }
 
-bool nm_config_files_current(nm_config_file_t **files, char **err_out) {
+bool nm_config_files_update(nm_config_file_t **files, char **err_out) {
     #define NM_ERR_RET false
     NM_ASSERT(files, "files pointer must not be null");
 
     nm_config_file_t *nfiles = nm_config_files(err_out);
     if (*err_out)
         return NM_ERR_RET;
+
+    if (!*files) {
+        *files = nfiles;
+        NM_RETURN_OK(true);
+    }
 
     bool ch = false;
     nm_config_file_t *op = *files;

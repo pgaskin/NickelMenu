@@ -25,8 +25,11 @@ typedef struct nm_config_file_t nm_config_file_t;
 nm_config_file_t *nm_config_files(char **err_out);
 
 // nm_config_files_update checks if the configuration files are up to date and
-// updates them, returning true, if not. Warning: if the files have changed,
-// the pointer passed to files will become invalid (it gets replaced).
+// updates them, returning true, if not. If *files is NULL, it is equivalent to
+// doing `*files = nm_config_files(err_out)`. If an error occurs, the pointer is
+// left untouched and false is returned along with the error. Warning: if the
+// files have changed, the pointer passed to files will become invalid (it gets
+// replaced).
 bool nm_config_files_update(nm_config_file_t **files, char **err_out);
 
 // nm_config_files_free frees the list of configuration files.
