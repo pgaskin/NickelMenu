@@ -111,6 +111,8 @@ bool nm_config_files_update(nm_config_file_t **files, char **err_out) {
             ch = true;
             break;
         }
+        op = op->next;
+        np = np->next;
     }
 
     if (ch || op || np) {
