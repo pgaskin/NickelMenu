@@ -36,7 +36,6 @@ ___
 [/LIST][B]Future features:[/B][LIST]
 [*] Reload configuration files without a reboot.
 [*] More actions and settings.
-[*] Log viewer.
 [*] More menu locations.
 [*] Custom browser URL and injected stylesheet.
 [/LIST]
