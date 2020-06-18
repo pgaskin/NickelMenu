@@ -295,12 +295,11 @@ QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_me
                 ? BoldMenuSeparator_BoldMenuSeparator
                 : LightMenuSeparator_LightMenuSeparator
             )(sep, reinterpret_cast<QWidget*>(_this));
-            sep->setProperty("nm_action", true);
             menu->insertAction(before, sep);
         } else {
             sep = menu->insertSeparator(before);
-            sep->setProperty("nm_action", true);
         }
+        sep->setProperty("nm_action", true);
     }
 
     return action;
