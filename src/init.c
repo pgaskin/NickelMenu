@@ -10,6 +10,7 @@
 #include "action.h"
 #include "config.h"
 #include "failsafe.h"
+#include "init.h"
 #include "menu.h"
 #include "util.h"
 
@@ -57,48 +58,21 @@ __attribute__((constructor)) void nm_init() {
     }
     #endif
 
-    NM_LOG("init: finding config files");
+    NM_LOG("init: updating config");
 
-    nm_config_file_t *files = nm_config_files(&err);
+    bool upd = nm_global_config_update(&err);
     if (err) {
-        NM_LOG("init: could not scan for config files: %s", err);
-        free(err);
-        return;
+        NM_LOG("init: error parsing config, will show a menu item with the error: %s", err);
     }
 
-    NM_LOG("init: parsing config");
-
-    size_t items_n;
-    nm_menu_item_t **items;
-    nm_config_t *cfg;
-
-    cfg = nm_config_parse(files, &err);
-    nm_config_files_free(files);
-
-    if (!cfg && err) {
-        NM_LOG("error: could not parse config: %s, creating error item in main menu instead", err);
-
-        items_n  = 1;
-        items    = calloc(items_n, sizeof(nm_menu_item_t*));
-        items[0] = calloc(1, sizeof(nm_menu_item_t));
-        items[0]->loc = NM_MENU_LOCATION_MAIN_MENU;
-        items[0]->lbl = strdup("Config Error");
-        items[0]->action = calloc(1, sizeof(nm_menu_action_t));
-        items[0]->action->arg = strdup(err);
-        items[0]->action->act = NM_ACTION(dbg_msg);
-        items[0]->action->on_failure = true;
-        items[0]->action->on_success = true;
-
-        free(err);
-    } else {
-        NM_LOG("init: generating items");
-        nm_config_generate(cfg);
-
-        NM_LOG("init: getting menu");
-        if (!(items = nm_config_get_menu(cfg, &items_n))) {
-            NM_LOG("error: could not allocate memory, stopping");
-            goto stop_fs;
-        }
+    size_t ntmp;
+    if (!upd) {
+        NM_LOG("init: no config file changes detected for initial config update (it should always return an error or update), stopping (this is a bug; err should have been returned instead)");
+        return;
+    } else if (nm_global_config_items(&ntmp)) {
+        NM_LOG("init: warning: no menu items returned by nm_global_config_items, ignoring for now (this is a bug; it should always have a menu item whether the default, an error, or the actual config)");
+    } else if (nm_global_config_items(&ntmp)) {
+        NM_LOG("init: warning: size returned by nm_global_config_items is 0, ignoring for now (this is a bug; it should always have a menu item whether the default, an error, or the actual config)");
     }
 
     NM_LOG("init: opening libnickel");
@@ -111,7 +85,7 @@ __attribute__((constructor)) void nm_init() {
 
     NM_LOG("init: hooking libnickel");
 
-    if (nm_menu_hook(libnickel, items, items_n, &err) && err) {
+    if (nm_menu_hook(libnickel, &err) && err) {
         NM_LOG("error: could not hook libnickel: %s, stopping", err);
         free(err);
         goto stop_fs;
@@ -124,4 +98,96 @@ stop_fs:
 stop:
     NM_LOG("init: done");
     return;
+}
+
+// note: not thread safe
+static nm_config_file_t  *nm_global_menu_config_files = NULL; // updated in-place by nm_global_config_update
+static      nm_config_t  *nm_global_menu_config       = NULL; // updated by nm_global_config_update, replaced by nm_global_config_replace, NULL on error
+static   nm_menu_item_t **nm_global_menu_config_items = NULL; // updated by nm_global_config_replace to an error message or the items from nm_global_menu_config
+static           size_t  nm_global_menu_config_n      = 0;    // ^
+
+nm_menu_item_t **nm_global_config_items(size_t *n_out) {
+    if (n_out)
+        *n_out = nm_global_menu_config_n;
+    return nm_global_menu_config_items;
+}
+
+static void nm_global_config_replace(nm_config_t *cfg, const char *err) {
+    if (nm_global_menu_config_n)
+        nm_global_menu_config_n = 0;
+
+    if (nm_global_menu_config_items) {
+        free(nm_global_menu_config_items);
+        nm_global_menu_config_items = NULL;
+    }
+
+    if (nm_global_menu_config) {
+        nm_config_free(nm_global_menu_config);
+        nm_global_menu_config = NULL;
+    }
+
+    if (err && cfg)
+        nm_config_free(cfg);
+
+    // this isn't strictly necessary, but we should always try to reparse it
+    // every time just in case the error was temporary
+    if (err && nm_global_menu_config_files) {
+        nm_config_files_free(nm_global_menu_config_files);
+        nm_global_menu_config_files = NULL;
+    }
+
+    if (err) {
+        nm_global_menu_config_n        = 1;
+        nm_global_menu_config_items    = calloc(nm_global_menu_config_n, sizeof(nm_menu_item_t*));
+        nm_global_menu_config_items[0] = calloc(1, sizeof(nm_menu_item_t));
+        nm_global_menu_config_items[0]->loc = NM_MENU_LOCATION_MAIN_MENU;
+        nm_global_menu_config_items[0]->lbl = strdup("Config Error");
+        nm_global_menu_config_items[0]->action = calloc(1, sizeof(nm_menu_action_t));
+        nm_global_menu_config_items[0]->action->arg = strdup(err);
+        nm_global_menu_config_items[0]->action->act = NM_ACTION(dbg_msg);
+        nm_global_menu_config_items[0]->action->on_failure = true;
+        nm_global_menu_config_items[0]->action->on_success = true;
+        return;
+    }
+
+    nm_global_menu_config_items = nm_config_get_menu(cfg, &nm_global_menu_config_n);
+    if (!nm_global_menu_config_items) 
+        NM_LOG("could not allocate memory");
+}
+
+bool nm_global_config_update(char **err_out) {
+    #define NM_ERR_RET true
+    char *err;
+
+    NM_LOG("global: scanning for config files");
+    bool updated = nm_config_files_update(&nm_global_menu_config_files, &err);
+    if (err) {
+        NM_LOG("... error: %s", err);
+        NM_LOG("global: freeing old config and replacing with error item");
+        nm_global_config_replace(NULL, err);
+        NM_RETURN_ERR("scan for config files: %s", err);
+    }
+
+    NM_LOG("global:%s changes detected", updated ? "" : " no");
+    if (!updated)
+        NM_RETURN_OK(false);
+    
+    NM_LOG("global: parsing new config");
+    nm_config_t *cfg = nm_config_parse(nm_global_menu_config_files, &err);
+    if (err) {
+        NM_LOG("... error: %s", err);
+        NM_LOG("global: freeing old config and replacing with error item");
+        nm_global_config_replace(NULL, err);
+        NM_RETURN_ERR("parse config files: %s", err);
+    }
+
+    NM_LOG("global: running generators");
+    nm_config_generate(cfg);
+
+    NM_LOG("global: freeing old config and replacing with new one");
+    nm_global_config_replace(cfg, NULL);
+
+    NM_LOG("global: done swapping config");
+    NM_RETURN_OK(true);
+    #undef NM_ERR_RET
 }

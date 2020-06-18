@@ -7,8 +7,8 @@
 #include <cstdlib>
 #include <dlfcn.h>
 
-#include "action.h"
 #include "dlhook.h"
+#include "init.h"
 #include "menu.h"
 #include "util.h"
 
@@ -60,10 +60,7 @@ void (*MainWindowController_toast)(MainWindowController*, QString const&, QStrin
 static void (*LightMenuSeparator_LightMenuSeparator)(void*, QWidget*);
 static void (*BoldMenuSeparator_BoldMenuSeparator)(void*, QWidget*);
 
-static nm_menu_item_t **_items;
-static size_t _items_n;
-
-extern "C" int nm_menu_hook(void *libnickel, nm_menu_item_t **items, size_t items_n, char **err_out) {
+extern "C" int nm_menu_hook(void *libnickel, char **err_out) {
     #define NM_ERR_RET 1
     //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
     reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem) = dlsym(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_");
@@ -97,9 +94,6 @@ extern "C" int nm_menu_hook(void *libnickel, nm_menu_item_t **items, size_t item
     //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
     reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem_orig) = nm_dlhook(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", nmh, &err);
     NM_ASSERT(AbstractNickelMenuController_createMenuTextItem_orig, "failed to hook _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_: %s", err);
-
-    _items = items;
-    _items_n = items_n;
 
     NM_RETURN_OK(0);
     #undef NM_ERR_RET
@@ -153,32 +147,45 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
     if (before == nullptr)
         NM_LOG("it seems the original item to add new ones before was never actually added to the menu (number of items when the action was created is %d, current is %d), appending to end instead", at, actions.count());
 
+    NM_LOG("checking for config updates");
+    bool updated = nm_global_config_update(NULL); // if there was an error it will be returned as a menu item anyways (and updated will be true)
+    NM_LOG("updated = %d", updated);
+
     NM_LOG("checking for old items");
 
     for (auto action : actions) {
         if (action->property("nm_action") == true) {
-            return; // already added
-            /*menu->removeAction(action);
-            delete action;*/
+            if (!updated)
+                return; // already added items, up to date
+            menu->removeAction(action);
+            delete action;
         }
     }
 
     NM_LOG("injecting new items");
+
+    size_t items_n;
+    nm_menu_item_t **items = nm_global_config_items(&items_n);
+
+    if (!items) {
+        NM_LOG("items is NULL (either the config hasn't been parsed yet or there was a memory allocation error), not adding");
+        return;
+    }
 
     // if it segfaults in createMenuTextItem, it's likely because
     // AbstractNickelMenuController is invalid, which shouldn't happen while the
     // menu which we added the signal from still can be shown... (but
     // theoretically, it's possible)
 
-    for (size_t i = 0; i < _items_n; i++) {
-        nm_menu_item_t *it = _items[i];
+    for (size_t i = 0; i < items_n; i++) {
+        nm_menu_item_t *it = items[i];
         if (it->loc != loc)
             continue;
 
         NM_LOG("adding items '%s'...", it->lbl);
 
         MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(nmc, menu, QString::fromUtf8(it->lbl), false, false, "");
-        QAction* action = AbstractNickelMenuController_createAction_before(before, loc, i == _items_n-1, nmc, menu, item, true, true, true);
+        QAction* action = AbstractNickelMenuController_createAction_before(before, loc, i == items_n-1, nmc, menu, item, true, true, true);
 
         action->setProperty("nm_action", true);
         QObject::connect(action, &QAction::triggered, [it](bool){
