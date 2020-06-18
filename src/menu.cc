@@ -138,6 +138,21 @@ extern "C" MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& 
 void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
     NM_LOG("inject %d @ %d", loc, at);
 
+    NM_LOG("checking for config updates");
+    bool updated = nm_global_config_update(NULL); // if there was an error it will be returned as a menu item anyways (and updated will be true)
+    NM_LOG("updated = %d", updated);
+
+    NM_LOG("checking for existing items added by nm");
+
+    for (auto action : menu->actions()) {
+        if (action->property("nm_action") == true) {
+            if (!updated)
+                return; // already added items, menu is up to date
+            menu->removeAction(action);
+            delete action;
+        }
+    }
+
     NM_LOG("getting insertion point");
 
     auto actions = menu->actions();
@@ -147,21 +162,6 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
 
     if (before == nullptr)
         NM_LOG("it seems the original item to add new ones before was never actually added to the menu (number of items when the action was created is %d, current is %d), appending to end instead", at, actions.count());
-
-    NM_LOG("checking for config updates");
-    bool updated = nm_global_config_update(NULL); // if there was an error it will be returned as a menu item anyways (and updated will be true)
-    NM_LOG("updated = %d", updated);
-
-    NM_LOG("checking for old items");
-
-    for (auto action : actions) {
-        if (action->property("nm_action") == true) {
-            if (!updated)
-                return; // already added items, up to date
-            menu->removeAction(action);
-            delete action;
-        }
-    }
 
     NM_LOG("injecting new items");
 
