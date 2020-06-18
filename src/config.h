@@ -5,7 +5,6 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
-#include <time.h>
 #include "menu.h"
 
 #ifndef NM_CONFIG_DIR
