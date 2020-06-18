@@ -102,7 +102,8 @@ extern "C" int nm_menu_hook(void *libnickel, char **err_out) {
 // AbstractNickelMenuController_createAction_before wraps
 // AbstractNickelMenuController::createAction to use the correct separator for
 // the menu location and to match the behaviour of QMenu::insertAction instead
-// of QMenu::addAction.
+// of QMenu::addAction. It also adds the property nm_action=true to the action
+// and separator.
 QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_menu_location_t loc, bool last_in_group, void *_this, QMenu *menu, QWidget *widget, bool close, bool enabled, bool separator);
 
 // nm_menu_item_do runs a nm_menu_item_t and must be called from the thread of a
@@ -187,7 +188,6 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
         MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(nmc, menu, QString::fromUtf8(it->lbl), false, false, "");
         QAction* action = AbstractNickelMenuController_createAction_before(before, loc, i == items_n-1, nmc, menu, item, true, true, true);
 
-        action->setProperty("nm_action", true);
         QObject::connect(action, &QAction::triggered, [it](bool){
             NM_LOG("item '%s' pressed...", it->lbl);
             nm_menu_item_do(it);
@@ -269,6 +269,8 @@ QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_me
     int n = menu->actions().count();
     QAction* action = AbstractNickelMenuController_createAction(_this, menu, widget, /*close*/false, enabled, /*separator*/false);
 
+    action->setProperty("nm_action", true);
+
     if (!menu->actions().contains(action)) {
         NM_LOG("could not find added action at end of menu (note: old count is %d, new is %d), not moving it to the right spot or adding separator", n, menu->actions().count());
         return action;
@@ -286,15 +288,18 @@ QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_me
 
     if (separator) {
         // if it's the main menu, we generally want to use a custom separator
+        QAction *sep;
         if (loc == NM_MENU_LOCATION_MAIN_MENU && LightMenuSeparator_LightMenuSeparator && BoldMenuSeparator_BoldMenuSeparator) {
-            QAction *lsp = reinterpret_cast<QAction*>(calloc(1, 32)); // it's actually 8 as of 14622, but better to be safe
+            sep = reinterpret_cast<QAction*>(calloc(1, 32)); // it's actually 8 as of 14622, but better to be safe
             (last_in_group
                 ? BoldMenuSeparator_BoldMenuSeparator
                 : LightMenuSeparator_LightMenuSeparator
-            )(lsp, reinterpret_cast<QWidget*>(_this));
-            menu->insertAction(before, lsp);
+            )(sep, reinterpret_cast<QWidget*>(_this));
+            sep->setProperty("nm_action", true);
+            menu->insertAction(before, sep);
         } else {
-            menu->insertSeparator(before);
+            sep = menu->insertSeparator(before);
+            sep->setProperty("nm_action", true);
         }
     }
 
