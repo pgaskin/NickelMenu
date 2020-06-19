@@ -52,7 +52,12 @@
 #                                      screenshots - toggles FeatureSettings.Screenshots
 #                                      force_wifi  - toggles DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
 #                   nickel_extras  - the mimetype of the plugin, or one of:
-#                                      web_browser
+#                                      web_browser                   - opens the web browser to the default homepage
+#                                      web_browser:<url>             - opens the web browser to the specified URL
+#                                      web_browser:<url> <css>       - opens the web browser to the specified URL and injects the specified CSS (which can contain spaces and colons) into all pages
+#                                      web_browser:modal             - opens the web browser to the default homepage as a pop-up window
+#                                      web_browser:modal:<url>       - see above
+#                                      web_browser:modal:<url> <css> - see above
 #                                      unblock_it
 #                                      sketch_pad
 #                                      solitaire

@@ -295,7 +295,50 @@ NM_ACTION_(nickel_setting) {
 NM_ACTION_(nickel_extras) {
     #define NM_ERR_RET nullptr
 
-    if (!strcmp(arg, "web_browser")) {
+    if (!strncmp(arg, "web_browser", 11)) {
+        bool modal;
+        QUrl *url;
+        QString *css;
+
+        if (!strcmp(arg, "web_browser")) {
+            modal = false;
+            url = new QUrl();
+            css = new QString("");
+        } else {
+            char *tmp1 = strdupa(arg); // strsep and strtrim will modify it
+            char *arg1 = strtrim(strsep(&tmp1, ":"));
+            char *arg2 = strtrim(tmp1);
+
+            if (!arg2 || strcmp(arg1, "web_browser"))
+                NM_RETURN_ERR("unknown beta feature name or plugin mimetype '%s' (split: '%s')", arg, arg1);
+
+            QString tmp = QString::fromUtf8(arg2).trimmed();
+
+            if (tmp.section(':', 0, 0).trimmed() == "modal") {
+                modal = true;
+                tmp = tmp.section(':', 1).trimmed();
+            } else {
+                modal = false;
+            }
+
+            if (tmp.contains(' ')) {
+                css = new QString(tmp.section(' ', 1).trimmed());
+                url = new QUrl(tmp.section(' ', 0, 0).trimmed());
+                if (!url->isValid())
+                    NM_RETURN_ERR("invalid url '%s' (argument: '%s') (note: if your url has spaces, they need to be escaped)", qPrintable(tmp.section(' ', 0, 0)), arg);
+            } else if (tmp.length()) {
+                url = new QUrl(tmp);
+                css = new QString("");
+                if (!url->isValid())
+                    NM_RETURN_ERR("invalid url '%s' (argument: '%s') (note: if your url has spaces, they need to be escaped)", qPrintable(tmp.section(' ', 0, 0)), arg);
+            } else {
+                url = new QUrl();
+                css = new QString("");
+            }
+        }
+
+        NM_LOG("web browser '%s' (modal=%d, url='%s', css='%s')", arg, modal, url->isValid() ? qPrintable(url->toString()) : "(home)", qPrintable(*css));
+
         //libnickel 4.6 * _ZN22BrowserWorkflowManager14sharedInstanceEv _ZN22BrowserWorkflowManagerC1EP7QObject
         BrowserWorkflowManager *(*BrowserWorkflowManager_sharedInstance)();
         void (*BrowserWorkflowManager_BrowserWorkflowManager)(BrowserWorkflowManager*, QObject*); // 4.11.11911+
@@ -323,7 +366,7 @@ NM_ACTION_(nickel_extras) {
             NM_ASSERT(bwm, "could not get shared browser workflow manager pointer");
         }
 
-        BrowserWorkflowManager_openBrowser(bwm, false, new QUrl(), new QString(""));
+        BrowserWorkflowManager_openBrowser(bwm, modal, url, css);
 
         NM_RETURN_OK(nm_action_result_silent());
     }
