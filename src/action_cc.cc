@@ -323,13 +323,13 @@ NM_ACTION_(nickel_extras) {
 
             if (tmp.contains(' ')) {
                 css = new QString(tmp.section(' ', 1).trimmed());
-                url = new QUrl(tmp.section(' ', 0, 0).trimmed());
-                if (!url->isValid())
+                url = new QUrl(tmp.section(' ', 0, 0).trimmed(), QUrl::ParsingMode::StrictMode);
+                if (!url->isValid() || url->isRelative())
                     NM_RETURN_ERR("invalid url '%s' (argument: '%s') (note: if your url has spaces, they need to be escaped)", qPrintable(tmp.section(' ', 0, 0)), arg);
             } else if (tmp.length()) {
-                url = new QUrl(tmp);
+                url = new QUrl(tmp, QUrl::ParsingMode::StrictMode);
                 css = new QString("");
-                if (!url->isValid())
+                if (!url->isValid() || url->isRelative())
                     NM_RETURN_ERR("invalid url '%s' (argument: '%s') (note: if your url has spaces, they need to be escaped)", qPrintable(tmp.section(' ', 0, 0)), arg);
             } else {
                 url = new QUrl();
