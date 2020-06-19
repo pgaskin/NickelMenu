@@ -151,12 +151,167 @@ struct nm_config_t {
     nm_config_t *next;
 };
 
+// nm_config_parse__state_t contains the current state of the config parser. It
+// should be initialized to zero. The nm_config_parse__append__* functions will
+// deep-copy the item to append (to malloc'd memory). Each call will always
+// leave the state consistent, even on error (i.e. it will always be safe to
+// nm_config_free cfg_s).
+typedef struct nm_config_parse__state_t {
+    nm_config_t *cfg_s; // config (first)
+    nm_config_t *cfg_c; // config (current)
+
+    nm_menu_item_t   *cfg_it_c;     // menu item (current)
+    nm_menu_action_t *cfg_it_act_s; // menu action (first)
+    nm_menu_action_t *cfg_it_act_c; // menu action (current)
+
+    nm_generator_t *cfg_gn_c; // generator (current)
+} nm_config_parse__state_t;
+
+typedef enum nm_config_parse__append__ret_t {
+    NM_CONFIG_PARSE__APPEND__RET_OK = 0,
+    NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR = 1,
+    NM_CONFIG_PARSE__APPEND__RET_ACTION_MUST_BE_AFTER_ITEM = 2,
+} nm_config_parse__append__ret_t;
+
+static const char* nm_config_parse__strerror(nm_config_parse__append__ret_t ret) {
+    switch (ret) {
+    case NM_CONFIG_PARSE__APPEND__RET_OK:
+        return NULL;
+    case NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR:
+        return "error allocating memory";
+    case NM_CONFIG_PARSE__APPEND__RET_ACTION_MUST_BE_AFTER_ITEM:
+        return "unexpected chain, must be directly after a menu item or another chain";
+    default:
+        return "unknown error";
+    }
+}
+
+// note: action will be ignored (add it with append_action)
+static nm_config_parse__append__ret_t nm_config_parse__append_item(nm_config_parse__state_t *restrict state, nm_menu_item_t *const restrict it) {
+    nm_config_t      *cfg_n        = calloc(1, sizeof(nm_config_t));
+    nm_menu_item_t   *cfg_it_n     = calloc(1, sizeof(nm_menu_item_t));
+
+    if (!cfg_n || !cfg_it_n) {
+        free(cfg_n);
+        free(cfg_it_n);
+        return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
+    }
+
+    *cfg_n = (nm_config_t){
+        .type      = NM_CONFIG_TYPE_MENU_ITEM,
+        .generated = false,
+        .value     = { .menu_item = cfg_it_n },
+        .next      = NULL,
+    };
+
+    *cfg_it_n = (nm_menu_item_t){
+        .loc    = it->loc,
+        .lbl    = strdup(it->lbl ? it->lbl : ""),
+        .action = NULL,
+    };
+
+    if (!cfg_it_n->lbl)
+        return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
+
+    if (state->cfg_c)
+        state->cfg_c->next = cfg_n;
+    else
+        state->cfg_s = cfg_n;
+
+    state->cfg_c    = cfg_n;
+    state->cfg_it_c = cfg_it_n;
+
+    state->cfg_it_act_s = NULL;
+    state->cfg_it_act_c = NULL;
+    state->cfg_gn_c     = NULL;
+
+    return NM_CONFIG_PARSE__APPEND__RET_OK;
+}
+
+// note: next will be ignored (add another one by calling this again)
+static int nm_config_parse__append_action(nm_config_parse__state_t *restrict state, nm_menu_action_t *const restrict act) {
+    if (!state->cfg_c || !state->cfg_it_c || state->cfg_gn_c)
+        return NM_CONFIG_PARSE__APPEND__RET_ACTION_MUST_BE_AFTER_ITEM;
+
+    nm_menu_action_t *cfg_it_act_n = calloc(1, sizeof(nm_menu_action_t));
+
+    if (!cfg_it_act_n)
+        return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
+
+    *cfg_it_act_n = (nm_menu_action_t){
+        .act        = act->act,
+        .on_failure = act->on_failure,
+        .on_success = act->on_success,
+        .arg        = strdup(act->arg ? act->arg : ""),
+        .next       = NULL,
+    };
+
+    if (!cfg_it_act_n->arg)
+        return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
+
+    if (!state->cfg_it_c->action)
+        state->cfg_it_c->action = cfg_it_act_n;
+
+    if (state->cfg_it_act_c)
+        state->cfg_it_act_c->next = cfg_it_act_n;
+    else
+        state->cfg_it_act_s = cfg_it_act_n;
+
+    state->cfg_it_act_c = cfg_it_act_n;
+
+    return NM_CONFIG_PARSE__APPEND__RET_OK;
+}
+
+static nm_config_parse__append__ret_t nm_config_parse__append_generator(nm_config_parse__state_t *restrict state, nm_generator_t *const restrict gn) {
+    nm_config_t    *cfg_n    = calloc(1, sizeof(nm_config_t));
+    nm_generator_t *cfg_gn_n = calloc(1, sizeof(nm_generator_t));
+
+    if (!cfg_n || !cfg_gn_n) {
+        free(cfg_n);
+        free(cfg_gn_n);
+        return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
+    }
+
+    *cfg_n = (nm_config_t){
+        .type      = NM_CONFIG_TYPE_GENERATOR,
+        .generated = false,
+        .value     = { .generator = cfg_gn_n },
+        .next      = NULL,
+    };
+
+    *cfg_gn_n = (nm_generator_t){
+        .desc     = strdup(gn->desc ? gn->desc : ""),
+        .loc      = gn->loc,
+        .arg      = strdup(gn->arg ? gn->arg : ""),
+        .generate = gn->generate,
+    };
+
+    if (!cfg_gn_n->desc || !cfg_gn_n->arg) {
+        free(cfg_gn_n->desc);
+        free(cfg_gn_n->arg);
+        return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
+    }
+
+    if (state->cfg_c)
+        state->cfg_c->next = cfg_n;
+    else
+        state->cfg_s = cfg_n;
+
+    state->cfg_c    = cfg_n;
+    state->cfg_gn_c = cfg_gn_n;
+
+    state->cfg_it_c     = NULL;
+    state->cfg_it_act_s = NULL;
+    state->cfg_it_act_c = NULL;
+
+    return NM_CONFIG_PARSE__APPEND__RET_OK;
+}
+
 nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
     #define NM_ERR_RET NULL
     NM_LOG("config: reading config dir %s", NM_CONFIG_DIR);
 
-    nm_config_t      *cfg_c        = NULL, *cfg_s = NULL;
-    nm_menu_action_t *cfg_it_act_c = NULL;
+    nm_config_parse__state_t state = {0};
 
     for (nm_config_file_t *cf = files; cf; cf = cf->next) {
         NM_LOG("config: reading config file %s", cf->path);
@@ -169,7 +324,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
         #define RETERR(fmt, ...) do {          \
             fclose(cfgfile);                   \
             free(line);                        \
-            nm_config_free(cfg_s);             \
+            nm_config_free(state.cfg_c);       \
             NM_RETURN_ERR(fmt, ##__VA_ARGS__); \
         } while (0)
 
@@ -188,13 +343,13 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
                 continue;
 
             // field 1: type
-            const char *s_typ = strtrim(strsep(&cur, ":"));
+            char *s_typ = strtrim(strsep(&cur, ":"));
             if (!strcmp(s_typ, "menu_item")) {
                 // type: menu_item
 
                 // type: menu_item - field 2: location
                 nm_menu_location_t p_loc;
-                const char *s_loc = strtrim(strsep(&cur, ":"));
+                char *s_loc = strtrim(strsep(&cur, ":"));
                 if (!s_loc) {
                     RETERR("file %s: line %d: field 2: expected location, got end of line", cf->path, line_n);
                 } else if (!strcmp(s_loc, "main")) {
@@ -204,13 +359,13 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
                 } else RETERR("file %s: line %d: field 2: unknown location '%s'", cf->path, line_n, s_loc);
 
                 // type: menu_item - field 3: label
-                const char *p_lbl = strtrim(strsep(&cur, ":"));
+                char *p_lbl = strtrim(strsep(&cur, ":"));
                 if (!p_lbl)
                     RETERR("file %s: line %d: field 3: expected label, got end of line", cf->path, line_n);
 
                 // type: menu_item - field 4: action
                 nm_action_fn_t p_act;
-                const char *s_act = strtrim(strsep(&cur, ":"));
+                char *s_act = strtrim(strsep(&cur, ":"));
                 if (!s_act) {
                     RETERR("file %s: line %d: field 4: expected action, got end of line", cf->path, line_n);
                     #define X(name)                 \
@@ -221,59 +376,29 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
                 } else RETERR("file %s: line %d: field 4: unknown action '%s'", cf->path, line_n, s_act);
 
                 // type: menu_item - field 5: argument
-                const char *p_arg = strtrim(cur);
+                char *p_arg = strtrim(cur);
                 if (!p_arg)
                     RETERR("file %s: line %d: field 5: expected argument, got end of line\n", cf->path, line_n);
 
-                // add it
+                nm_config_parse__append__ret_t ret;
 
-                nm_config_t      *cfg_n        = calloc(1, sizeof(nm_config_t));
-                nm_menu_item_t   *cfg_it_n     = calloc(1, sizeof(nm_menu_item_t));
-                nm_menu_action_t *cfg_it_act_n = calloc(1, sizeof(nm_menu_action_t));
-
-                if (!cfg_n || !cfg_it_n || !cfg_it_act_n) {
-                    free(cfg_n);
-                    free(cfg_it_n);
-                    free(cfg_it_act_n);
-                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
-                }
-
-                *cfg_n = (nm_config_t){
-                    .type      = NM_CONFIG_TYPE_MENU_ITEM,
-                    .generated = false,
-                    .value     = { .menu_item = cfg_it_n },
-                    .next      = NULL,
-                };
-
-                *cfg_it_n = (nm_menu_item_t){
+                if ((ret = nm_config_parse__append_item(&state, &(nm_menu_item_t){
                     .loc    = p_loc,
-                    .lbl    = strdup(p_lbl),
-                    .action = cfg_it_act_n,
-                };
+                    .lbl    = p_lbl,
+                    .action = NULL,
+                }))) RETERR("file %s: line %d: error appending item to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
 
-                *cfg_it_act_n = (nm_menu_action_t){
+                if ((ret = nm_config_parse__append_action(&state, &(nm_menu_action_t){
                     .act        = p_act,
                     .on_failure = true,
                     .on_success = true,
-                    .arg        = strdup(p_arg),
+                    .arg        = p_arg,
                     .next       = NULL,
-                };
+                }))) RETERR("file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
 
-                if (!cfg_it_n->lbl || !cfg_it_act_n->arg) {
-                    free(cfg_it_n->lbl);
-                    free(cfg_it_act_n->arg);
-                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
-                }
-
-                if (cfg_c)
-                    cfg_c->next = cfg_n;
-                else
-                    cfg_s = cfg_n;
-
-                cfg_c        = cfg_n;
-                cfg_it_act_c = cfg_it_act_n;
             } else if (!strncmp(s_typ, "chain", 5)) {
                 // type: chain
+
                 bool p_on_failure, p_on_success;
                 if (!strcmp(s_typ, "chain_success")) {
                     p_on_failure = false;
@@ -288,7 +413,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
 
                 // type: chain - field 2: action
                 nm_action_fn_t p_act;
-                const char *s_act = strtrim(strsep(&cur, ":"));
+                char *s_act = strtrim(strsep(&cur, ":"));
                 if (!s_act) {
                     RETERR("file %s: line %d: field 2: expected action, got end of line", cf->path, line_n);
                     #define X(name)                 \
@@ -299,39 +424,26 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
                 } else RETERR("file %s: line %d: field 2: unknown action '%s'", cf->path, line_n, s_act);
 
                 // type: chain - field 3: argument
-                const char *p_arg = strtrim(cur);
+                char *p_arg = strtrim(cur);
                 if (!p_arg)
                     RETERR("file %s: line %d: field 3: expected argument, got end of line\n", cf->path, line_n);
 
-                // add it
+                nm_config_parse__append__ret_t ret;
 
-                if (!cfg_c || !cfg_it_act_c)
-                    RETERR("file %s: line %d: unexpected chain, no menu_item to link to", cf->path, line_n);
-
-                nm_menu_action_t *cfg_it_act_n = calloc(1, sizeof(nm_menu_action_t));
-
-                if (!cfg_it_act_n)
-                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
-
-                *cfg_it_act_n = (nm_menu_action_t){
+                if ((ret = nm_config_parse__append_action(&state, &(nm_menu_action_t){
                     .act        = p_act,
                     .on_failure = p_on_failure,
                     .on_success = p_on_success,
-                    .arg        = strdup(p_arg),
+                    .arg        = p_arg,
                     .next       = NULL,
-                };
+                }))) RETERR("file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
 
-                if (!cfg_it_act_n->arg)
-                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
-
-                cfg_it_act_c->next = cfg_it_act_n;
-                cfg_it_act_c       = cfg_it_act_n;
             } else if (!strcmp(s_typ, "generator")) {
                 // type: generator
 
                 // type: generator - field 2: location
                 nm_menu_location_t p_loc;
-                const char *s_loc = strtrim(strsep(&cur, ":"));
+                char *s_loc = strtrim(strsep(&cur, ":"));
                 if (!s_loc) {
                     RETERR("file %s: line %d: field 2: expected location, got end of line", cf->path, line_n);
                 } else if (!strcmp(s_loc, "main")) {
@@ -342,7 +454,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
 
                 // type: generator - field 3: generator
                 nm_generator_fn_t p_generate;
-                const char *s_generate = strtrim(strsep(&cur, ":"));
+                char *s_generate = strtrim(strsep(&cur, ":"));
                 if (!s_generate) {
                     RETERR("file %s: line %d: field 3: expected generator, got end of line", cf->path, line_n);
                     #define X(name)                 \
@@ -353,46 +465,17 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
                 } else RETERR("file %s: line %d: field 3: unknown generator '%s'", cf->path, line_n, s_generate);
 
                 // type: generator - field 4: argument (optional)
-                const char *p_arg = strtrim(cur);
+                char *p_arg = strtrim(cur);
 
-                // add it
+                nm_config_parse__append__ret_t ret;
 
-                nm_config_t    *cfg_n    = calloc(1, sizeof(nm_config_t));
-                nm_generator_t *cfg_gn_n = calloc(1, sizeof(nm_generator_t));
-
-                if (!cfg_n || !cfg_gn_n) {
-                    free(cfg_n);
-                    free(cfg_gn_n);
-                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
-                }
-
-                *cfg_n = (nm_config_t){
-                    .type      = NM_CONFIG_TYPE_GENERATOR,
-                    .generated = false,
-                    .value     = { .generator = cfg_gn_n },
-                    .next      = NULL,
-                };
-
-                *cfg_gn_n = (nm_generator_t){
-                    .desc     = strdup(s_generate),
+                if ((ret = nm_config_parse__append_generator(&state, &(nm_generator_t){
+                    .desc     = s_generate,
                     .loc      = p_loc,
-                    .arg      = strdup(p_arg ? p_arg : ""),
+                    .arg      = p_arg,
                     .generate = p_generate,
-                };
+                }))) RETERR("file %s: line %d: error appending generator to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
 
-                if (!cfg_gn_n->desc || !cfg_gn_n->arg) {
-                    free(cfg_gn_n->desc);
-                    free(cfg_gn_n->arg);
-                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
-                }
-
-                if (cfg_c)
-                    cfg_c->next = cfg_n;
-                else
-                    cfg_s = cfg_n;
-
-                cfg_c        = cfg_n;
-                cfg_it_act_c = NULL;
             } else RETERR("file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, s_typ);
         }
 
@@ -401,56 +484,26 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
     }
 
     // add a default entry if none were found
-    if (!cfg_s) {
-        nm_config_t      *cfg_n        = calloc(1, sizeof(nm_config_t));
-        nm_menu_item_t   *cfg_it_n     = calloc(1, sizeof(nm_menu_item_t));
-        nm_menu_action_t *cfg_it_act_n = calloc(1, sizeof(nm_menu_action_t));
+    if (!state.cfg_c) {
+        nm_config_parse__append__ret_t ret;
 
-        if (!cfg_n || !cfg_it_n || !cfg_it_act_n) {
-            free(cfg_n);
-            free(cfg_it_n);
-            free(cfg_it_act_n);
-            NM_RETURN_ERR("error allocating memory");
-        }
-
-        *cfg_n = (nm_config_t){
-            .type      = NM_CONFIG_TYPE_MENU_ITEM,
-            .generated = false,
-            .value     = { .menu_item = cfg_it_n },
-            .next      = NULL,
-        };
-
-        *cfg_it_n = (nm_menu_item_t){
+        if ((ret = nm_config_parse__append_item(&state, &(nm_menu_item_t){
             .loc    = NM_MENU_LOCATION_MAIN_MENU,
-            .lbl    = strdup("NickelMenu"),
-            .action = cfg_it_act_n,
-        };
+            .lbl    = "NickelMenu",
+            .action = NULL,
+        }))) NM_RETURN_ERR("error appending default item to empty config: %s", nm_config_parse__strerror(ret));
 
-        *cfg_it_act_n = (nm_menu_action_t){
+        if ((ret = nm_config_parse__append_action(&state, &(nm_menu_action_t){
             .act        = NM_ACTION(dbg_toast),
             .on_failure = true,
             .on_success = true,
-            .arg        = strdup("See .adds/nm/doc for instructions on how to customize this menu."),
+            .arg        = "See .adds/nm/doc for instructions on how to customize this menu.",
             .next       = NULL,
-        };
-
-        if (!cfg_it_n->lbl || !cfg_it_act_n->arg) {
-            free(cfg_it_n->lbl);
-            free(cfg_it_act_n->arg);
-            NM_RETURN_ERR("error allocating memory");
-        }
-
-        if (cfg_c)
-            cfg_c->next = cfg_n;
-        else
-            cfg_s = cfg_n;
-
-        cfg_c        = cfg_n;
-        cfg_it_act_c = cfg_it_act_n;
+        }))) NM_RETURN_ERR("error appending default action to empty config: %s", nm_config_parse__strerror(ret));
     }
 
     size_t mm = 0, rm = 0;
-    for (nm_config_t *cur = cfg_s; cur; cur = cur->next) {
+    for (nm_config_t *cur = state.cfg_s; cur; cur = cur->next) {
         switch (cur->type) {
         case NM_CONFIG_TYPE_MENU_ITEM:
             NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl);
@@ -469,7 +522,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
     NM_ASSERT(mm <= NM_CONFIG_MAX_MENU_ITEMS_PER_MENU, "too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
     NM_ASSERT(rm <= NM_CONFIG_MAX_MENU_ITEMS_PER_MENU, "too many menu items in reader menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
 
-    NM_RETURN_OK(cfg_s);
+    NM_RETURN_OK(state.cfg_s);
     #undef NM_ERR_RET
 }
 
