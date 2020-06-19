@@ -296,42 +296,26 @@ NM_ACTION_(nickel_extras) {
     #define NM_ERR_RET nullptr
 
     if (!strcmp(arg, "web_browser")) {
-        //libnickel 4.6 * _ZN26N3SettingsExtrasControllerC2Ev
-        void (*N3SettingsExtrasController_N3SettingsExtrasController)(N3SettingsExtrasController*);
-        reinterpret_cast<void*&>(N3SettingsExtrasController_N3SettingsExtrasController) = dlsym(RTLD_DEFAULT, "_ZN26N3SettingsExtrasControllerC2Ev");
-        NM_ASSERT(N3SettingsExtrasController_N3SettingsExtrasController, "could not dlsym N3SettingsExtrasController constructor");
-
-        //libnickel 4.6 * _ZN26N3SettingsExtrasControllerD1Ev
-        void (*N3SettingsExtrasController_N3SettingsExtrasControllerD)(N3SettingsExtrasController*);
-        reinterpret_cast<void*&>(N3SettingsExtrasController_N3SettingsExtrasControllerD) = dlsym(RTLD_DEFAULT, "_ZN26N3SettingsExtrasControllerD1Ev");
-        NM_ASSERT(N3SettingsExtrasController_N3SettingsExtrasControllerD, "could not dlsym N3SettingsExtrasController destructor");
-
-        //libnickel 4.6 * _ZN26N3SettingsExtrasController11openBrowserEv
-        void (*N3SettingsExtrasController_openBrowser)(N3SettingsExtrasController*);
-        reinterpret_cast<void*&>(N3SettingsExtrasController_openBrowser) = dlsym(RTLD_DEFAULT, "_ZN26N3SettingsExtrasController11openBrowserEv");
-        NM_ASSERT(N3SettingsExtrasController_openBrowser, "could not dlsym BrowserWorkflowManager::openBrowser");
-
-        N3SettingsExtrasController *nse = alloca(128); // as of 4.20.14622, it's actually 48 bytes, but we're going to stay on the safe side
-        N3SettingsExtrasController_N3SettingsExtrasController(nse);
-        N3SettingsExtrasController_openBrowser(nse);
-        N3SettingsExtrasController_N3SettingsExtrasControllerD(nse);
-
-        // the QObject is only used to pass events to it, but there's something I'm missing here which leads to it segfaulting after connecting to WiFi if it isn't already connected
-        /*
         //libnickel 4.11.11911 * _ZN22BrowserWorkflowManagerC1EP7QObject
         void (*BrowserWorkflowManager_BrowserWorkflowManager)(BrowserWorkflowManager*, QObject*);
         reinterpret_cast<void*&>(BrowserWorkflowManager_BrowserWorkflowManager) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManagerC1EP7QObject");
         NM_ASSERT(BrowserWorkflowManager_BrowserWorkflowManager, "could not dlsym BrowserWorkflowManager constructor");
 
         //libnickel 4.6 * _ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString
-        void (*BrowserWorkflowManager_openBrowser)(BrowserWorkflowManager*, bool, QUrl const&, QString const&); // the bool is whether to open it as a modal, the string is CSS to inject
+        void (*BrowserWorkflowManager_openBrowser)(BrowserWorkflowManager*, bool, QUrl*, QString*); // the bool is whether to open it as a modal, the QUrl is the URL to load(if !QUrl::isValid(), it loads the homepage), the string is CSS to inject
         reinterpret_cast<void*&>(BrowserWorkflowManager_openBrowser) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString");
         NM_ASSERT(BrowserWorkflowManager_openBrowser, "could not dlsym BrowserWorkflowManager::openBrowser");
 
-        BrowserWorkflowManager *bwm = alloca(128); // as of 4.20.14622, it's actually 20 bytes, but we're going to stay on the safe side
-        BrowserWorkflowManager_BrowserWorkflowManager(bwm, new QObject());
-        BrowserWorkflowManager_openBrowser(bwm, false, QUrl(), QStringLiteral("")); // if !QUrl::isValid(), it loads the homepage
-        */
+        // note: everything must be on the heap since if it isn't connected, it
+        //       passes it as-is to the connected signal, which will be used
+        //       after this action returns.
+
+        BrowserWorkflowManager *bwm = calloc(1, 128); // as of 4.20.14622, it's actually 20 bytes, but we're going to stay on the safe side
+        NM_ASSERT(bwm, "could not allocate memory for BrowserWorkflowManager");
+
+        BrowserWorkflowManager_BrowserWorkflowManager(bwm, nullptr);
+        BrowserWorkflowManager_openBrowser(bwm, false, new QUrl(), new QString(""));
+
         NM_RETURN_OK(nm_action_result_silent());
     }
 
