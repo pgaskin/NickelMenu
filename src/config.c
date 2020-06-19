@@ -205,40 +205,42 @@ static bool nm_config_parse__line_generator(const char *type, char **line, nm_ge
 nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
     #define NM_ERR_RET NULL
 
+    char *err = NULL;
+
+    FILE   *cfgfile    = NULL;
+    char   *line       = NULL;
+    size_t  line_bufsz = 0;
+    int     line_n;
+    ssize_t line_sz;
+
+    nm_config_parse__append__ret_t ret;
     nm_config_parse__state_t state = {0};
+
+    nm_menu_item_t   tmp_it;
+    nm_menu_action_t tmp_act;
+    nm_generator_t   tmp_gn;
+
+    #define RETERR(fmt, ...) do {          \
+        if (cfgfile)                       \
+            fclose(cfgfile);               \
+        free(err);                         \
+        free(line);                        \
+        nm_config_free(state.cfg_c);       \
+        NM_RETURN_ERR(fmt, ##__VA_ARGS__); \
+    } while (0)
 
     for (nm_config_file_t *cf = files; cf; cf = cf->next) {
         NM_LOG("config: reading config file %s", cf->path);
 
-        FILE *cfgfile = fopen(cf->path, "r");
-        NM_ASSERT(cfgfile, "could not open file: %s", strerror(errno));
+        line_n  = 0;
+        cfgfile = fopen(cf->path, "r");
 
-        // parse each line
-        char *line;
-        int line_n = 0;
-        ssize_t line_sz;
-        size_t line_bufsz = 0;
-
-        char *err = NULL;
-        nm_config_parse__append__ret_t ret;
-
-        nm_menu_item_t   tmp_it;
-        nm_menu_action_t tmp_act;
-        nm_generator_t   tmp_gn;
-
-        // note: nm_config_free will handle freeing any added items, actions,
-        //       and generators too.
-        #define RETERR(fmt, ...) do {          \
-            free(err);                         \
-            fclose(cfgfile);                   \
-            free(line);                        \
-            nm_config_free(state.cfg_c);       \
-            NM_RETURN_ERR(fmt, ##__VA_ARGS__); \
-        } while (0)
+        if (!cfgfile)
+            RETERR("could not open file: %s", strerror(errno));
 
         while ((line_sz = getline(&line, &line_bufsz, cfgfile)) != -1) {
             line_n++;
-           
+
             char *cur = strtrim(line);
             if (!*cur || *cur == '#')
                 continue; // empty line or comment
@@ -275,17 +277,15 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
         }
 
         fclose(cfgfile);
-        free(line);
+        cfgfile = NULL;
     }
 
     if (!state.cfg_c) {
-        nm_config_parse__append__ret_t ret;
-
         if ((ret = nm_config_parse__append_item(&state, &(nm_menu_item_t){
             .loc    = NM_MENU_LOCATION_MAIN_MENU,
             .lbl    = "NickelMenu",
             .action = NULL,
-        }))) NM_RETURN_ERR("error appending default item to empty config: %s", nm_config_parse__strerror(ret));
+        }))) RETERR("error appending default item to empty config: %s", nm_config_parse__strerror(ret));
 
         if ((ret = nm_config_parse__append_action(&state, &(nm_menu_action_t){
             .act        = NM_ACTION(dbg_toast),
@@ -293,7 +293,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
             .on_success = true,
             .arg        = "See .adds/nm/doc for instructions on how to customize this menu.",
             .next       = NULL,
-        }))) NM_RETURN_ERR("error appending default action to empty config: %s", nm_config_parse__strerror(ret));
+        }))) RETERR("error appending default action to empty config: %s", nm_config_parse__strerror(ret));
     }
 
     size_t mm = 0, rm = 0;
@@ -313,8 +313,11 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
             break;
         }
     }
-    NM_ASSERT(mm <= NM_CONFIG_MAX_MENU_ITEMS_PER_MENU, "too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
-    NM_ASSERT(rm <= NM_CONFIG_MAX_MENU_ITEMS_PER_MENU, "too many menu items in reader menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
+
+    if (mm > NM_CONFIG_MAX_MENU_ITEMS_PER_MENU)
+        RETERR("too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
+    if (rm > NM_CONFIG_MAX_MENU_ITEMS_PER_MENU)
+        RETERR("too many menu items in reader menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
 
     NM_RETURN_OK(state.cfg_s);
     #undef NM_ERR_RET
@@ -327,7 +330,7 @@ static bool nm_config_parse__line_item(const char *type, char **line, nm_menu_it
         NM_RETURN_OK(false);
 
     *it_out = (nm_menu_item_t){0};
-    
+
     char *s_loc = strtrim(strsep(line, ":"));
     if      (!s_loc)                   NM_RETURN_ERR("field 2: expected location, got end of line");
     else if (!strcmp(s_loc, "main"))   it_out->loc = NM_MENU_LOCATION_MAIN_MENU;
@@ -379,7 +382,7 @@ static bool nm_config_parse__line_generator(const char *type, char **line, nm_ge
         NM_RETURN_OK(false);
 
     *gn_out = (nm_generator_t){0};
-    
+
     char *s_loc = strtrim(strsep(line, ":"));
     if      (!s_loc)                   NM_RETURN_ERR("field 2: expected location, got end of line");
     else if (!strcmp(s_loc, "main"))   gn_out->loc = NM_MENU_LOCATION_MAIN_MENU;
@@ -407,7 +410,7 @@ static bool nm_config_parse__lineend_action(int field, char **line, bool p_on_su
     #define NM_ERR_RET true
 
     *act_out = (nm_menu_action_t){0};
-    
+
     char *s_act = strtrim(strsep(line, ":"));
     if (!s_act) NM_RETURN_ERR("field %d: expected action, got end of line", field);
     #define X(name) \
@@ -429,8 +432,8 @@ static bool nm_config_parse__lineend_action(int field, char **line, bool p_on_su
 }
 
 static nm_config_parse__append__ret_t nm_config_parse__append_item(nm_config_parse__state_t *restrict state, nm_menu_item_t *const restrict it) {
-    nm_config_t      *cfg_n        = calloc(1, sizeof(nm_config_t));
-    nm_menu_item_t   *cfg_it_n     = calloc(1, sizeof(nm_menu_item_t));
+    nm_config_t    *cfg_n    = calloc(1, sizeof(nm_config_t));
+    nm_menu_item_t *cfg_it_n = calloc(1, sizeof(nm_menu_item_t));
 
     if (!cfg_n || !cfg_it_n) {
         free(cfg_n);
