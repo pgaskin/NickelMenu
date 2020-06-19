@@ -296,10 +296,12 @@ NM_ACTION_(nickel_extras) {
     #define NM_ERR_RET nullptr
 
     if (!strcmp(arg, "web_browser")) {
-        //libnickel 4.11.11911 * _ZN22BrowserWorkflowManagerC1EP7QObject
-        void (*BrowserWorkflowManager_BrowserWorkflowManager)(BrowserWorkflowManager*, QObject*);
+        //libnickel 4.6 * _ZN22BrowserWorkflowManager14sharedInstanceEv _ZN22BrowserWorkflowManagerC1EP7QObject
+        BrowserWorkflowManager *(*BrowserWorkflowManager_sharedInstance)();
+        void (*BrowserWorkflowManager_BrowserWorkflowManager)(BrowserWorkflowManager*, QObject*); // 4.11.11911+
+        reinterpret_cast<void*&>(BrowserWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManager14sharedInstanceEv");
         reinterpret_cast<void*&>(BrowserWorkflowManager_BrowserWorkflowManager) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManagerC1EP7QObject");
-        NM_ASSERT(BrowserWorkflowManager_BrowserWorkflowManager, "could not dlsym BrowserWorkflowManager constructor");
+        NM_ASSERT(BrowserWorkflowManager_sharedInstance || BrowserWorkflowManager_BrowserWorkflowManager, "could not dlsym BrowserWorkflowManager constructor (4.11.11911+) or sharedInstance");
 
         //libnickel 4.6 * _ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString
         void (*BrowserWorkflowManager_openBrowser)(BrowserWorkflowManager*, bool, QUrl*, QString*); // the bool is whether to open it as a modal, the QUrl is the URL to load(if !QUrl::isValid(), it loads the homepage), the string is CSS to inject
@@ -310,10 +312,17 @@ NM_ACTION_(nickel_extras) {
         //       passes it as-is to the connected signal, which will be used
         //       after this action returns.
 
-        BrowserWorkflowManager *bwm = calloc(1, 128); // as of 4.20.14622, it's actually 20 bytes, but we're going to stay on the safe side
-        NM_ASSERT(bwm, "could not allocate memory for BrowserWorkflowManager");
+        BrowserWorkflowManager *bwm;
 
-        BrowserWorkflowManager_BrowserWorkflowManager(bwm, nullptr);
+        if (BrowserWorkflowManager_BrowserWorkflowManager) {
+            bwm = calloc(1, 128); // as of 4.20.14622, it's actually 20 bytes, but we're going to stay on the safe side
+            NM_ASSERT(bwm, "could not allocate memory for BrowserWorkflowManager");
+            BrowserWorkflowManager_BrowserWorkflowManager(bwm, nullptr);
+        } else {
+            bwm = BrowserWorkflowManager_sharedInstance();
+            NM_ASSERT(bwm, "could not get shared browser workflow manager pointer");
+        }
+
         BrowserWorkflowManager_openBrowser(bwm, false, new QUrl(), new QString(""));
 
         NM_RETURN_OK(nm_action_result_silent());
