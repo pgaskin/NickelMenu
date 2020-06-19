@@ -151,43 +151,25 @@ struct nm_config_t {
     nm_config_t *next;
 };
 
-static void nm_config_push_menu_item(nm_config_t **cfg, nm_menu_item_t *it) {
-    nm_config_t *tmp = calloc(1, sizeof(nm_config_t));
-    tmp->type = NM_CONFIG_TYPE_MENU_ITEM;
-    tmp->value.menu_item = it;
-    tmp->next = *cfg;
-    *cfg = tmp;
-}
-
-static void nm_config_push_generator(nm_config_t **cfg, nm_generator_t *it) {
-    nm_config_t *tmp = calloc(1, sizeof(nm_config_t));
-    tmp->type = NM_CONFIG_TYPE_GENERATOR;
-    tmp->value.generator = it;
-    tmp->next = *cfg;
-    *cfg = tmp;
-}
-
-static void nm_config_push_action(nm_menu_action_t **cur, nm_menu_action_t *act) {
-    if (*cur)
-        (*cur)->next = act;
-    *cur = act;
-}
 nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
     #define NM_ERR_RET NULL
     NM_LOG("config: reading config dir %s", NM_CONFIG_DIR);
 
-    nm_config_t *cfg = NULL;
+    nm_config_t      *cfg_c        = NULL, *cfg_s = NULL;
+    nm_menu_action_t *cfg_it_act_c = NULL;
 
     for (nm_config_file_t *cf = files; cf; cf = cf->next) {
         NM_LOG("config: reading config file %s", cf->path);
 
-        FILE *cfgfile;
-        NM_ASSERT((cfgfile = fopen(cf->path, "r")), "could not open file: %s", strerror(errno));
+        FILE *cfgfile = fopen(cf->path, "r");
+        NM_ASSERT(cfgfile, "could not open file: %s", strerror(errno));
 
+        // note: nm_config_free will handle freeing any added items, actions,
+        //       and generators too.
         #define RETERR(fmt, ...) do {          \
             fclose(cfgfile);                   \
             free(line);                        \
-            nm_config_free(cfg);               \
+            nm_config_free(cfg_s);             \
             NM_RETURN_ERR(fmt, ##__VA_ARGS__); \
         } while (0)
 
@@ -197,8 +179,6 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
         ssize_t line_sz;
         size_t line_bufsz = 0;
 
-        nm_menu_item_t *it = NULL;
-        nm_menu_action_t *cur_act = NULL;
         while ((line_sz = getline(&line, &line_bufsz, cfgfile)) != -1) {
             line_n++;
 
@@ -208,131 +188,269 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
                 continue;
 
             // field 1: type
-            char *c_typ = strtrim(strsep(&cur, ":"));
-            if (!strcmp(c_typ, "menu_item")) {
+            const char *s_typ = strtrim(strsep(&cur, ":"));
+            if (!strcmp(s_typ, "menu_item")) {
                 // type: menu_item
-                if (it) nm_config_push_menu_item(&cfg, it);
-                it = calloc(1, sizeof(nm_menu_item_t));
-                cur_act = NULL;
 
                 // type: menu_item - field 2: location
-                char *c_loc = strtrim(strsep(&cur, ":"));
-                if (!c_loc) RETERR("file %s: line %d: field 2: expected location, got end of line", cf->path, line_n);
-                else if (!strcmp(c_loc, "main"))   it->loc = NM_MENU_LOCATION_MAIN_MENU;
-                else if (!strcmp(c_loc, "reader")) it->loc = NM_MENU_LOCATION_READER_MENU;
-                else RETERR("file %s: line %d: field 2: unknown location '%s'", cf->path, line_n, c_loc);
+                nm_menu_location_t p_loc;
+                const char *s_loc = strtrim(strsep(&cur, ":"));
+                if (!s_loc) {
+                    RETERR("file %s: line %d: field 2: expected location, got end of line", cf->path, line_n);
+                } else if (!strcmp(s_loc, "main")) {
+                    p_loc = NM_MENU_LOCATION_MAIN_MENU;
+                } else if (!strcmp(s_loc, "reader")) {
+                    p_loc = NM_MENU_LOCATION_READER_MENU;
+                } else RETERR("file %s: line %d: field 2: unknown location '%s'", cf->path, line_n, s_loc);
 
                 // type: menu_item - field 3: label
-                char *c_lbl = strtrim(strsep(&cur, ":"));
-                if (!c_lbl) RETERR("file %s: line %d: field 3: expected label, got end of line", cf->path, line_n);
-                else it->lbl = strdup(c_lbl);
+                const char *p_lbl = strtrim(strsep(&cur, ":"));
+                if (!p_lbl)
+                    RETERR("file %s: line %d: field 3: expected label, got end of line", cf->path, line_n);
 
                 // type: menu_item - field 4: action
-                nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
-                action->on_failure = true;
-                action->on_success = true;
-                char *c_act = strtrim(strsep(&cur, ":"));
-                if (!c_act) RETERR("file %s: line %d: field 4: expected action, got end of line", cf->path, line_n);
-                #define X(name) else if (!strcmp(c_act, #name)) action->act = NM_ACTION(name);
-                NM_ACTIONS
-                #undef X
-                else RETERR("file %s: line %d: field 4: unknown action '%s'", cf->path, line_n, c_act);
+                nm_action_fn_t p_act;
+                const char *s_act = strtrim(strsep(&cur, ":"));
+                if (!s_act) {
+                    RETERR("file %s: line %d: field 4: expected action, got end of line", cf->path, line_n);
+                    #define X(name)                 \
+                } else if (!strcmp(s_act, #name)) { \
+                    p_act = NM_ACTION(name);
+                    NM_ACTIONS
+                    #undef X
+                } else RETERR("file %s: line %d: field 4: unknown action '%s'", cf->path, line_n, s_act);
 
                 // type: menu_item - field 5: argument
-                char *c_arg = strtrim(cur);
-                if (!c_arg) RETERR("file %s: line %d: field 5: expected argument, got end of line\n", cf->path, line_n);
-                else action->arg = strdup(c_arg);
-                nm_config_push_action(&cur_act, action);
-                it->action = cur_act;
-            } else if (!strncmp(c_typ, "chain", 5)) {
-                // type: chain
-                if (!it) RETERR("file %s: line %d: unexpected chain, no menu_item to link to", cf->path, line_n);
-                nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
+                const char *p_arg = strtrim(cur);
+                if (!p_arg)
+                    RETERR("file %s: line %d: field 5: expected argument, got end of line\n", cf->path, line_n);
 
-                if (!strcmp(c_typ, "chain")) {
-                    RETERR("file %s: line %d: field 1: the chain action has been renamed to chain_success", cf->path, line_n);
-                } else if (!strcmp(c_typ, "chain_success")) {
-                    action->on_failure = false;
-                    action->on_success = true;
-                } else if (!strcmp(c_typ, "chain_always")) {
-                    action->on_failure = true;
-                    action->on_success = true;
-                } else if (!strcmp(c_typ, "chain_failure")) {
-                    action->on_failure = true;
-                    action->on_success = false;
-                } else RETERR("file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, c_typ);
+                // add it
+
+                nm_config_t      *cfg_n        = calloc(1, sizeof(nm_config_t));
+                nm_menu_item_t   *cfg_it_n     = calloc(1, sizeof(nm_menu_item_t));
+                nm_menu_action_t *cfg_it_act_n = calloc(1, sizeof(nm_menu_action_t));
+
+                if (!cfg_n || !cfg_it_n || !cfg_it_act_n) {
+                    free(cfg_n);
+                    free(cfg_it_n);
+                    free(cfg_it_act_n);
+                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
+                }
+
+                *cfg_n = (nm_config_t){
+                    .type      = NM_CONFIG_TYPE_MENU_ITEM,
+                    .generated = false,
+                    .value     = { .menu_item = cfg_it_n },
+                    .next      = NULL,
+                };
+
+                *cfg_it_n = (nm_menu_item_t){
+                    .loc    = p_loc,
+                    .lbl    = strdup(p_lbl),
+                    .action = cfg_it_act_n,
+                };
+
+                *cfg_it_act_n = (nm_menu_action_t){
+                    .act        = p_act,
+                    .on_failure = true,
+                    .on_success = true,
+                    .arg        = strdup(p_arg),
+                    .next       = NULL,
+                };
+
+                if (!cfg_it_n->lbl || !cfg_it_act_n->arg) {
+                    free(cfg_it_n->lbl);
+                    free(cfg_it_act_n->arg);
+                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
+                }
+
+                if (cfg_c)
+                    cfg_c->next = cfg_n;
+                else
+                    cfg_s = cfg_n;
+
+                cfg_c        = cfg_n;
+                cfg_it_act_c = cfg_it_act_n;
+            } else if (!strncmp(s_typ, "chain", 5)) {
+                // type: chain
+                bool p_on_failure, p_on_success;
+                if (!strcmp(s_typ, "chain_success")) {
+                    p_on_failure = false;
+                    p_on_success = true;
+                } else if (!strcmp(s_typ, "chain_always")) {
+                    p_on_failure = true;
+                    p_on_success = true;
+                } else if (!strcmp(s_typ, "chain_failure")) {
+                    p_on_failure = true;
+                    p_on_success = false;
+                } else RETERR("file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, s_typ);
 
                 // type: chain - field 2: action
-                char *c_act = strtrim(strsep(&cur, ":"));
-                if (!c_act) RETERR("file %s: line %d: field 2: expected action, got end of line", cf->path, line_n);
-                #define X(name) else if (!strcmp(c_act, #name)) action->act = NM_ACTION(name);
-                NM_ACTIONS
-                #undef X
-                else RETERR("file %s: line %d: field 2: unknown action '%s'", cf->path, line_n, c_act);
+                nm_action_fn_t p_act;
+                const char *s_act = strtrim(strsep(&cur, ":"));
+                if (!s_act) {
+                    RETERR("file %s: line %d: field 2: expected action, got end of line", cf->path, line_n);
+                    #define X(name)                 \
+                } else if (!strcmp(s_act, #name)) { \
+                    p_act = NM_ACTION(name);
+                    NM_ACTIONS
+                    #undef X
+                } else RETERR("file %s: line %d: field 2: unknown action '%s'", cf->path, line_n, s_act);
 
                 // type: chain - field 3: argument
-                char *c_arg = strtrim(cur);
-                if (!c_arg) RETERR("file %s: line %d: field 3: expected argument, got end of line\n", cf->path, line_n);
-                else action->arg = strdup(c_arg);
-                nm_config_push_action(&cur_act, action);
-            } else if (!strcmp(c_typ, "generator")) {
+                const char *p_arg = strtrim(cur);
+                if (!p_arg)
+                    RETERR("file %s: line %d: field 3: expected argument, got end of line\n", cf->path, line_n);
+
+                // add it
+
+                if (!cfg_c || !cfg_it_act_c)
+                    RETERR("file %s: line %d: unexpected chain, no menu_item to link to", cf->path, line_n);
+
+                nm_menu_action_t *cfg_it_act_n = calloc(1, sizeof(nm_menu_action_t));
+
+                if (!cfg_it_act_n)
+                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
+
+                *cfg_it_act_n = (nm_menu_action_t){
+                    .act        = p_act,
+                    .on_failure = p_on_failure,
+                    .on_success = p_on_success,
+                    .arg        = strdup(p_arg),
+                    .next       = NULL,
+                };
+
+                if (!cfg_it_act_n->arg)
+                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
+
+                cfg_it_act_c->next = cfg_it_act_n;
+                cfg_it_act_c       = cfg_it_act_n;
+            } else if (!strcmp(s_typ, "generator")) {
                 // type: generator
-                nm_generator_fn_t generate;
-                nm_menu_location_t loc;
 
                 // type: generator - field 2: location
-                char *c_loc = strtrim(strsep(&cur, ":"));
-                if (!c_loc) RETERR("file %s: line %d: field 2: expected location, got end of line", cf->path, line_n);
-                else if (!strcmp(c_loc, "main"))   loc = NM_MENU_LOCATION_MAIN_MENU;
-                else if (!strcmp(c_loc, "reader")) loc = NM_MENU_LOCATION_READER_MENU;
-                else RETERR("file %s: line %d: field 2: unknown location '%s'", cf->path, line_n, c_loc);
+                nm_menu_location_t p_loc;
+                const char *s_loc = strtrim(strsep(&cur, ":"));
+                if (!s_loc) {
+                    RETERR("file %s: line %d: field 2: expected location, got end of line", cf->path, line_n);
+                } else if (!strcmp(s_loc, "main")) {
+                    p_loc = NM_MENU_LOCATION_MAIN_MENU;
+                } else if (!strcmp(s_loc, "reader")) {
+                    p_loc = NM_MENU_LOCATION_READER_MENU;
+                } else RETERR("file %s: line %d: field 2: unknown location '%s'", cf->path, line_n, s_loc);
 
                 // type: generator - field 3: generator
-                char *c_gen = strtrim(strsep(&cur, ":"));
-                if (!c_gen) RETERR("file %s: line %d: field 3: expected generator, got end of line", cf->path, line_n);
-                #define X(name) else if (!strcmp(c_gen, #name)) generate = NM_GENERATOR(name);
-                NM_GENERATORS
-                #undef X
-                else RETERR("file %s: line %d: field 3: unknown generator '%s'", cf->path, line_n, c_gen);
+                nm_generator_fn_t p_generate;
+                const char *s_generate = strtrim(strsep(&cur, ":"));
+                if (!s_generate) {
+                    RETERR("file %s: line %d: field 3: expected generator, got end of line", cf->path, line_n);
+                    #define X(name)                 \
+                } else if (!strcmp(s_generate, #name)) { \
+                    p_generate = NM_GENERATOR(name);
+                    NM_GENERATORS
+                    #undef X
+                } else RETERR("file %s: line %d: field 3: unknown generator '%s'", cf->path, line_n, s_generate);
 
                 // type: generator - field 4: argument (optional)
-                char *c_arg = strtrim(cur);
+                const char *p_arg = strtrim(cur);
 
-                nm_generator_t *gen = calloc(1, sizeof(nm_generator_t));
-                gen->desc = strdup(c_gen);
-                gen->loc = loc;
-                gen->arg = strdup(c_arg ? c_arg : "");
-                gen->generate = generate;
-                nm_config_push_generator(&cfg, gen);
-            } else RETERR("file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, c_typ);
+                // add it
+
+                nm_config_t    *cfg_n    = calloc(1, sizeof(nm_config_t));
+                nm_generator_t *cfg_gn_n = calloc(1, sizeof(nm_generator_t));
+
+                if (!cfg_n || !cfg_gn_n) {
+                    free(cfg_n);
+                    free(cfg_gn_n);
+                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
+                }
+
+                *cfg_n = (nm_config_t){
+                    .type      = NM_CONFIG_TYPE_GENERATOR,
+                    .generated = false,
+                    .value     = { .generator = cfg_gn_n },
+                    .next      = NULL,
+                };
+
+                *cfg_gn_n = (nm_generator_t){
+                    .desc     = strdup(s_generate),
+                    .loc      = p_loc,
+                    .arg      = strdup(p_arg ? p_arg : ""),
+                    .generate = p_generate,
+                };
+
+                if (!cfg_gn_n->desc || !cfg_gn_n->arg) {
+                    free(cfg_gn_n->desc);
+                    free(cfg_gn_n->arg);
+                    RETERR("file %s: line %d: field 5: error allocating memory", cf->path, line_n);
+                }
+
+                if (cfg_c)
+                    cfg_c->next = cfg_n;
+                else
+                    cfg_s = cfg_n;
+
+                cfg_c        = cfg_n;
+                cfg_it_act_c = NULL;
+            } else RETERR("file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, s_typ);
         }
-
-        // push the last menu item onto the config
-        if (it) nm_config_push_menu_item(&cfg, it);
-        it = NULL;
-        cur_act = NULL;
-        #undef RETERR
 
         fclose(cfgfile);
         free(line);
     }
 
     // add a default entry if none were found
-    if (!cfg) {
-        nm_menu_item_t *it = calloc(1, sizeof(nm_menu_item_t));
-        nm_menu_action_t *action = calloc(1, sizeof(nm_menu_action_t));
-        it->loc = NM_MENU_LOCATION_MAIN_MENU;
-        it->lbl = strdup("NickelMenu");
-        it->action = action;
-        action->arg = strdup("See .adds/nm/doc for instructions on how to customize this menu.");
-        action->act = NM_ACTION(dbg_toast);
-        action->on_failure = true;
-        action->on_success = true;
-        nm_config_push_menu_item(&cfg, it);
+    if (!cfg_s) {
+        nm_config_t      *cfg_n        = calloc(1, sizeof(nm_config_t));
+        nm_menu_item_t   *cfg_it_n     = calloc(1, sizeof(nm_menu_item_t));
+        nm_menu_action_t *cfg_it_act_n = calloc(1, sizeof(nm_menu_action_t));
+
+        if (!cfg_n || !cfg_it_n || !cfg_it_act_n) {
+            free(cfg_n);
+            free(cfg_it_n);
+            free(cfg_it_act_n);
+            NM_RETURN_ERR("error allocating memory");
+        }
+
+        *cfg_n = (nm_config_t){
+            .type      = NM_CONFIG_TYPE_MENU_ITEM,
+            .generated = false,
+            .value     = { .menu_item = cfg_it_n },
+            .next      = NULL,
+        };
+
+        *cfg_it_n = (nm_menu_item_t){
+            .loc    = NM_MENU_LOCATION_MAIN_MENU,
+            .lbl    = strdup("NickelMenu"),
+            .action = cfg_it_act_n,
+        };
+
+        *cfg_it_act_n = (nm_menu_action_t){
+            .act        = NM_ACTION(dbg_toast),
+            .on_failure = true,
+            .on_success = true,
+            .arg        = strdup("See .adds/nm/doc for instructions on how to customize this menu."),
+            .next       = NULL,
+        };
+
+        if (!cfg_it_n->lbl || !cfg_it_act_n->arg) {
+            free(cfg_it_n->lbl);
+            free(cfg_it_act_n->arg);
+            NM_RETURN_ERR("error allocating memory");
+        }
+
+        if (cfg_c)
+            cfg_c->next = cfg_n;
+        else
+            cfg_s = cfg_n;
+
+        cfg_c        = cfg_n;
+        cfg_it_act_c = cfg_it_act_n;
     }
 
     size_t mm = 0, rm = 0;
-    for (nm_config_t *cur = cfg; cur; cur = cur->next) {
+    for (nm_config_t *cur = cfg_s; cur; cur = cur->next) {
         switch (cur->type) {
         case NM_CONFIG_TYPE_MENU_ITEM:
             NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl);
@@ -351,8 +469,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
     NM_ASSERT(mm <= NM_CONFIG_MAX_MENU_ITEMS_PER_MENU, "too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
     NM_ASSERT(rm <= NM_CONFIG_MAX_MENU_ITEMS_PER_MENU, "too many menu items in reader menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
 
-    // return the head of the list
-    NM_RETURN_OK(cfg);
+    NM_RETURN_OK(cfg_s);
     #undef NM_ERR_RET
 }
 
