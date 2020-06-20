@@ -47,10 +47,14 @@
 #                                    This is actually the basename of the watch's filename as specified in its KFMon config (i.e., the png).
 #                                    You can also check the output of the 'list' command via the kfmon-ipc tool.
 #                   nickel_setting - one of:
-#                                      invert      - toggles FeatureSettings.InvertScreen
-#                                      lockscreen  - toggles PowerSettings.UnlockEnabled (4.12.12111+)
-#                                      screenshots - toggles FeatureSettings.Screenshots
-#                                      force_wifi  - toggles DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
+#                                      invert              - toggles FeatureSettings.InvertScreen
+#                                      invert:<value>      - ^ same, but sets it to 'true'/'enabled'/'1' or 'false'/'disabled'/'0'
+#                                      lockscreen          - toggles PowerSettings.UnlockEnabled (4.12.12111+)
+#                                      lockscreen:<value>  - ^ ...
+#                                      screenshots         - toggles FeatureSettings.Screenshots
+#                                      screenshots:<value> - ^ ...
+#                                      force_wifi          - toggles DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
+#                                      force_wifi:<value>  - ^ ...
 #                   nickel_extras  - the mimetype of the plugin, or one of:
 #                                      web_browser
 #                                      unblock_it
