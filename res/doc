@@ -48,7 +48,7 @@
 #                                    You can also check the output of the 'list' command via the kfmon-ipc tool.
 #                   nickel_setting - one of:
 #                                      invert              - toggles FeatureSettings.InvertScreen
-#                                      invert:<value>      - ^ same, but sets it to 'true'/'enabled'/'1' or 'false'/'disabled'/'0'
+#                                      invert:<value>      - ^ same, but sets it to 'true'/'enabled'/'yes'/'on'/'1' or 'false'/'disabled'/'no'/'off'/'0'
 #                                      lockscreen          - toggles PowerSettings.UnlockEnabled (4.12.12111+)
 #                                      lockscreen:<value>  - ^ ...
 #                                      screenshots         - toggles FeatureSettings.Screenshots

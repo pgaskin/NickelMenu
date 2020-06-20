@@ -196,12 +196,12 @@ NM_ACTION_(nickel_setting) {
 
     if (arg2) {
         // note: v gets inverted when setting the setting below
-        if (!strcmp(arg2, "true") || !strcmp(arg2, "enabled") || !strcmp(arg2, "1")) {
+        if (!strcmp(arg2, "true") || !strcmp(arg2, "enabled") || !strcmp(arg2, "yes") || !strcmp(arg2, "on") || !strcmp(arg2, "1")) {
             v = false;
-        } else if (!strcmp(arg2, "false") || !strcmp(arg2, "disabled") || !strcmp(arg2, "0")) {
+        } else if (!strcmp(arg2, "false") || !strcmp(arg2, "disabled") || !strcmp(arg2, "no") || !strcmp(arg2, "off") || !strcmp(arg2, "0")) {
             v = true;
         } else {
-            NM_RETURN_ERR("invalid value '%s' for setting '%s', must be 'true'/'enabled'/'1' or 'false'/'disabled'/'0' (arg: '%s')", arg2, arg1, arg);
+            NM_RETURN_ERR("invalid value '%s' for setting '%s', must be 'true'/'enabled'/'yes'/'on'/'1' or 'false'/'disabled'/'no'/'off'/'0' (arg: '%s')", arg2, arg1, arg);
         }
     }
 
