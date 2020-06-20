@@ -190,13 +190,28 @@ NM_ACTION_(nickel_setting) {
 
     bool v = false;
 
-    if (!strcmp(arg, "invert") || !strcmp(arg, "screenshots")) {
+    char *tmp1 = strdupa(arg); // strsep and strtrim will modify it
+    char *arg1 = strtrim(strsep(&tmp1, ":"));
+    char *arg2 = strtrim(tmp1);
+
+    if (arg2) {
+        // note: v gets inverted when setting the setting below
+        if (!strcmp(arg2, "true") || !strcmp(arg2, "enabled") || !strcmp(arg2, "yes") || !strcmp(arg2, "on") || !strcmp(arg2, "1")) {
+            v = false;
+        } else if (!strcmp(arg2, "false") || !strcmp(arg2, "disabled") || !strcmp(arg2, "no") || !strcmp(arg2, "off") || !strcmp(arg2, "0")) {
+            v = true;
+        } else {
+            NM_RETURN_ERR("invalid value '%s' for setting '%s', must be 'true'/'enabled'/'yes'/'on'/'1' or 'false'/'disabled'/'no'/'off'/'0' (arg: '%s')", arg2, arg1, arg);
+        }
+    }
+
+    if (!strcmp(arg1, "invert") || !strcmp(arg1, "screenshots")) {
         //libnickel 4.6 * _ZTV15FeatureSettings
         void *FeatureSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV15FeatureSettings");
         NM_ASSERT(FeatureSettings_vtable, "could not dlsym the vtable for FeatureSettings");
         vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
 
-        if (!strcmp(arg, "invert")) {
+        if (!strcmp(arg1, "invert")) {
             //libnickel 4.6 * _ZN15FeatureSettings12invertScreenEv
             bool (*FeatureSettings_invertScreen)(Settings*);
             reinterpret_cast<void*&>(FeatureSettings_invertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings12invertScreenEv");
@@ -207,8 +222,10 @@ NM_ACTION_(nickel_setting) {
             reinterpret_cast<void*&>(FeatureSettings_setInvertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings15setInvertScreenEb");
             NM_ASSERT(FeatureSettings_setInvertScreen, "could not dlsym FeatureSettings::setInvertScreen");
 
-            v = FeatureSettings_invertScreen(settings);
-            vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+            if (!arg2) {
+                v = FeatureSettings_invertScreen(settings);
+                vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+            }
 
             FeatureSettings_setInvertScreen(settings, !v);
             vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
@@ -220,11 +237,12 @@ NM_ACTION_(nickel_setting) {
             NM_LOG("updating top-level window %p after invert", w);
             if (w)
                 w->update(); // TODO: figure out how to make it update _after_ the menu item redraws itself
-        } else if (!strcmp(arg, "screenshots")) {
-            QVariant v1 = Settings_getSetting(settings, QStringLiteral("Screenshots"), QVariant(false));
-            vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
-
-            v = v1.toBool();
+        } else if (!strcmp(arg1, "screenshots")) {
+            if (!arg2) {
+                QVariant v1 = Settings_getSetting(settings, QStringLiteral("Screenshots"), QVariant(false));
+                vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+                v = v1.toBool();
+            }
 
             Settings_saveSetting(settings, QStringLiteral("Screenshots"), QVariant(!v), false);
             vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
@@ -232,12 +250,12 @@ NM_ACTION_(nickel_setting) {
             QVariant v2 = Settings_getSetting(settings, QStringLiteral("Screenshots"), QVariant(false));
             vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
         }
-    } else if (!strcmp(arg, "lockscreen")) {
+    } else if (!strcmp(arg1, "lockscreen")) {
         void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV13PowerSettings");
         NM_ASSERT(PowerSettings_vtable, "could not dlsym the vtable for PowerSettings");
         vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
 
-        if (!strcmp(arg, "lockscreen")) {
+        if (!strcmp(arg1, "lockscreen")) {
             //libnickel 4.12.12111 * _ZN13PowerSettings16getUnlockEnabledEv
             bool (*PowerSettings__getUnlockEnabled)(Settings*);
             reinterpret_cast<void*&>(PowerSettings__getUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16getUnlockEnabledEv");
@@ -248,8 +266,10 @@ NM_ACTION_(nickel_setting) {
             reinterpret_cast<void*&>(PowerSettings__setUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16setUnlockEnabledEb");
             NM_ASSERT(PowerSettings__setUnlockEnabled, "could not dlsym PowerSettings::setUnlockEnabled");
 
-            v = PowerSettings__getUnlockEnabled(settings);
-            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+            if (!arg2) {
+                v = PowerSettings__getUnlockEnabled(settings);
+                vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+            }
 
             PowerSettings__setUnlockEnabled(settings, !v);
             vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
@@ -257,17 +277,18 @@ NM_ACTION_(nickel_setting) {
             NM_ASSERT(PowerSettings__getUnlockEnabled(settings) == !v, "failed to set setting");
             vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
         }
-    }  else if (!strcmp(arg, "force_wifi")) {
+    }  else if (!strcmp(arg1, "force_wifi")) {
         //libnickel 4.6 * _ZTV11DevSettings
         void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV11DevSettings");
         NM_ASSERT(PowerSettings_vtable, "could not dlsym the vtable for DevSettings");
         vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
 
-        if (!strcmp(arg, "force_wifi")) {
-            QVariant v1 = Settings_getSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(false));
-            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
-
-            v = v1.toBool();
+        if (!strcmp(arg1, "force_wifi")) {
+            if (!arg2) {
+                QVariant v1 = Settings_getSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(false));
+                vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+                v = v1.toBool();
+            }
 
             Settings_saveSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(!v), false);
             vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
@@ -278,7 +299,7 @@ NM_ACTION_(nickel_setting) {
     } else {
         // TODO: more settings
         Settings_SettingsD(settings);
-        NM_RETURN_ERR("unknown setting name '%s'", arg);
+        NM_RETURN_ERR("unknown setting name '%s' (arg: '%s')", arg1, arg);
     }
 
     #undef vtable_ptr
@@ -286,8 +307,8 @@ NM_ACTION_(nickel_setting) {
 
     Settings_SettingsD(settings);
 
-    NM_RETURN_OK(strcmp(arg, "invert") // invert is obvious
-        ? nm_action_result_toast("%s %s", v ? "disabled" : "enabled", arg)
+    NM_RETURN_OK(strcmp(arg1, "invert") // invert is obvious
+        ? nm_action_result_toast("%s %s", v ? "disabled" : "enabled", arg1)
         : nm_action_result_silent());
     #undef NM_ERR_RET
 }
