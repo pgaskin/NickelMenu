@@ -35,10 +35,21 @@ nm_config_file_t *nm_config_files(char **err_out) {
         struct dirent *de = nl[i];
         
         char *fn;
-        NM_ASSERT(asprintf(&fn, "%s/%s", NM_CONFIG_DIR, de->d_name) != -1, "could not build full path for config file");
+        if (asprintf(&fn, "%s/%s", NM_CONFIG_DIR, de->d_name) == -1)
+            fn = NULL;
 
         struct stat statbuf;
-        NM_ASSERT(!stat(fn, &statbuf), "could not stat %s", fn);
+        if (!fn || stat(fn, &statbuf)) {
+            while (cfs) {
+                nm_config_file_t *tmp = cfs->next;
+                free(cfs);
+                cfs = tmp;
+            }
+            if (!fn)
+                NM_RETURN_ERR("could not build full path for config file");
+            free(fn);
+            NM_RETURN_ERR("could not stat %s/%s", NM_CONFIG_DIR, de->d_name);
+        }
 
         // skip it if it isn't a file
         if (de->d_type != DT_REG && !S_ISREG(statbuf.st_mode)) {
