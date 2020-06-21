@@ -220,13 +220,15 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
     nm_menu_action_t tmp_act;
     nm_generator_t   tmp_gn;
 
-    #define RETERR(fmt, ...) do {          \
-        if (cfgfile)                       \
-            fclose(cfgfile);               \
-        free(err);                         \
-        free(line);                        \
-        nm_config_free(state.cfg_c);       \
-        NM_RETURN_ERR(fmt, ##__VA_ARGS__); \
+    #define RETERR(fmt, ...) do {                  \
+        if (cfgfile)                               \
+            fclose(cfgfile);                       \
+        if (err_out)                               \
+            asprintf(err_out, fmt, ##__VA_ARGS__); \
+        free(err);                                 \
+        free(line);                                \
+        nm_config_free(state.cfg_c);               \
+        return NM_ERR_RET;                         \
     } while (0)
 
     for (nm_config_file_t *cf = files; cf; cf = cf->next) {
