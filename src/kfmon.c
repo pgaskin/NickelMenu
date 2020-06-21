@@ -181,7 +181,7 @@ static int handle_list_reply(int data_fd, void *data) {
         // Make room for a new node
         if (kfmon_grow_list(list) != EXIT_SUCCESS) {
             status = KFMON_IPC_CALLOC_FAILURE;
-            break;
+            goto cleanup;
         }
         // Use it
         kfmon_watch_node_t *node = list->tail;
