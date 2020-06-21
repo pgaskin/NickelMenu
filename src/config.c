@@ -454,8 +454,11 @@ static nm_config_parse__append__ret_t nm_config_parse__append_item(nm_config_par
         .action = NULL,
     };
 
-    if (!cfg_it_n->lbl)
+    if (!cfg_it_n->lbl) {
+        free(cfg_n);
+        free(cfg_it_n);
         return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
+    }
 
     if (state->cfg_c)
         state->cfg_c->next = cfg_n;
@@ -489,8 +492,10 @@ static nm_config_parse__append__ret_t nm_config_parse__append_action(nm_config_p
         .next       = NULL,
     };
 
-    if (!cfg_it_act_n->arg)
+    if (!cfg_it_act_n->arg) {
+        free(cfg_it_act_n);
         return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
+    }
 
     if (!state->cfg_it_c->action)
         state->cfg_it_c->action = cfg_it_act_n;
@@ -532,6 +537,8 @@ static nm_config_parse__append__ret_t nm_config_parse__append_generator(nm_confi
     if (!cfg_gn_n->desc || !cfg_gn_n->arg) {
         free(cfg_gn_n->desc);
         free(cfg_gn_n->arg);
+        free(cfg_n);
+        free(cfg_gn_n);
         return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
     }
 
