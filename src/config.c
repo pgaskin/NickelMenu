@@ -22,13 +22,39 @@ struct nm_config_file_t {
     nm_config_file_t *next;
 };
 
+
+// nm_config_files_filter skips special files, including:
+// - dotfiles
+// - vim: .*~, .*.s?? (unix only, usually swp or swo), *.swp, *.swo
+// - gedit: .*~
+// - emacs: .*~, #*#
+// - kate: .*.kate-swp
+// - macOS: .DS_Store*, .Spotlight-V*, ._*
+// - Windows: [Tt]humbs.db, desktop.ini
+static int nm_config_files_filter(const struct dirent *de) {
+    const char *bn = de->d_name;
+    char *ex = strrchr(bn, '.');
+    ex = (ex && ex != bn && bn[0] != '.') ? ex : NULL;
+    char lc = bn[strlen(bn)-1];
+    if ((bn[0] == '.') ||
+        (lc == '~') ||
+        (bn[0] == '#' && lc == '#') ||
+        (ex && (!strcmp(ex, ".swo") || !strcmp(ex, ".swp"))) ||
+        (!strcmp(&bn[1], "humbs.db") && tolower(bn[0]) == 't') ||
+        (!strcmp(bn, "desktop.ini"))) {
+        NM_LOG("config: skipping %s/%s because it's a special file", NM_CONFIG_DIR, de->d_name);
+        return 0;
+    }
+    return 1;
+}
+
 nm_config_file_t *nm_config_files(char **err_out) {
     #define NM_ERR_RET NULL
 
     nm_config_file_t *cfs = NULL, *cfc = NULL;
 
     struct dirent **nl;
-    int n = scandir(NM_CONFIG_DIR, &nl, NULL, alphasort);
+    int n = scandir(NM_CONFIG_DIR, &nl, nm_config_files_filter, alphasort);
     NM_ASSERT(n != -1, "could not scan config dir: %s", strerror(errno));
 
     for (int i = 0; i < n; i++) {
@@ -54,29 +80,6 @@ nm_config_file_t *nm_config_files(char **err_out) {
         // skip it if it isn't a file
         if (de->d_type != DT_REG && !S_ISREG(statbuf.st_mode)) {
             NM_LOG("config: skipping %s because not a regular file", fn);
-            free(fn);
-            continue;
-        }
-
-        // skip special files, including:
-        // - dotfiles
-        // - vim: .*~, .*.s?? (unix only, usually swp or swo), *.swp, *.swo
-        // - gedit: .*~
-        // - emacs: .*~, #*#
-        // - kate: .*.kate-swp
-        // - macOS: .DS_Store*, .Spotlight-V*, ._*
-        // - Windows: [Tt]humbs.db, desktop.ini
-        char *bn = de->d_name;
-        char *ex = strrchr(bn, '.');
-        ex = (ex && ex != bn && bn[0] != '.') ? ex : NULL;
-        char lc = bn[strlen(bn)-1];
-        if ((bn[0] == '.') ||
-            (lc == '~') ||
-            (bn[0] == '#' && lc == '#') ||
-            (ex && (!strcmp(ex, ".swo") || !strcmp(ex, ".swp"))) ||
-            (!strcmp(&bn[1], "humbs.db") && tolower(bn[0]) == 't') ||
-            (!strcmp(bn, "desktop.ini"))) {
-            NM_LOG("config: skipping %s because it's a special file", fn);
             free(fn);
             continue;
         }
