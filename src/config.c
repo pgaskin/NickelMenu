@@ -292,6 +292,12 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
             RETERR("file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, s_typ);
         }
 
+        // reset the current per-file state
+        state.cfg_it_c     = NULL;
+        state.cfg_it_act_s = NULL;
+        state.cfg_it_act_c = NULL;
+        state.cfg_gn_c     = NULL;
+
         fclose(cfgfile);
         cfgfile = NULL;
     }
