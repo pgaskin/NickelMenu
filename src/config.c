@@ -120,7 +120,7 @@ bool nm_config_files_update(nm_config_file_t **files, char **err_out) {
     bool ch = false;
     nm_config_file_t *op = *files;
     nm_config_file_t *np = nfiles;
-    
+
     while (op && np) {
         if (strcmp(op->path, np->path) || op->mtime.tv_sec != np->mtime.tv_sec || op->mtime.tv_nsec != np->mtime.tv_nsec) {
             ch = true;
