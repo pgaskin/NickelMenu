@@ -264,29 +264,29 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
             char *s_typ = strtrim(strsep(&cur, ":"));
 
             if (nm_config_parse__line_item(s_typ, &cur, &tmp_it, &tmp_act, &err)) {
+                if (err)
+                    RETERR("file %s: line %d: parse menu_item: %s", cf->path, line_n, err);
                 if ((ret = nm_config_parse__append_item(&state, &tmp_it)))
                     RETERR("file %s: line %d: error appending item to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 if ((ret = nm_config_parse__append_action(&state, &tmp_act)))
                     RETERR("file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 continue;
-            } else if (err) {
-                RETERR("file %s: line %d: parse menu_item: %s", cf->path, line_n, err);
             }
 
             if (nm_config_parse__line_chain(s_typ, &cur, &tmp_act, &err)) {
+                if (err)
+                    RETERR("file %s: line %d: parse chain: %s", cf->path, line_n, err);
                 if ((ret = nm_config_parse__append_action(&state, &tmp_act)))
                     RETERR("file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 continue;
-            } else if (err) {
-                RETERR("file %s: line %d: parse chain: %s", cf->path, line_n, err);
             }
 
             if (nm_config_parse__line_generator(s_typ, &cur, &tmp_gn, &err)) {
+                if (err)
+                    RETERR("file %s: line %d: parse generator: %s", cf->path, line_n, err);
                 if ((ret = nm_config_parse__append_generator(&state, &tmp_gn)))
                     RETERR("file %s: line %d: error appending generator to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 continue;
-            } else if (err) {
-                RETERR("file %s: line %d: parse generator: %s", cf->path, line_n, err);
             }
 
             RETERR("file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, s_typ);
