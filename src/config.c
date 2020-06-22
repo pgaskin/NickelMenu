@@ -33,7 +33,7 @@ nm_config_file_t *nm_config_files(char **err_out) {
 
     for (int i = 0; i < n; i++) {
         struct dirent *de = nl[i];
-        
+
         char *fn;
         if (asprintf(&fn, "%s/%s", NM_CONFIG_DIR, de->d_name) == -1)
             fn = NULL;
@@ -596,7 +596,7 @@ void nm_config_generate(nm_config_t *cfg) {
             }
 
             NM_LOG("config: ... %zu items generated", sz);
-            for (size_t i = 0; i < sz; i++) {
+            for (ssize_t i = sz-1; i >= 0; i--) {
                 nm_config_t *tmp = calloc(1, sizeof(nm_config_t));
                 tmp->type = NM_CONFIG_TYPE_MENU_ITEM;
                 tmp->value.menu_item = items[i];
