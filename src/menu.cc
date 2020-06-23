@@ -113,7 +113,7 @@ void nm_menu_item_do(nm_menu_item_t *it);
 // _nm_menu_inject handles the QMenu::aboutToShow signal and injects menu items.
 void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at);
 
-extern "C" MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& label, bool checkable, bool checked, QString const& thingy) {
+extern "C" NM_PUBLIC MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& label, bool checkable, bool checked, QString const& thingy) {
     NM_LOG("AbstractNickelMenuController::createMenuTextItem(%p, `%s`, %d, %d, `%s`)", menu, qPrintable(label), checkable, checked, qPrintable(thingy));
 
     QString trmm = QCoreApplication::translate("StatusBarMenuController", "Settings");
