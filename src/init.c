@@ -152,6 +152,7 @@ static void nm_global_config_replace(nm_config_t *cfg, const char *err) {
         return;
     }
 
+    nm_global_menu_config = cfg;
     nm_global_menu_config_items = nm_config_get_menu(cfg, &nm_global_menu_config_n);
     if (!nm_global_menu_config_items) 
         NM_LOG("could not allocate memory");
