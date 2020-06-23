@@ -1,7 +1,13 @@
 #define _GNU_SOURCE // asprintf
+#include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "generator.h"
 #include "menu.h"
@@ -10,6 +16,9 @@
 
 NM_GENERATOR_(_test) {
     #define NM_ERR_RET NULL
+
+    if (time_in_out->tv_sec || time_in_out->tv_nsec)
+        NM_RETURN_OK(NULL); // updates not supported (or needed, for that matter)
 
     char *tmp;
     long n = strtol(arg, &tmp, 10);
@@ -31,7 +40,51 @@ NM_GENERATOR_(_test) {
         items[i]->action->on_success = true;
     }
 
+    clock_gettime(CLOCK_REALTIME, time_in_out); // note: any nonzero value would work, but this generator is for testing and as an example
+
     *sz_out = n;
+    NM_RETURN_OK(items);
+
+    #undef NM_ERR_RET
+}
+
+NM_GENERATOR_(_test_time) {
+    #define NM_ERR_RET NULL
+
+    if (arg && *arg)
+        NM_RETURN_ERR("_test_time does not accept any arguments");
+
+    // note: this used as an example and for testing
+
+    NM_LOG("_test_time: checking for updates");
+
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+
+    struct tm lt;
+    localtime_r(&ts.tv_sec, &lt);
+
+    if (time_in_out->tv_sec && ts.tv_sec - time_in_out->tv_sec < 10) {
+        NM_LOG("_test_time: last update is nonzero and last update time is < 10s, skipping");
+        NM_RETURN_OK(NULL);
+    }
+
+    NM_LOG("_test_time: updating");
+
+    // note: you'd usually do the slower logic here
+
+    nm_menu_item_t **items = calloc(1, sizeof(nm_menu_item_t*));
+    items[0] = calloc(1, sizeof(nm_menu_item_t));
+    asprintf(&items[0]->lbl, "%d:%02d:%02d", lt.tm_hour, lt.tm_min, lt.tm_sec);
+    items[0]->action = calloc(1, sizeof(nm_menu_action_t));
+    items[0]->action->act = NM_ACTION(dbg_msg);
+    items[0]->action->arg = strdup("It worked!");
+    items[0]->action->on_failure = true;
+    items[0]->action->on_success = true;
+
+    time_in_out->tv_sec = ts.tv_sec;
+
+    *sz_out = 1;
     NM_RETURN_OK(items);
 
     #undef NM_ERR_RET
@@ -39,6 +92,13 @@ NM_GENERATOR_(_test) {
 
 NM_GENERATOR_(kfmon) {
     #define NM_ERR_RET NULL
+
+    struct stat sb;
+    if (stat(KFMON_IPC_SOCKET, &sb))
+        NM_RETURN_ERR("error checking '%s': stat: %s", KFMON_IPC_SOCKET, strerror(errno));
+
+    if (time_in_out->tv_sec == sb.st_mtim.tv_sec && time_in_out->tv_nsec == sb.st_mtim.tv_nsec)
+        NM_RETURN_OK(NULL);
 
     // Default with no arg or an empty arg is to request a gui-listing
     const char *kfmon_cmd = NULL;
@@ -85,6 +145,7 @@ NM_GENERATOR_(kfmon) {
     // Destroy the list now that we've dumped it into an array of nm_menu_item_t
     kfmon_teardown_list(&list);
 
+    *time_in_out = sb.st_mtim;
     NM_RETURN_OK(items);
 
     #undef NM_ERR_RET

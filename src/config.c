@@ -579,32 +579,39 @@ static nm_config_parse__append__ret_t nm_config_parse__append_generator(nm_confi
     return NM_CONFIG_PARSE__APPEND__RET_OK;
 }
 
-void nm_config_generate(nm_config_t *cfg) {
-    NM_LOG("config: removing any previously generated items");
-    for (nm_config_t *prev = NULL, *cur = cfg; cur; cur = cur->next) {
-        if (prev && cur->generated) { // we can't get rid of the first item and it won't be generated anyways (plus doing it this way simplifies the loop)
-            prev->next = cur->next; // skip the generated item
-            cur->next = NULL; // so we only free that item
-            nm_config_free(cur);
-            cur = prev; // continue with the new current item
-        } else {
-            prev = cur; // the item was kept, so it's now the previous one
-        }
-    }
+bool nm_config_generate(nm_config_t *cfg, bool force_update) {
+    bool changed = false;
 
     NM_LOG("config: running generators");
     for (nm_config_t *cur = cfg; cur; cur = cur->next) {
         if (cur->type == NM_CONFIG_TYPE_GENERATOR) {
             NM_LOG("config: running generator %s:%s", cur->value.generator->desc, cur->value.generator->arg);
 
+            if (force_update)
+                cur->value.generator->time = (struct timespec){0, 0};
+
             size_t sz;
             nm_menu_item_t **items = nm_generator_do(cur->value.generator, &sz);
             if (!items) {
-                NM_LOG("config: ... no items generated");
+                NM_LOG("config: ... no new items generated");
+                if (force_update)
+                    NM_LOG("config: ... possible bug: no items were generated even with force_update");
                 continue;
             }
 
-            NM_LOG("config: ... %zu items generated", sz);
+            NM_LOG("config: ... %zu items generated, removing previously generated items and replacing with new ones", sz);
+
+            changed = true;
+
+            // remove all generated items immediately after the generator
+            for (nm_config_t *t_prev = cur, *t_cur = cur->next; t_cur && t_cur->generated; t_cur = t_cur->next) {
+                t_prev->next = t_cur->next; // skip the generated item
+                t_cur->next = NULL; // so we only free that item
+                nm_config_free(t_cur);
+                t_cur = t_prev; // continue with the new current item
+            }
+
+            // add the new ones
             for (ssize_t i = sz-1; i >= 0; i--) {
                 nm_config_t *tmp = calloc(1, sizeof(nm_config_t));
                 tmp->type = NM_CONFIG_TYPE_MENU_ITEM;
@@ -632,6 +639,8 @@ void nm_config_generate(nm_config_t *cfg) {
             }
         }
     }
+
+    return changed;
 }
 
 nm_menu_item_t **nm_config_get_menu(nm_config_t *cfg, size_t *n_out) {

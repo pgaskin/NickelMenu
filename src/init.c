@@ -154,12 +154,13 @@ static void nm_global_config_replace(nm_config_t *cfg, const char *err) {
 
     nm_global_menu_config = cfg;
     nm_global_menu_config_items = nm_config_get_menu(cfg, &nm_global_menu_config_n);
-    if (!nm_global_menu_config_items) 
+    if (!nm_global_menu_config_items)
         NM_LOG("could not allocate memory");
 }
 
 bool nm_global_config_update(char **err_out) {
     #define NM_ERR_RET true
+
     char *err;
 
     NM_LOG("global: scanning for config files");
@@ -170,27 +171,46 @@ bool nm_global_config_update(char **err_out) {
         nm_global_config_replace(NULL, err);
         NM_RETURN_ERR("scan for config files: %s", err);
     }
-
     NM_LOG("global:%s changes detected", updated ? "" : " no");
-    if (!updated)
-        NM_RETURN_OK(false);
-    
-    NM_LOG("global: parsing new config");
-    nm_config_t *cfg = nm_config_parse(nm_global_menu_config_files, &err);
-    if (err) {
-        NM_LOG("... error: %s", err);
-        NM_LOG("global: freeing old config and replacing with error item");
-        nm_global_config_replace(NULL, err);
-        NM_RETURN_ERR("parse config files: %s", err);
+
+    if (updated) {
+        NM_LOG("global: parsing new config");
+        nm_config_t *cfg = nm_config_parse(nm_global_menu_config_files, &err);
+        if (err) {
+            NM_LOG("... error: %s", err);
+            NM_LOG("global: freeing old config and replacing with error item");
+            nm_global_config_replace(NULL, err);
+            NM_RETURN_ERR("parse config files: %s", err);
+        }
+
+        NM_LOG("global: config updated, freeing old config and replacing with new one");
+        nm_global_config_replace(cfg, NULL);
+        NM_LOG("global: done swapping config");
     }
 
     NM_LOG("global: running generators");
-    nm_config_generate(cfg);
+    bool g_updated = nm_config_generate(nm_global_menu_config, false);
+    NM_LOG("global:%s generators updated", g_updated ? "" : " no");
 
-    NM_LOG("global: freeing old config and replacing with new one");
-    nm_global_config_replace(cfg, NULL);
+    if (g_updated) {
+        NM_LOG("global: generators updated, freeing old items and replacing with new ones");
 
-    NM_LOG("global: done swapping config");
-    NM_RETURN_OK(true);
+        if (nm_global_menu_config_n)
+            nm_global_menu_config_n = 0;
+
+        if (nm_global_menu_config_items) {
+            free(nm_global_menu_config_items);
+            nm_global_menu_config_items = NULL;
+        }
+
+        nm_global_menu_config_items = nm_config_get_menu(nm_global_menu_config, &nm_global_menu_config_n);
+        if (!nm_global_menu_config_items) 
+            NM_LOG("could not allocate memory");
+
+        NM_LOG("done replacing items");
+    }
+
+    NM_RETURN_OK(updated || g_updated);
+
     #undef NM_ERR_RET
 }
