@@ -28,12 +28,9 @@ typedef struct {
     nm_menu_action_t *action;
 } nm_menu_item_t;
 
-// nm_menu_hook hooks a dlopen'd libnickel handle to add the specified menus,
-// and returns 0 on success, or 1 with err_out (if provided) set to the malloc'd
-// error message on error. The provided configuration and all pointers it
-// references must remain valid for the lifetime of the program (i.e. not stack
-// allocated). It MUST NOT be called more than once.
-int nm_menu_hook(void *libnickel, nm_menu_item_t **items, size_t items_n, char **err_out);
+// nm_menu_hook hooks a dlopen'd libnickel handle. It MUST NOT be called more
+// than once.
+int nm_menu_hook(void *libnickel, char **err_out);
 
 #ifdef __cplusplus
 }
