@@ -39,8 +39,9 @@ void nm_config_files_free(nm_config_file_t *files);
 nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out);
 
 // nm_config_generate runs all generators synchronously and sequentially. Any
-// previously generated items are automatically removed.
-void nm_config_generate(nm_config_t *cfg);
+// previously generated items are automatically removed if updates are required.
+// If the config was modified, true is returned.
+bool nm_config_generate(nm_config_t *cfg, bool force_update);
 
 // nm_config_get_menu gets a malloc'd array of pointers to the menu items
 // defined in the config. These pointers will be valid until nm_config_free is
