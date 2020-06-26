@@ -138,15 +138,17 @@ extern "C" NM_PUBLIC MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QStri
 void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
     NM_LOG("inject %d @ %d", loc, at);
 
-    NM_LOG("checking for config updates");
-    bool updated = nm_global_config_update(NULL); // if there was an error it will be returned as a menu item anyways (and updated will be true)
-    NM_LOG("updated = %d", updated);
+    int rev_o = menu->property("nm_config_rev").toInt();
+
+    NM_LOG("checking for config updates (current revision: %d)", rev_o);
+    int rev_n = nm_global_config_update(NULL); // if there was an error it will be returned as a menu item anyways (and updated will be true)
+    NM_LOG("new revision = %d%s", rev_n, rev_n == rev_o ? "" : " (changed)");
 
     NM_LOG("checking for existing items added by nm");
 
     for (auto action : menu->actions()) {
         if (action->property("nm_action") == true) {
-            if (!updated)
+            if (rev_o == rev_n)
                 return; // already added items, menu is up to date
             menu->removeAction(action);
             delete action;
@@ -183,7 +185,7 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
         if (it->loc != loc)
             continue;
 
-        NM_LOG("adding items '%s'...", it->lbl);
+        NM_LOG("adding item '%s'...", it->lbl);
 
         MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(nmc, menu, QString::fromUtf8(it->lbl), false, false, "");
         QAction* action = AbstractNickelMenuController_createAction_before(before, loc, i == items_n-1, nmc, menu, item, true, true, true);
@@ -194,6 +196,9 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
             NM_LOG("done");
         }); // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
     }
+
+    NM_LOG("updating config revision property");
+    menu->setProperty("nm_config_rev", rev_n);
 }
 
 void nm_menu_item_do(nm_menu_item_t *it) {

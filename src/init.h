@@ -7,11 +7,10 @@ extern "C" {
 #include <stdbool.h>
 #include "menu.h"
 
-// nm_global_config_update updates and regenerates the config if needed, and
-// returns true if it needed updating. If an error occurs, true is also returned
-// since the menu items will be updated to a single one showing the error (see
-// nm_global_config_items).
-bool nm_global_config_update(char **err_out);
+// nm_global_config_update updates and regenerates the config if needed. If the
+// menu items changed (i.e. the old items aren't valid anymore), the revision
+// will be incremented and returned (even if there was an error).
+int nm_global_config_update(char **err_out);
 
 // nm_global_config_items returns an array of pointers with the current menu
 // items (the pointer and the items it points to will remain valid until the
