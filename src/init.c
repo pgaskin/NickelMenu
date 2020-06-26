@@ -60,13 +60,13 @@ __attribute__((constructor)) void nm_init() {
 
     NM_LOG("init: updating config");
 
-    bool upd = nm_global_config_update(&err);
+    int rev = nm_global_config_update(&err);
     if (err) {
         NM_LOG("init: error parsing config, will show a menu item with the error: %s", err);
     }
 
     size_t ntmp = SIZE_MAX;
-    if (!upd) {
+    if (rev == -1) {
         NM_LOG("init: no config file changes detected for initial config update (it should always return an error or update), stopping (this is a bug; err should have been returned instead)");
         return;
     } else if (!nm_global_config_items(&ntmp)) {
@@ -106,7 +106,8 @@ stop:
 static nm_config_file_t  *nm_global_menu_config_files = NULL; // updated in-place by nm_global_config_update
 static      nm_config_t  *nm_global_menu_config       = NULL; // updated by nm_global_config_update, replaced by nm_global_config_replace, NULL on error
 static   nm_menu_item_t **nm_global_menu_config_items = NULL; // updated by nm_global_config_replace to an error message or the items from nm_global_menu_config
-static           size_t  nm_global_menu_config_n      = 0;    // ^
+static           size_t   nm_global_menu_config_n     = 0;    // ^
+static              int   nm_global_menu_config_rev   = -1;   // incremented by nm_global_config_update whenever the config items change for any reason
 
 nm_menu_item_t **nm_global_config_items(size_t *n_out) {
     if (n_out)
@@ -158,8 +159,8 @@ static void nm_global_config_replace(nm_config_t *cfg, const char *err) {
         NM_LOG("could not allocate memory");
 }
 
-bool nm_global_config_update(char **err_out) {
-    #define NM_ERR_RET true
+int nm_global_config_update(char **err_out) {
+    #define NM_ERR_RET nm_global_menu_config_rev
 
     char *err;
 
@@ -169,6 +170,7 @@ bool nm_global_config_update(char **err_out) {
         NM_LOG("... error: %s", err);
         NM_LOG("global: freeing old config and replacing with error item");
         nm_global_config_replace(NULL, err);
+        nm_global_menu_config_rev++;
         NM_RETURN_ERR("scan for config files: %s", err);
     }
     NM_LOG("global:%s changes detected", updated ? "" : " no");
@@ -180,11 +182,13 @@ bool nm_global_config_update(char **err_out) {
             NM_LOG("... error: %s", err);
             NM_LOG("global: freeing old config and replacing with error item");
             nm_global_config_replace(NULL, err);
+            nm_global_menu_config_rev++;
             NM_RETURN_ERR("parse config files: %s", err);
         }
 
         NM_LOG("global: config updated, freeing old config and replacing with new one");
         nm_global_config_replace(cfg, NULL);
+        nm_global_menu_config_rev++;
         NM_LOG("global: done swapping config");
     }
 
@@ -207,10 +211,11 @@ bool nm_global_config_update(char **err_out) {
         if (!nm_global_menu_config_items) 
             NM_LOG("could not allocate memory");
 
+        nm_global_menu_config_rev++;
         NM_LOG("done replacing items");
     }
 
-    NM_RETURN_OK(updated || g_updated);
+    NM_RETURN_OK(nm_global_menu_config_rev);
 
     #undef NM_ERR_RET
 }
