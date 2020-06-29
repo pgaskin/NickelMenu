@@ -13,7 +13,7 @@ nm_action_result_t *nm_action_result_silent() {
 }
 
 #define _nm_action_result_fmt(_fn, _typ)                                 \
-    nm_action_result_t *nm_action_result_##_fn(const char *fmt, ...) { \
+    nm_action_result_t *nm_action_result_##_fn(const char *fmt, ...) {   \
         nm_action_result_t *res = calloc(1, sizeof(nm_action_result_t)); \
         res->type = _typ;                                                \
         va_list v;                                                       \
