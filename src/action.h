@@ -43,6 +43,7 @@ void nm_action_result_free(nm_action_result_t *res);
     X(kfmon_id)       \
     X(nickel_setting) \
     X(nickel_extras)  \
+    X(nickel_browser) \
     X(nickel_misc)    \
     X(nickel_open)    \
     X(nickel_wifi)    \

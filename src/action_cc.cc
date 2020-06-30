@@ -316,24 +316,38 @@ NM_ACTION_(nickel_setting) {
 NM_ACTION_(nickel_extras) {
     #define NM_ERR_RET nullptr
 
-    if (!strncmp(arg, "web_browser", 11)) {
+    const char* mimetype;
+    if (strchr(arg, '/'))                   mimetype = arg;
+    else if (!strcmp(arg, "unblock_it"))    mimetype = "application/x-games-RushHour";
+    else if (!strcmp(arg, "sketch_pad"))    mimetype = "application/x-games-Scribble";
+    else if (!strcmp(arg, "solitaire"))     mimetype = "application/x-games-Solitaire";
+    else if (!strcmp(arg, "sudoku"))        mimetype = "application/x-games-Sudoku";
+    else if (!strcmp(arg, "word_scramble")) mimetype = "application/x-games-Boggle";
+    else NM_RETURN_ERR("unknown beta feature name or plugin mimetype '%s'", arg);
+
+    //libnickel 4.6 * _ZN18ExtrasPluginLoader10loadPluginEPKc
+    void (*ExtrasPluginLoader_loadPlugin)(const char*);
+    reinterpret_cast<void*&>(ExtrasPluginLoader_loadPlugin) = dlsym(RTLD_DEFAULT, "_ZN18ExtrasPluginLoader10loadPluginEPKc");
+    NM_ASSERT(ExtrasPluginLoader_loadPlugin, "could not dlsym ExtrasPluginLoader::loadPlugin");
+    ExtrasPluginLoader_loadPlugin(mimetype);
+
+    NM_RETURN_OK(nm_action_result_silent());
+    #undef NM_ERR_RET
+}
+
+NM_ACTION_(nickel_browser) {
+    #define NM_ERR_RET nullptr
+
         bool modal;
         QUrl *url;
         QString *css;
 
-        if (!strcmp(arg, "web_browser")) {
+    if (!arg || !*arg) {
             modal = false;
             url = new QUrl();
             css = new QString("");
         } else {
-            char *tmp1 = strdupa(arg); // strsep and strtrim will modify it
-            char *arg1 = strtrim(strsep(&tmp1, ":"));
-            char *arg2 = strtrim(tmp1);
-
-            if (!arg2 || strcmp(arg1, "web_browser"))
-                NM_RETURN_ERR("unknown beta feature name or plugin mimetype '%s' (split: '%s')", arg, arg1);
-
-            QString tmp = QString::fromUtf8(arg2).trimmed();
+        QString tmp = QString::fromUtf8(arg).trimmed();
 
             if (tmp.section(':', 0, 0).trimmed() == "modal") {
                 modal = true;
@@ -388,24 +402,6 @@ NM_ACTION_(nickel_extras) {
         }
 
         BrowserWorkflowManager_openBrowser(bwm, modal, url, css);
-
-        NM_RETURN_OK(nm_action_result_silent());
-    }
-
-    const char* mimetype;
-    if (strchr(arg, '/'))                   mimetype = arg;
-    else if (!strcmp(arg, "unblock_it"))    mimetype = "application/x-games-RushHour";
-    else if (!strcmp(arg, "sketch_pad"))    mimetype = "application/x-games-Scribble";
-    else if (!strcmp(arg, "solitaire"))     mimetype = "application/x-games-Solitaire";
-    else if (!strcmp(arg, "sudoku"))        mimetype = "application/x-games-Sudoku";
-    else if (!strcmp(arg, "word_scramble")) mimetype = "application/x-games-Boggle";
-    else NM_RETURN_ERR("unknown beta feature name or plugin mimetype '%s'", arg);
-
-    //libnickel 4.6 * _ZN18ExtrasPluginLoader10loadPluginEPKc
-    void (*ExtrasPluginLoader_loadPlugin)(const char*);
-    reinterpret_cast<void*&>(ExtrasPluginLoader_loadPlugin) = dlsym(RTLD_DEFAULT, "_ZN18ExtrasPluginLoader10loadPluginEPKc");
-    NM_ASSERT(ExtrasPluginLoader_loadPlugin, "could not dlsym ExtrasPluginLoader::loadPlugin");
-    ExtrasPluginLoader_loadPlugin(mimetype);
 
     NM_RETURN_OK(nm_action_result_silent());
     #undef NM_ERR_RET

@@ -29,6 +29,7 @@
 #                   kfmon          - triggers a kfmon action
 #                   nickel_setting - toggles a boolean setting
 #                   nickel_extras  - opens one of the beta features
+#                   nickel_browser - opens the browser
 #                   nickel_misc    - other stuff which isn't significant enough for its own category
 #                   nickel_open    - opens a view
 #                   nickel_wifi    - controls wifi (note: it doesn't wait for it to connect or disconnect, neither does it check for success)
@@ -56,17 +57,18 @@
 #                                      force_wifi          - toggles DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
 #                                      force_wifi:<value>  - ^ ...
 #                   nickel_extras  - the mimetype of the plugin, or one of:
-#                                      web_browser                   - opens the web browser to the default homepage
-#                                      web_browser:<url>             - opens the web browser to the specified URL
-#                                      web_browser:<url> <css>       - opens the web browser to the specified URL and injects the specified CSS (which can contain spaces and colons) into all pages
-#                                      web_browser:modal             - opens the web browser to the default homepage as a pop-up window
-#                                      web_browser:modal:<url>       - see above
-#                                      web_browser:modal:<url> <css> - see above
 #                                      unblock_it
 #                                      sketch_pad
 #                                      solitaire
 #                                      sudoku
 #                                      word_scramble
+#                   nickel_browser - one of:
+#                                                        - opens the web browser to the default homepage (note that the line should end with a colon even though the argument is blank)
+#                                      <url>             - opens the web browser to the specified URL
+#                                      <url> <css>       - opens the web browser to the specified URL and injects the specified CSS (which can contain spaces and colons) into all pages
+#                                      modal             - opens the web browser to the default homepage as a pop-up window
+#                                      modal:<url>       - see above
+#                                      modal:<url> <css> - see above
 #                   nickel_misc    - one of:
 #                                      home                 - goes to the home screen
 #                                      force_usb_connection - forces a usb connection dialog to be shown
