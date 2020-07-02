@@ -126,6 +126,26 @@ NM_ACTION_(nickel_open) {
 NM_ACTION_(nickel_setting) {
     #define NM_ERR_RET nullptr
 
+    enum {
+        mode_toggle,
+        mode_enable,
+        mode_disable,
+    } mode;
+
+    char *tmp1 = strdupa(arg); // strsep and strtrim will modify it
+    char *arg1 = strtrim(strsep(&tmp1, ":"));
+    char *arg2 = strtrim(tmp1);
+    NM_ASSERT(arg2, "could not find a : in the argument");
+
+    if (!strcmp(arg1, "toggle"))
+        mode = mode_toggle;
+    else if (!strcmp(arg1, "enable"))
+        mode = mode_enable;
+    else if (!strcmp(arg1, "disable"))
+        mode = mode_disable;
+    else
+        NM_RETURN_ERR("unknown action '%s' for nickel_setting: expected 'toggle', 'enable', or 'disable'", arg1);
+
     //libnickel 4.6 * _ZN6Device16getCurrentDeviceEv
     Device *(*Device_getCurrentDevice)();
     reinterpret_cast<void*&>(Device_getCurrentDevice) = dlsym(RTLD_DEFAULT, "_ZN6Device16getCurrentDeviceEv");
@@ -188,30 +208,15 @@ NM_ACTION_(nickel_setting) {
     NM_ASSERT(Settings_vtable, "could not dlsym the vtable for Settings");
     NM_ASSERT(vtable_ptr(settings) == vtable_target(Settings_vtable), "unexpected vtable layout (expected class to start with a pointer to 8 bytes into the vtable)");
 
-    bool v = false;
+    bool v = mode == mode_disable; // this gets inverted
 
-    char *tmp1 = strdupa(arg); // strsep and strtrim will modify it
-    char *arg1 = strtrim(strsep(&tmp1, ":"));
-    char *arg2 = strtrim(tmp1);
-
-    if (arg2) {
-        // note: v gets inverted when setting the setting below
-        if (!strcmp(arg2, "true") || !strcmp(arg2, "enabled") || !strcmp(arg2, "yes") || !strcmp(arg2, "on") || !strcmp(arg2, "1")) {
-            v = false;
-        } else if (!strcmp(arg2, "false") || !strcmp(arg2, "disabled") || !strcmp(arg2, "no") || !strcmp(arg2, "off") || !strcmp(arg2, "0")) {
-            v = true;
-        } else {
-            NM_RETURN_ERR("invalid value '%s' for setting '%s', must be 'true'/'enabled'/'yes'/'on'/'1' or 'false'/'disabled'/'no'/'off'/'0' (arg: '%s')", arg2, arg1, arg);
-        }
-    }
-
-    if (!strcmp(arg1, "invert") || !strcmp(arg1, "screenshots")) {
+    if (!strcmp(arg2, "invert") || !strcmp(arg2, "screenshots")) {
         //libnickel 4.6 * _ZTV15FeatureSettings
         void *FeatureSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV15FeatureSettings");
         NM_ASSERT(FeatureSettings_vtable, "could not dlsym the vtable for FeatureSettings");
         vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
 
-        if (!strcmp(arg1, "invert")) {
+        if (!strcmp(arg2, "invert")) {
             //libnickel 4.6 * _ZN15FeatureSettings12invertScreenEv
             bool (*FeatureSettings_invertScreen)(Settings*);
             reinterpret_cast<void*&>(FeatureSettings_invertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings12invertScreenEv");
@@ -222,7 +227,7 @@ NM_ACTION_(nickel_setting) {
             reinterpret_cast<void*&>(FeatureSettings_setInvertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings15setInvertScreenEb");
             NM_ASSERT(FeatureSettings_setInvertScreen, "could not dlsym FeatureSettings::setInvertScreen");
 
-            if (!arg2) {
+            if (mode == mode_toggle) {
                 v = FeatureSettings_invertScreen(settings);
                 vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
             }
@@ -237,8 +242,8 @@ NM_ACTION_(nickel_setting) {
             NM_LOG("updating top-level window %p after invert", w);
             if (w)
                 w->update(); // TODO: figure out how to make it update _after_ the menu item redraws itself
-        } else if (!strcmp(arg1, "screenshots")) {
-            if (!arg2) {
+        } else if (!strcmp(arg2, "screenshots")) {
+            if (mode == mode_toggle) {
                 QVariant v1 = Settings_getSetting(settings, QStringLiteral("Screenshots"), QVariant(false));
                 vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
                 v = v1.toBool();
@@ -250,54 +255,50 @@ NM_ACTION_(nickel_setting) {
             QVariant v2 = Settings_getSetting(settings, QStringLiteral("Screenshots"), QVariant(false));
             vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
         }
-    } else if (!strcmp(arg1, "lockscreen")) {
+    } else if (!strcmp(arg2, "lockscreen")) {
         void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV13PowerSettings");
         NM_ASSERT(PowerSettings_vtable, "could not dlsym the vtable for PowerSettings");
         vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
 
-        if (!strcmp(arg1, "lockscreen")) {
-            //libnickel 4.12.12111 * _ZN13PowerSettings16getUnlockEnabledEv
-            bool (*PowerSettings__getUnlockEnabled)(Settings*);
-            reinterpret_cast<void*&>(PowerSettings__getUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16getUnlockEnabledEv");
-            NM_ASSERT(PowerSettings__getUnlockEnabled, "could not dlsym PowerSettings::getUnlockEnabled");
+        //libnickel 4.12.12111 * _ZN13PowerSettings16getUnlockEnabledEv
+        bool (*PowerSettings__getUnlockEnabled)(Settings*);
+        reinterpret_cast<void*&>(PowerSettings__getUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16getUnlockEnabledEv");
+        NM_ASSERT(PowerSettings__getUnlockEnabled, "could not dlsym PowerSettings::getUnlockEnabled");
 
-            //libnickel 4.12.12111 * _ZN13PowerSettings16setUnlockEnabledEb
-            bool (*PowerSettings__setUnlockEnabled)(Settings*, bool);
-            reinterpret_cast<void*&>(PowerSettings__setUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16setUnlockEnabledEb");
-            NM_ASSERT(PowerSettings__setUnlockEnabled, "could not dlsym PowerSettings::setUnlockEnabled");
+        //libnickel 4.12.12111 * _ZN13PowerSettings16setUnlockEnabledEb
+        bool (*PowerSettings__setUnlockEnabled)(Settings*, bool);
+        reinterpret_cast<void*&>(PowerSettings__setUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16setUnlockEnabledEb");
+        NM_ASSERT(PowerSettings__setUnlockEnabled, "could not dlsym PowerSettings::setUnlockEnabled");
 
-            if (!arg2) {
-                v = PowerSettings__getUnlockEnabled(settings);
-                vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
-            }
-
-            PowerSettings__setUnlockEnabled(settings, !v);
-            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
-
-            NM_ASSERT(PowerSettings__getUnlockEnabled(settings) == !v, "failed to set setting");
+        if (mode == mode_toggle) {
+            v = PowerSettings__getUnlockEnabled(settings);
             vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
         }
-    }  else if (!strcmp(arg1, "force_wifi")) {
+
+        PowerSettings__setUnlockEnabled(settings, !v);
+        vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+        NM_ASSERT(PowerSettings__getUnlockEnabled(settings) == !v, "failed to set setting");
+        vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+    }  else if (!strcmp(arg2, "force_wifi")) {
         //libnickel 4.6 * _ZTV11DevSettings
         void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV11DevSettings");
         NM_ASSERT(PowerSettings_vtable, "could not dlsym the vtable for DevSettings");
         vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
 
-        if (!strcmp(arg1, "force_wifi")) {
-            if (!arg2) {
-                QVariant v1 = Settings_getSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(false));
-                vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
-                v = v1.toBool();
-            }
-
-            Settings_saveSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(!v), false);
+        if (mode == mode_toggle) {
+            QVariant v1 = Settings_getSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(false));
             vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
-
-            QVariant v2 = Settings_getSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(false));
-            vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+            v = v1.toBool();
         }
+
+        Settings_saveSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(!v), false);
+        vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
+
+        QVariant v2 = Settings_getSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(false));
+        vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
     } else {
-        // TODO: more settings
+        // TODO: more settings?
         Settings_SettingsD(settings);
         NM_RETURN_ERR("unknown setting name '%s' (arg: '%s')", arg1, arg);
     }
@@ -307,7 +308,7 @@ NM_ACTION_(nickel_setting) {
 
     Settings_SettingsD(settings);
 
-    NM_RETURN_OK(strcmp(arg1, "invert") // invert is obvious
+    NM_RETURN_OK(strcmp(arg2, "invert") // invert is obvious
         ? nm_action_result_toast("%s %s", v ? "disabled" : "enabled", arg1)
         : nm_action_result_silent());
     #undef NM_ERR_RET
@@ -315,82 +316,6 @@ NM_ACTION_(nickel_setting) {
 
 NM_ACTION_(nickel_extras) {
     #define NM_ERR_RET nullptr
-
-    if (!strncmp(arg, "web_browser", 11)) {
-        bool modal;
-        QUrl *url;
-        QString *css;
-
-        if (!strcmp(arg, "web_browser")) {
-            modal = false;
-            url = new QUrl();
-            css = new QString("");
-        } else {
-            char *tmp1 = strdupa(arg); // strsep and strtrim will modify it
-            char *arg1 = strtrim(strsep(&tmp1, ":"));
-            char *arg2 = strtrim(tmp1);
-
-            if (!arg2 || strcmp(arg1, "web_browser"))
-                NM_RETURN_ERR("unknown beta feature name or plugin mimetype '%s' (split: '%s')", arg, arg1);
-
-            QString tmp = QString::fromUtf8(arg2).trimmed();
-
-            if (tmp.section(':', 0, 0).trimmed() == "modal") {
-                modal = true;
-                tmp = tmp.section(':', 1).trimmed();
-            } else {
-                modal = false;
-            }
-
-            if (tmp.contains(' ')) {
-                css = new QString(tmp.section(' ', 1).trimmed());
-                url = new QUrl(tmp.section(' ', 0, 0).trimmed(), QUrl::ParsingMode::StrictMode);
-                if (!url->isValid() || url->isRelative())
-                    NM_RETURN_ERR("invalid url '%s' (argument: '%s') (note: if your url has spaces, they need to be escaped)", qPrintable(tmp.section(' ', 0, 0)), arg);
-            } else if (tmp.length()) {
-                url = new QUrl(tmp, QUrl::ParsingMode::StrictMode);
-                css = new QString("");
-                if (!url->isValid() || url->isRelative())
-                    NM_RETURN_ERR("invalid url '%s' (argument: '%s') (note: if your url has spaces, they need to be escaped)", qPrintable(tmp.section(' ', 0, 0)), arg);
-            } else {
-                url = new QUrl();
-                css = new QString("");
-            }
-        }
-
-        NM_LOG("web browser '%s' (modal=%d, url='%s', css='%s')", arg, modal, url->isValid() ? qPrintable(url->toString()) : "(home)", qPrintable(*css));
-
-        //libnickel 4.6 * _ZN22BrowserWorkflowManager14sharedInstanceEv _ZN22BrowserWorkflowManagerC1EP7QObject
-        BrowserWorkflowManager *(*BrowserWorkflowManager_sharedInstance)();
-        void (*BrowserWorkflowManager_BrowserWorkflowManager)(BrowserWorkflowManager*, QObject*); // 4.11.11911+
-        reinterpret_cast<void*&>(BrowserWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManager14sharedInstanceEv");
-        reinterpret_cast<void*&>(BrowserWorkflowManager_BrowserWorkflowManager) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManagerC1EP7QObject");
-        NM_ASSERT(BrowserWorkflowManager_sharedInstance || BrowserWorkflowManager_BrowserWorkflowManager, "could not dlsym BrowserWorkflowManager constructor (4.11.11911+) or sharedInstance");
-
-        //libnickel 4.6 * _ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString
-        void (*BrowserWorkflowManager_openBrowser)(BrowserWorkflowManager*, bool, QUrl*, QString*); // the bool is whether to open it as a modal, the QUrl is the URL to load(if !QUrl::isValid(), it loads the homepage), the string is CSS to inject
-        reinterpret_cast<void*&>(BrowserWorkflowManager_openBrowser) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString");
-        NM_ASSERT(BrowserWorkflowManager_openBrowser, "could not dlsym BrowserWorkflowManager::openBrowser");
-
-        // note: everything must be on the heap since if it isn't connected, it
-        //       passes it as-is to the connected signal, which will be used
-        //       after this action returns.
-
-        BrowserWorkflowManager *bwm;
-
-        if (BrowserWorkflowManager_BrowserWorkflowManager) {
-            bwm = calloc(1, 128); // as of 4.20.14622, it's actually 20 bytes, but we're going to stay on the safe side
-            NM_ASSERT(bwm, "could not allocate memory for BrowserWorkflowManager");
-            BrowserWorkflowManager_BrowserWorkflowManager(bwm, nullptr);
-        } else {
-            bwm = BrowserWorkflowManager_sharedInstance();
-            NM_ASSERT(bwm, "could not get shared browser workflow manager pointer");
-        }
-
-        BrowserWorkflowManager_openBrowser(bwm, modal, url, css);
-
-        NM_RETURN_OK(nm_action_result_silent());
-    }
 
     const char* mimetype;
     if (strchr(arg, '/'))                   mimetype = arg;
@@ -406,6 +331,78 @@ NM_ACTION_(nickel_extras) {
     reinterpret_cast<void*&>(ExtrasPluginLoader_loadPlugin) = dlsym(RTLD_DEFAULT, "_ZN18ExtrasPluginLoader10loadPluginEPKc");
     NM_ASSERT(ExtrasPluginLoader_loadPlugin, "could not dlsym ExtrasPluginLoader::loadPlugin");
     ExtrasPluginLoader_loadPlugin(mimetype);
+
+    NM_RETURN_OK(nm_action_result_silent());
+    #undef NM_ERR_RET
+}
+
+NM_ACTION_(nickel_browser) {
+    #define NM_ERR_RET nullptr
+
+    bool modal;
+    QUrl *url;
+    QString *css;
+
+    if (!arg || !*arg) {
+        modal = false;
+        url = new QUrl();
+        css = new QString("");
+    } else {
+        QString tmp = QString::fromUtf8(arg).trimmed();
+
+        if (tmp.section(':', 0, 0).trimmed() == "modal") {
+            modal = true;
+            tmp = tmp.section(':', 1).trimmed();
+        } else {
+            modal = false;
+        }
+
+        if (tmp.contains(' ')) {
+            css = new QString(tmp.section(' ', 1).trimmed());
+            url = new QUrl(tmp.section(' ', 0, 0).trimmed(), QUrl::ParsingMode::StrictMode);
+            if (!url->isValid() || url->isRelative())
+                NM_RETURN_ERR("invalid url '%s' (argument: '%s') (note: if your url has spaces, they need to be escaped)", qPrintable(tmp.section(' ', 0, 0)), arg);
+        } else if (tmp.length()) {
+            url = new QUrl(tmp, QUrl::ParsingMode::StrictMode);
+            css = new QString("");
+            if (!url->isValid() || url->isRelative())
+                NM_RETURN_ERR("invalid url '%s' (argument: '%s') (note: if your url has spaces, they need to be escaped)", qPrintable(tmp.section(' ', 0, 0)), arg);
+        } else {
+            url = new QUrl();
+            css = new QString("");
+        }
+    }
+
+    NM_LOG("web browser '%s' (modal=%d, url='%s', css='%s')", arg, modal, url->isValid() ? qPrintable(url->toString()) : "(home)", qPrintable(*css));
+
+    //libnickel 4.6 * _ZN22BrowserWorkflowManager14sharedInstanceEv _ZN22BrowserWorkflowManagerC1EP7QObject
+    BrowserWorkflowManager *(*BrowserWorkflowManager_sharedInstance)();
+    void (*BrowserWorkflowManager_BrowserWorkflowManager)(BrowserWorkflowManager*, QObject*); // 4.11.11911+
+    reinterpret_cast<void*&>(BrowserWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManager14sharedInstanceEv");
+    reinterpret_cast<void*&>(BrowserWorkflowManager_BrowserWorkflowManager) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManagerC1EP7QObject");
+    NM_ASSERT(BrowserWorkflowManager_sharedInstance || BrowserWorkflowManager_BrowserWorkflowManager, "could not dlsym BrowserWorkflowManager constructor (4.11.11911+) or sharedInstance");
+
+    //libnickel 4.6 * _ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString
+    void (*BrowserWorkflowManager_openBrowser)(BrowserWorkflowManager*, bool, QUrl*, QString*); // the bool is whether to open it as a modal, the QUrl is the URL to load(if !QUrl::isValid(), it loads the homepage), the string is CSS to inject
+    reinterpret_cast<void*&>(BrowserWorkflowManager_openBrowser) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString");
+    NM_ASSERT(BrowserWorkflowManager_openBrowser, "could not dlsym BrowserWorkflowManager::openBrowser");
+
+    // note: everything must be on the heap since if it isn't connected, it
+    //       passes it as-is to the connected signal, which will be used
+    //       after this action returns.
+
+    BrowserWorkflowManager *bwm;
+
+    if (BrowserWorkflowManager_BrowserWorkflowManager) {
+        bwm = calloc(1, 128); // as of 4.20.14622, it's actually 20 bytes, but we're going to stay on the safe side
+        NM_ASSERT(bwm, "could not allocate memory for BrowserWorkflowManager");
+        BrowserWorkflowManager_BrowserWorkflowManager(bwm, nullptr);
+    } else {
+        bwm = BrowserWorkflowManager_sharedInstance();
+        NM_ASSERT(bwm, "could not get shared browser workflow manager pointer");
+    }
+
+    BrowserWorkflowManager_openBrowser(bwm, modal, url, css);
 
     NM_RETURN_OK(nm_action_result_silent());
     #undef NM_ERR_RET
