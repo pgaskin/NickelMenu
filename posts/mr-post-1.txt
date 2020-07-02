@@ -16,11 +16,12 @@ ___
 
 [B]Features:[/B][LIST]
 [*] A built-in failsafe will automatically remove NickelMenu if any fatal error occurs, and will never result in an unbootable Kobo. Non-fatal errors will appear as a menu item with more details.
-[*] Multi-version compatiblity (even for future versions).
+[*] Multi-version compatibility (even for future versions).
 [*] Many built-in actions: [LIST]
 [*]   Debug messages (dbg_syslog, dbg_error, dbg_msg, dbg_toast).
-[*]   Nickel settings (nickel_setting:{invert,lockscreen,screenshots,force_wifi}).
-[*]   Nickel extras (nickel_extras:{web_browser,unblock_it,sketch_pad,solitaire,sudoku,word_scramble}).
+[*]   Nickel settings (nickel_setting:{toggle,enable,disable}:{invert,lockscreen,screenshots,force_wifi}).
+[*]   Nickel browser with support for showing as a pop-up (e.g. for a reference site while reading) and adding custom CSS (nickel_browser:{modal:,}<url>{ <css>,})
+[*]   Nickel extras (nickel_extras:{unblock_it,sketch_pad,solitaire,sudoku,word_scramble}).
 [*]   Nickel views (nickel_open:{discover:storefront,discover:wishlist,library:library,library:library2,library:all,library:authors,library:series,library:shelves,library:pocket,library:dropbox,reading_life:reading_life,reading_life:stats,reading_life:awards,reading_life:words,store:overdrive,store:search}).
 [*]   Nickel WiFi (nickel_wifi:{autoconnect,autoconnect_silent,enable,disable,toggle}).
 [*]   Other Nickel stuff (nickel_misc:{home,force_usb_connection,rescan_books,rescan_books_full}).
@@ -28,16 +29,13 @@ ___
 [*]   Launch system commands and optionally display the output (cmd_spawn{,:quiet},cmd_output:timeout{,:quiet}).
 [*]   KFMon (kfmon, kfmon_id).
 [/LIST]
+[*] The web_browser action has additional features such as opening a pop-up window, opening a custom URL instead of the homepage, or adding custom CSS styles to the webpages.
 [*] Action chaining (chain_{success,failure,always}).
 [*] Dynamically generated menu items (generator:kfmon).
 [*] Simple configuration format with support for multiple configuration files.
+[*] Configuration files and item generators will be updated instantly without a reboot.
 [*] Comprehensive logging to syslog (view over telnet or SSH with logread, or enable developer options and see the syslog files in KOBOeReader/.kobo).
 [*] No system files are ever touched directly, and no patching is required.
-[/LIST][B]Future features:[/B][LIST]
-[*] Reload configuration files without a reboot.
-[*] More actions and settings.
-[*] More menu locations.
-[*] Custom browser URL and injected stylesheet.
 [/LIST]
 
 [B]Troubleshooting/FAQ:[/B][LIST]
@@ -59,6 +57,8 @@ ___
     [I]There is an example configuration file in the [URL="https://github.com/geek1011/NickelMenu/blob/master/res/doc"]documentation[/URL]. If you still need help, feel free to post in this thread.[/I]
 [*] I found a bug in NickelMenu
     [I]Try re-installing NickelMenu. If that still doesn't work, please post your syslog, your configuration file, and a description of the issue in this thread or on [URL="https://github.com/geek1011/NickelMenu/issues/new"]GitHub[/URL].[/I]
+[*] I found a bug in Nickel (i.e. Kobo's reader itself)
+    [I]Before you report it, first reboot and confirm the issue is still reproducible without using any menu items.[/I]
 [*] I would like to request a new feature
     [I]Please post it in this thread or open an [URL="https://github.com/geek1011/NickelMenu/issues/new"]issue on GitHub[/URL].[/I]
 [*] I receive an error message when trying to launch a KFMon action

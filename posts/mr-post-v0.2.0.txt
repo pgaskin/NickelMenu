@@ -1,0 +1,33 @@
+[B][SIZE=5]NickelMenu v0.2.0[/SIZE][/B]
+
+This release is the second major feature update for NickelMenu.
+[LIST]
+[*] [B]Breaking change:[/B] For simplicity, `nickel_extras:web_browser` has been renamed to nickel_browser. Note that if you aren't providing any additional arguments, you still need to include a `:` (like `menu_item:main:Web Browser:nickel_browser:`).
+[*] [B]Breaking change:[/B] To improve future-proofing so breaking changes won't need to be made in the future and to make the new option for explicit values simpler, the arguments for `nickel_setting` have changed. Instead of only specifying the setting name to toggle, you specify the action (toggle, enable, disable), and then the setting name. For example, instead of using `nickel_setting:invert`, you need to use `nickel_setting:toggle:invert`. This will make it easier to deal with non-boolean settings in the future, or to add additional setting-related functionality.
+[*] NickelMenu now supports reloading configuration files without a reboot.
+[*] Automatic reloading for generators are also supported.
+[*] The configuration parser has been rewritten and is now cleaner and more efficient (this change shouldn't be noticeable in general).
+[*] Explicit values for nickel_setting are now supported. You can now do things like `nickel_setting:enable:force_wifi` and `nickel_setting:disable:force_wifi`.
+[*] Custom URLs for `nickel_browser` are now supported.
+[*] There is a new `modal` option for `nickel_browser` to open it as a pop-up window. This works from any screen, including the web browser itself.
+[*] You can now add custom CSS stylesheets to all web pages with the `nickel_browser` action.
+[/LIST]
+See the [URL="https://github.com/geek1011/NickelMenu/releases/v0.2.0"]release[/URL] on GitHub for more details.
+
+[SPOILER][CODE]nickel_browser - one of:
+                      - opens the web browser to the default homepage (note that the line should end with a colon even though the argument is blank)
+    <url>             - opens the web browser to the specified URL
+    <url> <css>       - opens the web browser to the specified URL and injects the specified CSS (which can contain spaces and colons) into all pages
+    modal             - opens the web browser to the default homepage as a pop-up window
+    modal:<url>       - see above
+    modal:<url> <css> - see above[/CODE]
+
+[CODE]nickel_setting - <action>:<setting>
+    action if one of:
+       toggle  - toggles between true/false
+       enable  - sets to true
+       disable - sets to false
+    setting is one of:
+      invert      - FeatureSettings.InvertScreen
+      lockscreen  - PowerSettings.UnlockEnabled (4.12.12111+)
+      screenshots - FeatureSettings.Screenshots[/CODE][/SPOILER]
