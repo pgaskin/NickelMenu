@@ -20,14 +20,14 @@
 #                   reader - the overflow menu in the reader
 #     <label>     the label to show on the menu item (must not contain :)
 #     <action>    the type of action to run, one of:
-#                   cmd_spawn      - starts another process or script in the background
-#                   cmd_output     - runs a command and displays the output
+#                   cmd_spawn      - starts a command in the background
+#                   cmd_output     - runs a command, waits for it to exit, and optionally displays the output
 #                   dbg_syslog     - writes a message to syslog (for testing)
 #                   dbg_error      - always returns an error (for testing)
 #                   dbg_msg        - shows a message (for testing)
 #                   dbg_toast      - shows a toast (for testing)
 #                   kfmon          - triggers a kfmon action
-#                   nickel_setting - toggles a boolean setting
+#                   nickel_setting - changes a setting
 #                   nickel_extras  - opens one of the beta features
 #                   nickel_browser - opens the browser
 #                   nickel_misc    - other stuff which isn't significant enough for its own category
@@ -129,7 +129,7 @@
 #                    _test - the number of items to generate (0-10)
 #                    kfmon - one or none of:
 #                              gui - only enumerate non-hidden active KFMon watches (this is the default)
-#                              all - enumerate *every* active KFMon watch
+#                              all - enumerate all active KFMon watches
 #
 # For example, you might have a configuration file in KOBOeReader/.adds/nm/mystuff like:
 #
