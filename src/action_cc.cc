@@ -309,7 +309,7 @@ NM_ACTION_(nickel_setting) {
     Settings_SettingsD(settings);
 
     NM_RETURN_OK(strcmp(arg2, "invert") // invert is obvious
-        ? nm_action_result_toast("%s %s", v ? "disabled" : "enabled", arg1)
+        ? nm_action_result_toast("%s %s", v ? "disabled" : "enabled", arg2)
         : nm_action_result_silent());
     #undef NM_ERR_RET
 }
