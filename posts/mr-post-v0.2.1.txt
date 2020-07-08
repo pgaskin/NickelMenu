@@ -1,0 +1,5 @@
+[B][SIZE=5]NickelMenu v0.2.1[/SIZE][/B]
+
+This release improves the documentation and fixes a minor cosmetic issue with the setting name in the toast which appears after most nickel_setting actions.
+
+See the [URL="https://github.com/geek1011/NickelMenu/releases/v0.2.1"]release[/URL] on GitHub for more details.
