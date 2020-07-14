@@ -24,7 +24,7 @@
 //
 // In general, we try to use Nickel's functionality over a Qt or system
 // version provided that the symbol has existed for multiple versions, is
-// unlikely to change (as judged by @geek1011), is not deeply tied to other
+// unlikely to change (as judged by @pgaskin), is not deeply tied to other
 // parts of Nickel, and is unlikely to cause issues if it fails to run properly.
 //
 // Other times, we generally try to use system functionality through C library

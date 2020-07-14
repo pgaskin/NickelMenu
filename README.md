@@ -5,7 +5,7 @@ The easiest way to launch custom scripts, change hidden settings, and run action
 See the [thread on MobileRead](https://go.pgaskin.net/kobo/nm) for more details.
 
 ## Installation
-You can download pre-built packages of the latest stable release from the [releases](https://github.com/geek1011/NickelMenu/releases) page, or you can find bleeding-edge builds of each commit from [here](https://github.com/geek1011/NickelMenu/actions).
+You can download pre-built packages of the latest stable release from the [releases](https://github.com/pgaskin/NickelMenu/releases) page, or you can find bleeding-edge builds of each commit from [here](https://github.com/pgaskin/NickelMenu/actions).
 
 After you download the package, copy `KoboRoot.tgz` into the `.kobo` folder of your eReader, then eject it.
 
