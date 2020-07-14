@@ -18,4 +18,4 @@ This release adds a new `nickel_open` action, which allows you to replicate the 
     reading_life:words        - My Words
     store:overdrive           - OverDrive (4.10.11655+) (note: if you don't have an active OverDrive account, it will give you a "Network Error")
     store:search              - Search[/CODE]
-See the [URL="https://github.com/geek1011/NickelMenu/releases/v0.1.1"]release[/URL] on GitHub for more details.
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.1.1"]release[/URL] on GitHub for more details.

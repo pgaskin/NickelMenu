@@ -8,6 +8,6 @@ This release contains minor features and bugfixes.
 [*] A bug where the default menu item wouldn't do anything has been fixed.
 [*] The `nickel_setting` action now supports firmware versions 4.12.12111 and older.
 [*] There are various improvements to the documentation.
-[*] Internally, NickelMenu has switched to the [url="https://github.com/geek1011/NickelTC"]new toolchain builds[/url], and now has automatic checking for symbol compatibility between firmware versions.
+[*] Internally, NickelMenu has switched to the [url="https://github.com/pgaskin/NickelTC"]new toolchain builds[/url], and now has automatic checking for symbol compatibility between firmware versions.
 [/LIST]
-See the [URL="https://github.com/geek1011/NickelMenu/release/v0.0.2"]release[/URL] on GitHub for more details.
+See the [URL="https://github.com/pgaskin/NickelMenu/release/v0.0.2"]release[/URL] on GitHub for more details.

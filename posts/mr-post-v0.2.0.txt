@@ -12,7 +12,7 @@ This release is the second major feature update for NickelMenu.
 [*] There is a new `modal` option for `nickel_browser` to open it as a pop-up window. This works from any screen, including the web browser itself.
 [*] You can now add custom CSS stylesheets to all web pages with the `nickel_browser` action.
 [/LIST]
-See the [URL="https://github.com/geek1011/NickelMenu/releases/v0.2.0"]release[/URL] on GitHub for more details.
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.2.0"]release[/URL] on GitHub for more details.
 
 [SPOILER][CODE]nickel_browser - one of:
                       - opens the web browser to the default homepage (note that the line should end with a colon even though the argument is blank)

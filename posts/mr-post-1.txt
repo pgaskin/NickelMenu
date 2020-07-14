@@ -2,16 +2,16 @@
 [SIZE=4]The easiest way to launch custom scripts, change hidden settings, and run actions on Kobo eReaders.[/SIZE]
 ___
 
-[URL="https://github.com/geek1011/NickelMenu/releases/latest"][IMG]https://img.shields.io/github/v/release/geek1011/NickelMenu?label=Download&style=flat-square&color=gray[/IMG][/URL] [URL="https://github.com/geek1011/NickelMenu/blob/master/res/doc"][IMG]https://img.shields.io/badge/Documentation-gray?style=flat-square[/IMG][/URL] [URL="https://github.com/geek1011/NickelMenu"][IMG]https://img.shields.io/badge/Source%20Code-github.com%2Fgeek1011%2FNickelMenu-gray?style=flat-square[/IMG][/URL]
+[URL="https://github.com/pgaskin/NickelMenu/releases/latest"][IMG]https://img.shields.io/github/v/release/pgaskin/NickelMenu?label=Download&style=flat-square&color=gray[/IMG][/URL] [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"][IMG]https://img.shields.io/badge/Documentation-gray?style=flat-square[/IMG][/URL] [URL="https://github.com/pgaskin/NickelMenu"][IMG]https://img.shields.io/badge/Source%20Code-github.com%2Fpgaskin%2FNickelMenu-gray?style=flat-square[/IMG][/URL]
 
 [SIZE=4]NickelMenu adds custom actions the main and/or reader menus. It works on firmware 4.6+, and persists between firmware upgrades.[/SIZE]
 
 [B]Installation:[/B][LIST=1]
 [*] Connect your Kobo eReader to your computer over USB.
-[*] Download [B][URL="https://github.com/geek1011/NickelMenu/releases/latest/download/KoboRoot.tgz"]KoboRoot.tgz[/URL][/B] ([URL="https://github.com/geek1011/NickelMenu/releases"]release notes[/URL]) into [B]KOBOeReader/.kobo[/B]. You may need to show hidden files to see the folder.
+[*] Download [B][URL="https://github.com/pgaskin/NickelMenu/releases/latest/download/KoboRoot.tgz"]KoboRoot.tgz[/URL][/B] ([URL="https://github.com/pgaskin/NickelMenu/releases"]release notes[/URL]) into [B]KOBOeReader/.kobo[/B]. You may need to show hidden files to see the folder.
 [*] Safely eject your eReader and wait for it to reboot.
 [*] Ensure there is a new menu item in the top-left main menu entitled [B]NickelMenu[/B]
-[*] Connect you Kobo eReader to your computer again and create a new file (of any type) named [B]KOBOeReader/.adds/nm/config[/B], and follow the instructions in [URL="https://github.com/geek1011/NickelMenu/blob/master/res/doc"]KOBOeReader/.adds/nm/doc[/URL] to configure NickelMenu.
+[*] Connect you Kobo eReader to your computer again and create a new file (of any type) named [B]KOBOeReader/.adds/nm/config[/B], and follow the instructions in [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"]KOBOeReader/.adds/nm/doc[/URL] to configure NickelMenu.
 [/LIST]
 
 [B]Features:[/B][LIST]
@@ -52,33 +52,33 @@ ___
 [*] When I try to open a file in KOBOeReader/.adds/nm, I get asked what I want to open it with
     [I]Open it with a text editor, for example, Notepad, Notepad++, or Visual Studio Code.[/I]
 [*] When I open a configuration file, everything is jumbled in one long line
-    [I]Open it with a different text editor which supports unix line breaks. If you are trying to view the documentation, it is also [URL="https://github.com/geek1011/NickelMenu/blob/master/res/doc"]available online[/URL].[/I]
+    [I]Open it with a different text editor which supports unix line breaks. If you are trying to view the documentation, it is also [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"]available online[/URL].[/I]
 [*] I need help writing a configuration file
-    [I]There is an example configuration file in the [URL="https://github.com/geek1011/NickelMenu/blob/master/res/doc"]documentation[/URL]. If you still need help, feel free to post in this thread.[/I]
+    [I]There is an example configuration file in the [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"]documentation[/URL]. If you still need help, feel free to post in this thread.[/I]
 [*] I found a bug in NickelMenu
-    [I]Try re-installing NickelMenu. If that still doesn't work, please post your syslog, your configuration file, and a description of the issue in this thread or on [URL="https://github.com/geek1011/NickelMenu/issues/new"]GitHub[/URL].[/I]
+    [I]Try re-installing NickelMenu. If that still doesn't work, please post your syslog, your configuration file, and a description of the issue in this thread or on [URL="https://github.com/pgaskin/NickelMenu/issues/new"]GitHub[/URL].[/I]
 [*] I found a bug in Nickel (i.e. Kobo's reader itself)
     [I]Before you report it, first reboot and confirm the issue is still reproducible without using any menu items.[/I]
 [*] I would like to request a new feature
-    [I]Please post it in this thread or open an [URL="https://github.com/geek1011/NickelMenu/issues/new"]issue on GitHub[/URL].[/I]
+    [I]Please post it in this thread or open an [URL="https://github.com/pgaskin/NickelMenu/issues/new"]issue on GitHub[/URL].[/I]
 [*] I receive an error message when trying to launch a KFMon action
     [I]Make sure the launcher name you specified is correct. It should look like [B]action.png[/B] or something similar. Also, make sure you have installed the latest version of KFMon and try re-installing NickelMenu.[/I]
 [*] How do I configure NickelMenu
-    [I]Read the instructions above again, and see the [URL="https://github.com/geek1011/NickelMenu/blob/master/res/doc"]documentation[/URL].[/I]
+    [I]Read the instructions above again, and see the [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"]documentation[/URL].[/I]
 [/LIST]
 
 [B]Credits (initial version):[/B][LIST]
-[*] geek1011 ([URL="https://github.com/geek1011"]@geek1011[/URL]): Original idea, reverse engineering, implemented core functionality, implemented most actions.
+[*] pgaskin ([URL="https://github.com/pgaskin"]@pgaskin[/URL]): Original idea, reverse engineering, implemented core functionality, implemented most actions.
 [*] sherman ([URL="https://github.com/shermp"]@shermp[/URL]): Implemented action chaining, tested everything, provided feedback and ideas.
 [*] NiLuJe ([URL="https://github.com/NiLuJe"]@NiLuJe[/URL]): Implemented kfmon action, tested everything, provided feedback and ideas.
 [*] jackie_w ([URL="https://github.com/jackiew1"]@jackiew1[/URL]): Did some testing, provided feedback and ideas.
 [/LIST]
 
 [B]Contributors:[/B][LIST]
-[*] Patrick Gaskin ([URL="https://github.com/geek1011/NickelMenu/commits?author=geek1011"]@geek1011[/URL])
-[*] NiLuJe ([URL="https://github.com/geek1011/NickelMenu/commits?author=NiLuJe"]@NiLuJe[/URL])
-[*] Sherman Perry ([URL="https://github.com/geek1011/NickelMenu/commits?author=shermp"]@shermp[/URL])
-[*] Bastien Dejean ([URL="https://github.com/geek1011/NickelMenu/commits?author=baskerville"]@baskerville[/URL])
+[*] Patrick Gaskin ([URL="https://github.com/pgaskin/NickelMenu/commits?author=pgaskin"]@pgaskin[/URL])
+[*] NiLuJe ([URL="https://github.com/pgaskin/NickelMenu/commits?author=NiLuJe"]@NiLuJe[/URL])
+[*] Sherman Perry ([URL="https://github.com/pgaskin/NickelMenu/commits?author=shermp"]@shermp[/URL])
+[*] Bastien Dejean ([URL="https://github.com/pgaskin/NickelMenu/commits?author=baskerville"]@baskerville[/URL])
 [/LIST]
 
-[SIZE=4][URL="https://github.com/geek1011/NickelMenu/releases/latest/download/KoboRoot.tgz"]Download[/URL] | [URL="https://github.com/geek1011/NickelMenu/blob/master/res/doc"]Documentation[/URL] | [URL="https://github.com/geek1011/NickelMenu"]Source Code[/URL] | [URL="https://github.com/geek1011/NickelMenu/releases"]Release Notes[/URL][/SIZE]
+[SIZE=4][URL="https://github.com/pgaskin/NickelMenu/releases/latest/download/KoboRoot.tgz"]Download[/URL] | [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"]Documentation[/URL] | [URL="https://github.com/pgaskin/NickelMenu"]Source Code[/URL] | [URL="https://github.com/pgaskin/NickelMenu/releases"]Release Notes[/URL][/SIZE]

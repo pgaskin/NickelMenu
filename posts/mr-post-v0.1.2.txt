@@ -7,4 +7,4 @@ This release adds two new actions: `nickel_misc:home` and `nickel_wifi`.
     enable             - enables WiFi (but doesn't necessarily connect to it)
     disable            - disables WiFi
     toggle             - toggles WiFi (but doesn't necessarily connect to it)[/CODE]
-See the [URL="https://github.com/geek1011/NickelMenu/releases/v0.1.2"]release[/URL] on GitHub for more details.
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.1.2"]release[/URL] on GitHub for more details.

@@ -7,4 +7,4 @@ This release contains minor bugfixes and improvements.
 [*] Additional whitespace around the quiet and timeout arguments for `cmd_spawn`/`cmd_output` is now normalized.
 [*] An example for starting Telnet/FTP has been added to the documentation.
 [/LIST]
-See the [URL="https://github.com/geek1011/NickelMenu/release/v0.0.3"]release[/URL] on GitHub for more details.
+See the [URL="https://github.com/pgaskin/NickelMenu/release/v0.0.3"]release[/URL] on GitHub for more details.
