@@ -101,17 +101,16 @@ nm_config_file_t *nm_config_files() {
     return cfs;
 }
 
-bool nm_config_files_update(nm_config_file_t **files) {
+int nm_config_files_update(nm_config_file_t **files) {
     NM_CHECK(false, files, "files pointer must not be null");
 
     nm_config_file_t *nfiles = nm_config_files();
     if (nm_err_peek())
-        return false; // the error is passed on
+        return -1; // the error is passed on
 
     if (!*files) {
         *files = nfiles;
-        nm_err_set(NULL);
-        return true;
+        return 0;
     }
 
     bool ch = false;
@@ -127,14 +126,13 @@ bool nm_config_files_update(nm_config_file_t **files) {
         np = np->next;
     }
 
-    nm_err_set(NULL);
     if (ch || op || np) {
         nm_config_files_free(*files);
         *files = nfiles;
-        return true;
+        return 0;
     } else {
         nm_config_files_free(nfiles);
-        return false;
+        return 1;
     }
 }
 
@@ -243,7 +241,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
         cfgfile = fopen(cf->path, "r");
 
         if (!cfgfile)
-            NM_ERR_RET(NULL, "could not open file: %s", strerror(errno));
+            RETERR("could not open file: %s", strerror(errno));
 
         while ((line_sz = getline(&line, &line_bufsz, cfgfile)) != -1) {
             line_n++;
@@ -256,31 +254,31 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
 
             if (nm_config_parse__line_item(s_typ, &cur, &tmp_it, &tmp_act)) {
                 if ((err = nm_err()))
-                    NM_ERR_RET(NULL, "file %s: line %d: parse menu_item: %s", cf->path, line_n, err);
+                    RETERR("file %s: line %d: parse menu_item: %s", cf->path, line_n, err);
                 if ((ret = nm_config_parse__append_item(&state, &tmp_it)))
-                    NM_ERR_RET(NULL, "file %s: line %d: error appending item to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    RETERR("file %s: line %d: error appending item to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 if ((ret = nm_config_parse__append_action(&state, &tmp_act)))
-                    NM_ERR_RET(NULL, "file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    RETERR("file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 continue;
             }
 
             if (nm_config_parse__line_chain(s_typ, &cur, &tmp_act)) {
                 if ((err = nm_err()))
-                    NM_ERR_RET(NULL, "file %s: line %d: parse chain: %s", cf->path, line_n, err);
+                    RETERR("file %s: line %d: parse chain: %s", cf->path, line_n, err);
                 if ((ret = nm_config_parse__append_action(&state, &tmp_act)))
-                    NM_ERR_RET(NULL, "file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    RETERR("file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 continue;
             }
 
             if (nm_config_parse__line_generator(s_typ, &cur, &tmp_gn)) {
                 if ((err = nm_err()))
-                    NM_ERR_RET(NULL, "file %s: line %d: parse generator: %s", cf->path, line_n, err);
+                    RETERR("file %s: line %d: parse generator: %s", cf->path, line_n, err);
                 if ((ret = nm_config_parse__append_generator(&state, &tmp_gn)))
-                    NM_ERR_RET(NULL, "file %s: line %d: error appending generator to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    RETERR("file %s: line %d: error appending generator to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 continue;
             }
 
-            NM_ERR_RET(NULL, "file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, s_typ);
+            RETERR("file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, s_typ);
         }
 
         // reset the current per-file state
@@ -298,7 +296,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
             .loc    = NM_MENU_LOCATION_MAIN_MENU,
             .lbl    = "NickelMenu",
             .action = NULL,
-        }))) NM_ERR_RET(NULL, "error appending default item to empty config: %s", nm_config_parse__strerror(ret));
+        }))) RETERR("error appending default item to empty config: %s", nm_config_parse__strerror(ret));
 
         if ((ret = nm_config_parse__append_action(&state, &(nm_menu_action_t){
             .act        = NM_ACTION(dbg_toast),
@@ -306,7 +304,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
             .on_success = true,
             .arg        = "See .adds/nm/doc for instructions on how to customize this menu.",
             .next       = NULL,
-        }))) NM_ERR_RET(NULL, "error appending default action to empty config: %s", nm_config_parse__strerror(ret));
+        }))) RETERR("error appending default action to empty config: %s", nm_config_parse__strerror(ret));
     }
 
     size_t mm = 0, rm = 0;
@@ -328,9 +326,9 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
     }
 
     if (mm > NM_CONFIG_MAX_MENU_ITEMS_PER_MENU)
-        NM_ERR_RET(NULL, "too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
+        RETERR("too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
     if (rm > NM_CONFIG_MAX_MENU_ITEMS_PER_MENU)
-        NM_ERR_RET(NULL, "too many menu items in reader menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
+        RETERR("too many menu items in reader menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
 
     return state.cfg_s;
 }

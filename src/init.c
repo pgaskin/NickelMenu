@@ -155,23 +155,23 @@ static void nm_global_config_replace(nm_config_t *cfg, const char *err) {
 }
 
 int nm_global_config_update() {
-    const char *err;
-
     NM_LOG("global: scanning for config files");
-    bool updated = nm_config_files_update(&nm_global_menu_config_files);
-    if ((err = nm_err())) {
+    int state = nm_config_files_update(&nm_global_menu_config_files);
+    if (state == -1) {
+        const char *err = nm_err();
         NM_LOG("... error: %s", err);
         NM_LOG("global: freeing old config and replacing with error item");
         nm_global_config_replace(NULL, err);
         nm_global_menu_config_rev++;
         NM_ERR_RET(nm_global_menu_config_rev, "scan for config files: %s", err);
     }
-    NM_LOG("global:%s changes detected", updated ? "" : " no");
+    NM_LOG("global:%s changes detected", state == 0 ? "" : " no");
 
-    if (updated) {
+    if (state == 0) {
         NM_LOG("global: parsing new config");
         nm_config_t *cfg = nm_config_parse(nm_global_menu_config_files);
-        if ((err = nm_err())) {
+        if (!cfg) {
+            const char *err = nm_err();
             NM_LOG("... error: %s", err);
             NM_LOG("global: freeing old config and replacing with error item");
             nm_global_config_replace(NULL, err);
