@@ -4,13 +4,8 @@
 extern "C" {
 #endif
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE // asprintf
-#endif
-
 #include <ctype.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <string.h>
 #include <syslog.h>
 
