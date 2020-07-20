@@ -1,6 +1,6 @@
-#define _GNU_SOURCE // program_invocation_short_name
+#define _GNU_SOURCE
 #include <dlfcn.h>
-#include <errno.h> // program_invocation_short_name
+#include <errno.h>
 #include <link.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -15,11 +15,6 @@
 #include "util.h"
 
 __attribute__((constructor)) void nm_init() {
-    // for if it's been loaded with LD_PRELOAD rather than as a Qt plugin
-    if (strcmp(program_invocation_short_name, "nickel"))
-        if (!(getenv("LIBNM_FORCE") && !strcmp(getenv("LIBNM_FORCE"), "true")))
-            return;
-
     char *err;
 
     NM_LOG("version: " NM_VERSION);
