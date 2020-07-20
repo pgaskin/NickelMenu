@@ -48,14 +48,12 @@ static int nm_config_files_filter(const struct dirent *de) {
     return 1;
 }
 
-nm_config_file_t *nm_config_files(char **err_out) {
-    #define NM_ERR_RET NULL
-
+nm_config_file_t *nm_config_files() {
     nm_config_file_t *cfs = NULL, *cfc = NULL;
 
     struct dirent **nl;
     int n = scandir(NM_CONFIG_DIR, &nl, nm_config_files_filter, alphasort);
-    NM_ASSERT(n != -1, "could not scan config dir: %s", strerror(errno));
+    NM_CHECK(NULL, n != -1, "could not scan config dir: %s", strerror(errno));
 
     for (int i = 0; i < n; i++) {
         struct dirent *de = nl[i];
@@ -72,9 +70,9 @@ nm_config_file_t *nm_config_files(char **err_out) {
                 cfs = tmp;
             }
             if (!fn)
-                NM_RETURN_ERR("could not build full path for config file");
+                NM_ERR_RET(NULL, "could not build full path for config file");
             free(fn);
-            NM_RETURN_ERR("could not stat %s/%s", NM_CONFIG_DIR, de->d_name);
+            NM_ERR_RET(NULL, "could not stat %s/%s", NM_CONFIG_DIR, de->d_name);
         }
 
         // skip it if it isn't a file
@@ -100,21 +98,20 @@ nm_config_file_t *nm_config_files(char **err_out) {
 
     free(nl);
 
-    NM_RETURN_OK(cfs);
-    #undef NM_ERR_RET
+    return cfs;
 }
 
-bool nm_config_files_update(nm_config_file_t **files, char **err_out) {
-    #define NM_ERR_RET false
-    NM_ASSERT(files, "files pointer must not be null");
+bool nm_config_files_update(nm_config_file_t **files) {
+    NM_CHECK(false, files, "files pointer must not be null");
 
-    nm_config_file_t *nfiles = nm_config_files(err_out);
-    if (*err_out)
-        return NM_ERR_RET;
+    nm_config_file_t *nfiles = nm_config_files();
+    if (nm_err_peek())
+        return false; // the error is passed on
 
     if (!*files) {
         *files = nfiles;
-        NM_RETURN_OK(true);
+        nm_err_set(NULL);
+        return true;
     }
 
     bool ch = false;
@@ -130,16 +127,15 @@ bool nm_config_files_update(nm_config_file_t **files, char **err_out) {
         np = np->next;
     }
 
+    nm_err_set(NULL);
     if (ch || op || np) {
         nm_config_files_free(*files);
         *files = nfiles;
-        NM_RETURN_OK(true);
+        return true;
     } else {
         nm_config_files_free(nfiles);
-        NM_RETURN_OK(false);
+        return false;
     }
-
-    #undef NM_ERR_RET
 }
 
 void nm_config_files_free(nm_config_file_t *files) {
@@ -206,20 +202,18 @@ static const char* nm_config_parse__strerror(nm_config_parse__append__ret_t ret)
 
 // note: line must point to the part after the config line type, and will be
 //       modified. if the config line type doesn't match, everything will be
-//       left as-is and false will be returned without an error. if an error
-//       occurs, err_out will be set and true will be returned (since stuff
-//       may be modified). otherwise, true is returned without an error (the
+//       left as-is and false will be returned with nm_err cleared. if an error
+//       occurs, nm_err will be set and true will be returned (since stuff
+//       may be modified). otherwise, true is returned with nm_err cleared (the
 //       parsed output will have strings pointing directly into the line).
 
-static bool nm_config_parse__lineend_action(int field, char **line, bool p_on_success, bool p_on_failure, nm_menu_action_t *act_out, char **err_out);
-static bool nm_config_parse__line_item(const char *type, char **line, nm_menu_item_t *it_out, nm_menu_action_t *action_out, char **err_out);
-static bool nm_config_parse__line_chain(const char *type, char **line, nm_menu_action_t *act_out, char **err_out);
-static bool nm_config_parse__line_generator(const char *type, char **line, nm_generator_t *gn_out, char **err_out);
+static bool nm_config_parse__lineend_action(int field, char **line, bool p_on_success, bool p_on_failure, nm_menu_action_t *act_out);
+static bool nm_config_parse__line_item(const char *type, char **line, nm_menu_item_t *it_out, nm_menu_action_t *action_out);
+static bool nm_config_parse__line_chain(const char *type, char **line, nm_menu_action_t *act_out);
+static bool nm_config_parse__line_generator(const char *type, char **line, nm_generator_t *gn_out);
 
-nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
-    #define NM_ERR_RET NULL
-
-    char *err = NULL;
+nm_config_t *nm_config_parse(nm_config_file_t *files) {
+    const char *err = NULL;
 
     FILE   *cfgfile    = NULL;
     char   *line       = NULL;
@@ -237,12 +231,9 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
     #define RETERR(fmt, ...) do {                  \
         if (cfgfile)                               \
             fclose(cfgfile);                       \
-        if (err_out)                               \
-            asprintf(err_out, fmt, ##__VA_ARGS__); \
-        free(err);                                 \
         free(line);                                \
         nm_config_free(state.cfg_c);               \
-        return NM_ERR_RET;                         \
+        NM_ERR_RET(NULL, fmt, ##__VA_ARGS__);      \
     } while (0)
 
     for (nm_config_file_t *cf = files; cf; cf = cf->next) {
@@ -252,7 +243,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
         cfgfile = fopen(cf->path, "r");
 
         if (!cfgfile)
-            RETERR("could not open file: %s", strerror(errno));
+            NM_ERR_RET(NULL, "could not open file: %s", strerror(errno));
 
         while ((line_sz = getline(&line, &line_bufsz, cfgfile)) != -1) {
             line_n++;
@@ -263,33 +254,33 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
 
             char *s_typ = strtrim(strsep(&cur, ":"));
 
-            if (nm_config_parse__line_item(s_typ, &cur, &tmp_it, &tmp_act, &err)) {
-                if (err)
-                    RETERR("file %s: line %d: parse menu_item: %s", cf->path, line_n, err);
+            if (nm_config_parse__line_item(s_typ, &cur, &tmp_it, &tmp_act)) {
+                if ((err = nm_err()))
+                    NM_ERR_RET(NULL, "file %s: line %d: parse menu_item: %s", cf->path, line_n, err);
                 if ((ret = nm_config_parse__append_item(&state, &tmp_it)))
-                    RETERR("file %s: line %d: error appending item to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    NM_ERR_RET(NULL, "file %s: line %d: error appending item to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 if ((ret = nm_config_parse__append_action(&state, &tmp_act)))
-                    RETERR("file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    NM_ERR_RET(NULL, "file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 continue;
             }
 
-            if (nm_config_parse__line_chain(s_typ, &cur, &tmp_act, &err)) {
-                if (err)
-                    RETERR("file %s: line %d: parse chain: %s", cf->path, line_n, err);
+            if (nm_config_parse__line_chain(s_typ, &cur, &tmp_act)) {
+                if ((err = nm_err()))
+                    NM_ERR_RET(NULL, "file %s: line %d: parse chain: %s", cf->path, line_n, err);
                 if ((ret = nm_config_parse__append_action(&state, &tmp_act)))
-                    RETERR("file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    NM_ERR_RET(NULL, "file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 continue;
             }
 
-            if (nm_config_parse__line_generator(s_typ, &cur, &tmp_gn, &err)) {
-                if (err)
-                    RETERR("file %s: line %d: parse generator: %s", cf->path, line_n, err);
+            if (nm_config_parse__line_generator(s_typ, &cur, &tmp_gn)) {
+                if ((err = nm_err()))
+                    NM_ERR_RET(NULL, "file %s: line %d: parse generator: %s", cf->path, line_n, err);
                 if ((ret = nm_config_parse__append_generator(&state, &tmp_gn)))
-                    RETERR("file %s: line %d: error appending generator to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    NM_ERR_RET(NULL, "file %s: line %d: error appending generator to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
                 continue;
             }
 
-            RETERR("file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, s_typ);
+            NM_ERR_RET(NULL, "file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, s_typ);
         }
 
         // reset the current per-file state
@@ -307,7 +298,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
             .loc    = NM_MENU_LOCATION_MAIN_MENU,
             .lbl    = "NickelMenu",
             .action = NULL,
-        }))) RETERR("error appending default item to empty config: %s", nm_config_parse__strerror(ret));
+        }))) NM_ERR_RET(NULL, "error appending default item to empty config: %s", nm_config_parse__strerror(ret));
 
         if ((ret = nm_config_parse__append_action(&state, &(nm_menu_action_t){
             .act        = NM_ACTION(dbg_toast),
@@ -315,7 +306,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
             .on_success = true,
             .arg        = "See .adds/nm/doc for instructions on how to customize this menu.",
             .next       = NULL,
-        }))) RETERR("error appending default action to empty config: %s", nm_config_parse__strerror(ret));
+        }))) NM_ERR_RET(NULL, "error appending default action to empty config: %s", nm_config_parse__strerror(ret));
     }
 
     size_t mm = 0, rm = 0;
@@ -337,45 +328,39 @@ nm_config_t *nm_config_parse(nm_config_file_t *files, char **err_out) {
     }
 
     if (mm > NM_CONFIG_MAX_MENU_ITEMS_PER_MENU)
-        RETERR("too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
+        NM_ERR_RET(NULL, "too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
     if (rm > NM_CONFIG_MAX_MENU_ITEMS_PER_MENU)
-        RETERR("too many menu items in reader menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
+        NM_ERR_RET(NULL, "too many menu items in reader menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
 
-    NM_RETURN_OK(state.cfg_s);
-    #undef NM_ERR_RET
+    return state.cfg_s;
 }
 
-static bool nm_config_parse__line_item(const char *type, char **line, nm_menu_item_t *it_out, nm_menu_action_t *action_out, char **err_out) {
-    #define NM_ERR_RET true
-
-    if (strcmp(type, "menu_item"))
-        NM_RETURN_OK(false);
+static bool nm_config_parse__line_item(const char *type, char **line, nm_menu_item_t *it_out, nm_menu_action_t *action_out) {
+    if (strcmp(type, "menu_item")) {
+        nm_err_set(NULL);
+        return false;
+    }
 
     *it_out = (nm_menu_item_t){0};
 
     char *s_loc = strtrim(strsep(line, ":"));
-    if      (!s_loc)                   NM_RETURN_ERR("field 2: expected location, got end of line");
+    if      (!s_loc)                   NM_ERR_RET(NULL, "field 2: expected location, got end of line");
     else if (!strcmp(s_loc, "main"))   it_out->loc = NM_MENU_LOCATION_MAIN_MENU;
     else if (!strcmp(s_loc, "reader")) it_out->loc = NM_MENU_LOCATION_READER_MENU;
-    else NM_RETURN_ERR("field 2: unknown location '%s'", s_loc);
+    else NM_ERR_RET(NULL, "field 2: unknown location '%s'", s_loc);
 
     char *p_lbl = strtrim(strsep(line, ":"));
-    if (!p_lbl) NM_RETURN_ERR("field 3: expected label, got end of line");
+    if (!p_lbl) NM_ERR_RET(NULL, "field 3: expected label, got end of line");
     it_out->lbl = p_lbl;
 
-    nm_config_parse__lineend_action(4, line, true, true, action_out, err_out);
-    if (*err_out)
-        return NM_ERR_RET;
-
-    NM_RETURN_OK(true);
-    #undef NM_ERR_RET
+    return nm_config_parse__lineend_action(4, line, true, true, action_out);
 }
 
-static bool nm_config_parse__line_chain(const char *type, char **line, nm_menu_action_t *act_out, char **err_out) {
-    #define NM_ERR_RET true
-
-    if (strncmp(type, "chain_", 5))
-        NM_RETURN_OK(false);
+static bool nm_config_parse__line_chain(const char *type, char **line, nm_menu_action_t *act_out) {
+    if (strncmp(type, "chain_", 5)) {
+        nm_err_set(NULL);
+        return false;
+    }
 
     bool p_on_success, p_on_failure;
     if (!strcmp(type, "chain_success")) {
@@ -387,70 +372,66 @@ static bool nm_config_parse__line_chain(const char *type, char **line, nm_menu_a
     } else if (!strcmp(type, "chain_failure")) {
         p_on_success = false;
         p_on_failure = true;
-    } else NM_RETURN_OK(false);
+    } else {
+        nm_err_set(NULL);
+        return false;
+    }
 
-    nm_config_parse__lineend_action(2, line, p_on_success, p_on_failure, act_out, err_out);
-    if (*err_out)
-        return NM_ERR_RET;
-
-    NM_RETURN_OK(true);
-    #undef NM_ERR_RET
+    return nm_config_parse__lineend_action(2, line, p_on_success, p_on_failure, act_out);
 }
 
-static bool nm_config_parse__line_generator(const char *type, char **line, nm_generator_t *gn_out, char **err_out) {
-    #define NM_ERR_RET true
-
-    if (strcmp(type, "generator"))
-        NM_RETURN_OK(false);
+static bool nm_config_parse__line_generator(const char *type, char **line, nm_generator_t *gn_out) {
+    if (strcmp(type, "generator")) {
+        nm_err_set(NULL);
+        return false;
+    }
 
     *gn_out = (nm_generator_t){0};
 
     char *s_loc = strtrim(strsep(line, ":"));
-    if      (!s_loc)                   NM_RETURN_ERR("field 2: expected location, got end of line");
+    if      (!s_loc)                   NM_ERR_RET(NULL, "field 2: expected location, got end of line");
     else if (!strcmp(s_loc, "main"))   gn_out->loc = NM_MENU_LOCATION_MAIN_MENU;
     else if (!strcmp(s_loc, "reader")) gn_out->loc = NM_MENU_LOCATION_READER_MENU;
-    else NM_RETURN_ERR("field 2: unknown location '%s'", s_loc);
+    else NM_ERR_RET(NULL, "field 2: unknown location '%s'", s_loc);
 
     char *s_generate = strtrim(strsep(line, ":"));
-    if (!s_generate) NM_RETURN_ERR("field 3: expected generator, got end of line");
+    if (!s_generate) NM_ERR_RET(NULL, "field 3: expected generator, got end of line");
     #define X(name) \
     else if (!strcmp(s_generate, #name)) gn_out->generate = NM_GENERATOR(name);
     NM_GENERATORS
     #undef X
-    else NM_RETURN_ERR("field 3: unknown generator '%s'", s_generate);
+    else NM_ERR_RET(NULL, "field 3: unknown generator '%s'", s_generate);
 
     char *p_arg = strtrim(*line); // note: optional
     if (p_arg) gn_out->arg = p_arg;
 
     gn_out->desc = s_generate;
 
-    NM_RETURN_OK(true);
-    #undef NM_ERR_RET
+    nm_err_set(NULL);
+    return true;
 }
 
-static bool nm_config_parse__lineend_action(int field, char **line, bool p_on_success, bool p_on_failure, nm_menu_action_t *act_out, char **err_out) {
-    #define NM_ERR_RET true
-
+static bool nm_config_parse__lineend_action(int field, char **line, bool p_on_success, bool p_on_failure, nm_menu_action_t *act_out) {
     *act_out = (nm_menu_action_t){0};
 
     char *s_act = strtrim(strsep(line, ":"));
-    if (!s_act) NM_RETURN_ERR("field %d: expected action, got end of line", field);
+    if (!s_act) NM_ERR_RET(true, "field %d: expected action, got end of line", field);
     #define X(name) \
     else if (!strcmp(s_act, #name)) act_out->act = NM_ACTION(name);
     NM_ACTIONS
     #undef X
-    else NM_RETURN_ERR("field %d: unknown action '%s'", field, s_act);
+    else NM_ERR_RET(true, "field %d: unknown action '%s'", field, s_act);
 
     // type: menu_item - field 5: argument
     char *p_arg = strtrim(*line);
-    if (!p_arg) NM_RETURN_ERR("field %d: expected argument, got end of line\n", field+1);
+    if (!p_arg) NM_ERR_RET(true, "field %d: expected argument, got end of line\n", field+1);
     act_out->arg = p_arg;
 
     act_out->on_success = p_on_success;
     act_out->on_failure = p_on_failure;
 
-    NM_RETURN_OK(true);
-    #undef NM_ERR_RET
+    nm_err_set(NULL);
+    return true;
 }
 
 static nm_config_parse__append__ret_t nm_config_parse__append_item(nm_config_parse__state_t *restrict state, nm_menu_item_t *const restrict it) {

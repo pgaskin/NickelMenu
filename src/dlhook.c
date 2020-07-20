@@ -28,14 +28,12 @@
 // prevent GCC from giving us warnings everywhere about the format specifiers for the ELF typedefs
 #pragma GCC diagnostic ignored "-Wformat"
 
-void *nm_dlhook(void *handle, const char *symname, void *target, char **err_out) {
-    #define NM_ERR_RET NULL
-
-    NM_ASSERT(handle && symname && target, "BUG: required arguments are null");
+void *nm_dlhook(void *handle, const char *symname, void *target) {
+    NM_CHECK(NULL, handle && symname && target, "BUG: required arguments are null");
 
     // the link_map conveniently gives use the base address without /proc/maps, and it gives us a pointer to dyn
     struct link_map *lm;
-    NM_ASSERT(!dlinfo(handle, RTLD_DI_LINKMAP, &lm), "could not get link_map for lib");
+    NM_CHECK(NULL, !dlinfo(handle, RTLD_DI_LINKMAP, &lm), "could not get link_map for lib");
     NM_LOG("lib %s is mapped at %lx", lm->l_name, lm->l_addr);
 
     // stuff extracted from DT_DYNAMIC
@@ -65,9 +63,9 @@ void *nm_dlhook(void *handle, const char *symname, void *target, char **err_out)
         }
     }
     NM_LOG("DT_DYNAMIC: plt_is_rela=%d plt=%p plt_sz=%lu plt_ent_sz=%lu sym=%p str=%p", dyn.plt_is_rela, (void*)(dyn.plt)._, dyn.plt_sz, dyn.plt_ent_sz, dyn.sym, dyn.str);
-    NM_ASSERT(dyn.plt_ent_sz, "plt_ent_sz is zero");
-    NM_ASSERT(dyn.plt_sz%dyn.plt_ent_sz == 0, ".rel.plt length is not a multiple of plt_ent_sz");
-    NM_ASSERT((dyn.plt_is_rela ? sizeof(*dyn.plt.rela) : sizeof(*dyn.plt.rel)) == dyn.plt_ent_sz, "size mismatch (%lu != %lu)", dyn.plt_is_rela ? sizeof(*dyn.plt.rela) : sizeof(*dyn.plt.rel), dyn.plt_ent_sz);
+    NM_CHECK(NULL, dyn.plt_ent_sz, "plt_ent_sz is zero");
+    NM_CHECK(NULL, dyn.plt_sz%dyn.plt_ent_sz == 0, ".rel.plt length is not a multiple of plt_ent_sz");
+    NM_CHECK(NULL, (dyn.plt_is_rela ? sizeof(*dyn.plt.rela) : sizeof(*dyn.plt.rel)) == dyn.plt_ent_sz, "size mismatch (%lu != %lu)", dyn.plt_is_rela ? sizeof(*dyn.plt.rela) : sizeof(*dyn.plt.rel), dyn.plt_ent_sz);
 
     // parse the dynamic symbol table, resolve symbols to relocations, then GOT entries
     for (size_t i = 0; i < dyn.plt_sz/dyn.plt_ent_sz; i++) {
@@ -75,7 +73,7 @@ void *nm_dlhook(void *handle, const char *symname, void *target, char **err_out)
         ElfW(Rel) *rel = dyn.plt_is_rela
             ? (ElfW(Rel)*)(&dyn.plt.rela[i])
             : &dyn.plt.rel[i];
-        NM_ASSERT(ELFW(R_TYPE)(rel->r_info) == R_JUMP_SLOT, "not a jump slot relocation (R_TYPE=%lu)", ELFW(R_TYPE)(rel->r_info));
+        NM_CHECK(NULL, ELFW(R_TYPE)(rel->r_info) == R_JUMP_SLOT, "not a jump slot relocation (R_TYPE=%lu)", ELFW(R_TYPE)(rel->r_info));
 
         ElfW(Sym) *sym = &dyn.sym[ELFW(R_SYM)(rel->r_info)];
         const char *str = &dyn.str[sym->st_name];
@@ -85,14 +83,13 @@ void *nm_dlhook(void *handle, const char *symname, void *target, char **err_out)
         void **gotoff = (void**)(lm->l_addr + rel->r_offset);
         NM_LOG("found symbol %s (gotoff=%p [mapped=%p])", str, (void*)(rel->r_offset), gotoff);
 
-        NM_ASSERT(ELFW(ST_TYPE)(sym->st_info) != STT_GNU_IFUNC, "STT_GNU_IFUNC not implemented (gotoff=%p)", (void*)(rel->r_offset));
-        NM_ASSERT(ELFW(ST_TYPE)(sym->st_info) == STT_FUNC, "not a function symbol (ST_TYPE=%d) (gotoff=%p)", ELFW(ST_TYPE)(sym->st_info), (void*)(rel->r_offset));
-        NM_ASSERT(ELFW(ST_BIND)(sym->st_info) == STB_GLOBAL, "not a globally bound symbol (ST_BIND=%d) (gotoff=%p)", ELFW(ST_BIND)(sym->st_info), (void*)(rel->r_offset));
+        NM_CHECK(NULL, ELFW(ST_TYPE)(sym->st_info) != STT_GNU_IFUNC, "STT_GNU_IFUNC not implemented (gotoff=%p)", (void*)(rel->r_offset));
+        NM_CHECK(NULL, ELFW(ST_TYPE)(sym->st_info) == STT_FUNC, "not a function symbol (ST_TYPE=%d) (gotoff=%p)", ELFW(ST_TYPE)(sym->st_info), (void*)(rel->r_offset));
+        NM_CHECK(NULL, ELFW(ST_BIND)(sym->st_info) == STB_GLOBAL, "not a globally bound symbol (ST_BIND=%d) (gotoff=%p)", ELFW(ST_BIND)(sym->st_info), (void*)(rel->r_offset));
 
-        // TODO: figure out why directly getting the offset from the GOT was broken on ARM, but not x86
-        NM_LOG("ensuring the symbol is loaded");
+        NM_LOG("ensuring the symbol is loaded (to get the original address)");
         void *orig = dlsym(handle, symname);
-        NM_ASSERT(orig, "could not dlsym symbol");
+        NM_CHECK(NULL, orig, "could not dlsym symbol");
 
         // remove memory protection (to bypass RELRO if it is enabled)
         // note: this doesn't seem to be used on the Kobo, but we might as well stay on the safe side (plus, I test this on my local machine too)
@@ -100,18 +97,18 @@ void *nm_dlhook(void *handle, const char *symname, void *target, char **err_out)
         // note: we won't put it back afterwards, as if full RELRO (i.e. RTLD_NOW) wasn't enabled, it would cause segfaults when resolving symbols later on
         NM_LOG("removing memory protection");
         long pagesize = sysconf(_SC_PAGESIZE);
-        NM_ASSERT(pagesize != -1, "could not get memory page size");
+        NM_CHECK(NULL, pagesize != -1, "could not get memory page size");
         void *gotpage = (void*)((size_t)(gotoff) & ~(pagesize-1));
-        NM_ASSERT(!mprotect(gotpage, pagesize, PROT_READ|PROT_WRITE), "could not set memory protection of page %p containing %p to PROT_READ|PROT_WRITE", gotpage, gotoff);
+        NM_CHECK(NULL, !mprotect(gotpage, pagesize, PROT_READ|PROT_WRITE), "could not set memory protection of page %p containing %p to PROT_READ|PROT_WRITE", gotpage, gotoff);
 
         // replace the target offset
         NM_LOG("patching symbol");
         //void *orig = *gotoff;
         *gotoff = target;
         NM_LOG("successfully patched symbol %s (orig=%p, new=%p)", str, orig, target);
-        NM_RETURN_OK(orig);
+        return orig;
     }
 
-    NM_RETURN_ERR("could not find symbol");
-    #undef NM_err_ret
+    NM_ERR_SET("could not find symbol");
+    return 0;
 }

@@ -17,7 +17,10 @@ typedef struct {
     int skip; // for use by skip only
 } nm_action_result_t;
 
-typedef nm_action_result_t *(*nm_action_fn_t)(const char *arg, char **err);
+// nm_action_fn_t represents an action. On success, a nm_action_result_t is
+// returned and needs to be freed with nm_action_result_free. Otherwise, NULL is
+// returned and nm_err is set.
+typedef nm_action_result_t *(*nm_action_fn_t)(const char *arg);
 
 nm_action_result_t *nm_action_result_silent();
 nm_action_result_t *nm_action_result_msg(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
@@ -27,9 +30,9 @@ void nm_action_result_free(nm_action_result_t *res);
 #define NM_ACTION(name) nm_action_##name
 
 #ifdef __cplusplus
-#define NM_ACTION_(name) extern "C" nm_action_result_t *NM_ACTION(name)(const char *arg, char **err_out)
+#define NM_ACTION_(name) extern "C" nm_action_result_t *NM_ACTION(name)(const char *arg)
 #else
-#define NM_ACTION_(name) nm_action_result_t *NM_ACTION(name)(const char *arg, char **err_out)
+#define NM_ACTION_(name) nm_action_result_t *NM_ACTION(name)(const char *arg)
 #endif
 
 #define NM_ACTIONS    \

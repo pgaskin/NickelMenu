@@ -15,18 +15,19 @@
 #include "util.h"
 
 NM_GENERATOR_(_test) {
-    #define NM_ERR_RET NULL
-
-    if (time_in_out->tv_sec || time_in_out->tv_nsec)
-        NM_RETURN_OK(NULL); // updates not supported (or needed, for that matter)
+    if (time_in_out->tv_sec || time_in_out->tv_nsec) {
+        nm_err_set(NULL);
+        return NULL; // updates not supported (or needed, for that matter)
+    }
 
     char *tmp;
     long n = strtol(arg, &tmp, 10);
-    NM_ASSERT(*arg && !*tmp && n >= 0 && n <= 10, "invalid count '%s': must be an integer from 1-10", arg);
+    NM_CHECK(NULL, *arg && !*tmp && n >= 0 && n <= 10, "invalid count '%s': must be an integer from 1-10", arg);
 
     if (n == 0) {
         *sz_out = 0;
-        NM_RETURN_OK(NULL);
+        nm_err_set(NULL);
+        return NULL;
     }
 
     nm_menu_item_t **items = calloc(n, sizeof(nm_menu_item_t*));
@@ -43,16 +44,13 @@ NM_GENERATOR_(_test) {
     clock_gettime(CLOCK_REALTIME, time_in_out); // note: any nonzero value would work, but this generator is for testing and as an example
 
     *sz_out = n;
-    NM_RETURN_OK(items);
-
-    #undef NM_ERR_RET
+    nm_err_set(NULL);
+    return items;
 }
 
 NM_GENERATOR_(_test_time) {
-    #define NM_ERR_RET NULL
-
     if (arg && *arg)
-        NM_RETURN_ERR("_test_time does not accept any arguments");
+        NM_ERR_RET(NULL, "_test_time does not accept any arguments");
 
     // note: this used as an example and for testing
 
@@ -66,7 +64,8 @@ NM_GENERATOR_(_test_time) {
 
     if (time_in_out->tv_sec && ts.tv_sec - time_in_out->tv_sec < 10) {
         NM_LOG("_test_time: last update is nonzero and last update time is < 10s, skipping");
-        NM_RETURN_OK(NULL);
+        nm_err_set(NULL);
+        return NULL;
     }
 
     NM_LOG("_test_time: updating");
@@ -85,20 +84,19 @@ NM_GENERATOR_(_test_time) {
     time_in_out->tv_sec = ts.tv_sec;
 
     *sz_out = 1;
-    NM_RETURN_OK(items);
-
-    #undef NM_ERR_RET
+    nm_err_set(NULL);
+    return items;
 }
 
 NM_GENERATOR_(kfmon) {
-    #define NM_ERR_RET NULL
-
     struct stat sb;
     if (stat(KFMON_IPC_SOCKET, &sb))
-        NM_RETURN_ERR("error checking '%s': stat: %s", KFMON_IPC_SOCKET, strerror(errno));
+        NM_ERR_RET(NULL, "error checking '%s': stat: %s", KFMON_IPC_SOCKET, strerror(errno));
 
-    if (time_in_out->tv_sec == sb.st_mtim.tv_sec && time_in_out->tv_nsec == sb.st_mtim.tv_nsec)
-        NM_RETURN_OK(NULL);
+    if (time_in_out->tv_sec == sb.st_mtim.tv_sec && time_in_out->tv_nsec == sb.st_mtim.tv_nsec) {
+        nm_err_set(NULL);
+        return NULL;
+    }
 
     // Default with no arg or an empty arg is to request a gui-listing
     const char *kfmon_cmd = NULL;
@@ -107,7 +105,7 @@ NM_GENERATOR_(kfmon) {
     } else if (!strcmp(arg, "all")) {
         kfmon_cmd = "list";
     } else {
-        NM_RETURN_ERR("invalid argument '%s': if specified, must be either gui or all", arg);
+        NM_ERR_RET(NULL, "invalid argument '%s': if specified, must be either gui or all", arg);
     }
 
     // We'll want to retrieve our watch list in there.
@@ -115,14 +113,14 @@ NM_GENERATOR_(kfmon) {
     int status = nm_kfmon_list_request(kfmon_cmd, &list);
 
     // If there was an error, handle it now.
-    if (status != KFMON_IPC_OK) {
-        return nm_kfmon_error_handler(status, err_out);
-    }
+    if (nm_kfmon_error_handler(status))
+        return NULL; // the error will be passed on
 
     // Handle an empty listing safely
     if (list.count == 0) {
         *sz_out = 0;
-        NM_RETURN_OK(NULL);
+        nm_err_set(NULL);
+        return NULL;
     }
 
     // And now we can start populating an array of nm_menu_item_t :)
@@ -146,7 +144,6 @@ NM_GENERATOR_(kfmon) {
     kfmon_teardown_list(&list);
 
     *time_in_out = sb.st_mtim;
-    NM_RETURN_OK(items);
-
-    #undef NM_ERR_RET
+    nm_err_set(NULL);
+    return items;
 }

@@ -18,7 +18,7 @@ typedef struct nm_menu_action_t {
     char *arg;
     bool on_success;
     bool on_failure;
-    nm_action_fn_t act; // can block, must return 0 on success, nonzero with out_err set to the malloc'd error message on error
+    nm_action_fn_t act; // can block, must return zero on success, nonzero with nm_err set on error
     struct nm_menu_action_t *next;
 } nm_menu_action_t;
 
@@ -29,8 +29,9 @@ typedef struct {
 } nm_menu_item_t;
 
 // nm_menu_hook hooks a dlopen'd libnickel handle. It MUST NOT be called more
-// than once.
-int nm_menu_hook(void *libnickel, char **err_out);
+// than once. On success, zero is returned. Otherwise, a nonzero value is
+// returned and nm_err is set.
+int nm_menu_hook(void *libnickel);
 
 #ifdef __cplusplus
 }

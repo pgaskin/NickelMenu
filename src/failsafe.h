@@ -14,8 +14,9 @@ extern "C" {
 typedef struct nm_failsafe_t nm_failsafe_t;
 
 // nm_failsafe_create allocates and arms a failsafe mechanism for the currently
-// dlopen'd or LD_PRELOAD'd library.
-NM_PRIVATE nm_failsafe_t *nm_failsafe_create(char **err_out);
+// dlopen'd or LD_PRELOAD'd library. On error,  NULL is returned and nm_err is
+// set.
+NM_PRIVATE nm_failsafe_t *nm_failsafe_create();
 
 // nm_failsafe_destroy starts a pthread which disarms and frees the failsafe
 // after a delay. The nm_failsafe_t must not be used afterwards.

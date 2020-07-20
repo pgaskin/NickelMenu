@@ -100,7 +100,7 @@ override GENERATED += KoboRoot.tgz
 src/libnm.so: override CFLAGS   += $(PTHREAD_CFLAGS) -fvisibility=hidden -fPIC
 src/libnm.so: override CXXFLAGS += $(PTHREAD_CFLAGS) $(QT5CORE_CFLAGS) $(QT5WIDGETS_CFLAGS) -fvisibility=hidden -fvisibility-inlines-hidden -fPIC
 src/libnm.so: override LDFLAGS  += $(PTHREAD_LIBS) $(QT5CORE_LIBS) $(QT5WIDGETS_LIBS) -ldl -Wl,-soname,libnm.so
-src/libnm.so: src/qtplugin.o src/init.o src/config.o src/dlhook.o src/failsafe.o src/menu.o src/kfmon.o src/action.o src/action_c.o src/action_cc.o src/generator.o src/generator_c.o
+src/libnm.so: src/qtplugin.o src/init.o src/config.o src/dlhook.o src/failsafe.o src/menu.o src/kfmon.o src/action.o src/action_c.o src/action_cc.o src/generator.o src/generator_c.o src/util.o
 
 override LIBRARIES += src/libnm.so
 override MOCS      += src/qtplugin.moc

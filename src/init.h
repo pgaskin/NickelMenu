@@ -9,8 +9,9 @@ extern "C" {
 
 // nm_global_config_update updates and regenerates the config if needed. If the
 // menu items changed (i.e. the old items aren't valid anymore), the revision
-// will be incremented and returned (even if there was an error).
-int nm_global_config_update(char **err_out);
+// will be incremented and returned (even if there was an error). On error,
+// nm_err is set, and otherwise, it is cleared.
+int nm_global_config_update();
 
 // nm_global_config_items returns an array of pointers with the current menu
 // items (the pointer and the items it points to will remain valid until the

@@ -30,7 +30,6 @@ _nm_action_result_fmt(toast,  NM_ACTION_RESULT_TYPE_TOAST);
 void nm_action_result_free(nm_action_result_t *res) {
     if (!res)
         return;
-
     if (res->msg)
         free(res->msg);
     free(res);
