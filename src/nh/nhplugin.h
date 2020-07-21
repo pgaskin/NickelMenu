@@ -6,7 +6,9 @@
 // we make it a fake image plugin so we can have Qt automatically load it
 // without needing extra configuration (e.g. LD_PRELOAD, -plugin arg, etc).
 
-class NMPlugin : public QImageIOPlugin {
+// note: this class does not need to be renamed when using NickelHook, as
+// duplicate classes don't matter for separate plugins
+class NHPlugin : public QImageIOPlugin {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QImageIOHandlerFactoryInterface")
 public:

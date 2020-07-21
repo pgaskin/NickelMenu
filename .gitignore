@@ -1,33 +1,22 @@
 # make gitignore
-
-# KDevelop
 .kdev4/
-NickelMenu.kdev4
+*.kdev4
 .kateconfig
-
-# VSCode
 .vscode/
-
-# clangd
-compile_flags.txt
-
-# Build artifacts
+.idea/
+.clangd/
+compile_commands.json
 /KoboRoot.tgz
 /src/libnm.so
-
-/src/qtplugin.moc
-/src/qtplugin.o
-
-/src/failsafe.o
-/src/init.o
-/src/config.o
-/src/kfmon.o
 /src/action.o
-/src/util.o
-/src/dlhook.o
-/src/generator.o
 /src/action_c.o
+/src/config.o
+/src/generator.o
 /src/generator_c.o
-
-/src/menu.o
+/src/kfmon.o
+/src/util.o
+/src/nh/nh.o
 /src/action_cc.o
+/src/nickelmenu.o
+/src/nh/nhplugin.moc
+/src/nh/nhplugin.moc.o

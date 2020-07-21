@@ -9,8 +9,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "config.h"
 #include "generator.h"
-#include "menu.h"
 #include "kfmon.h"
 #include "util.h"
 
