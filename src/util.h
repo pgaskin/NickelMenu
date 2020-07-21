@@ -4,12 +4,8 @@
 extern "C" {
 #endif
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE // asprintf
-#endif
-
 #include <ctype.h>
-#include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <syslog.h>
 
@@ -22,7 +18,7 @@ extern "C" {
 #define NM_LOG_NAME "NickelMenu"
 #endif
 
-// Symbol visibility
+// Symbol visibility (to prevent conflicts when reusing parts of NM)
 #define NM_PUBLIC  __attribute__((visibility("default")))
 #define NM_PRIVATE __attribute__((visibility("hidden")))
 
@@ -37,37 +33,43 @@ inline char *strtrim(char *s) {
     return a;
 }
 
-// A bunch of useful macros to simplify error handling and logging.
-
 // NM_LOG writes a log message.
-#define NM_LOG(fmt, ...) syslog(LOG_DEBUG, "(" NM_LOG_NAME ") " fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__)
+#define NM_LOG(fmt, ...) syslog(LOG_DEBUG, ("(" NM_LOG_NAME ") " fmt " (%s:%d)"), ##__VA_ARGS__, __FILE__, __LINE__)
 
-// NM_RETURN returns ret, and if ret is NM_ERR_RET and err_out is not NULL, it
-// writes the formatted error message to *err_out as a malloc'd string. The
-// arguments may or may not be evaluated more than once.
-#define NM_RETURN(ret, fmt, ...) _NM_RETURN(0, ret, fmt, ##__VA_ARGS__)
-#define _NM_RETURN(noerr, ret, fmt, ...) ({                                                                     \
-    __typeof__(ret) _ret = (ret);                                                                               \
-    if (err_out) {                                                                                              \
-        if (!noerr && _ret == NM_ERR_RET) asprintf(err_out, fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__); \
-        else *err_out = NULL;                                                                                   \
-    }                                                                                                           \
-    return _ret;                                                                                                \
-})
+// Error handling (thread-safe):
 
-// NM_ASSERT is like assert, but it writes the formatted error message to
-// err_out as a malloc'd string, and returns NM_ERR_RET. Cond will always be
-// evaluated exactly once. The other arguments may or may not be evaluated one
-// or more times.
-#define NM_ASSERT(cond, fmt, ...) ({                                                             \
-    if (!(cond)) _NM_RETURN(0, NM_ERR_RET, fmt " (assertion failed: %s)", ##__VA_ARGS__, #cond); \
-})
+// nm_err returns the current error message and clears the error state. If there
+// isn't any error set, NULL is returned. The returned string is only valid on
+// the current thread until nm_err_set is called.
+NM_PRIVATE const char *nm_err();
 
-// NM_RETURN_ERR is the same as NM_RETURN(NM_ERR_RET, fmt, ...).
-#define NM_RETURN_ERR(fmt, ...) _NM_RETURN(0, NM_ERR_RET, fmt, ##__VA_ARGS__)
+// nm_err_peek is like nm_err, but doesn't clear the error state.
+NM_PRIVATE const char *nm_err_peek();
 
-// NM_RETURN_OK is the same as NM_RETURN(ret, "").
-#define NM_RETURN_OK(ret) _NM_RETURN(1, ret, "")
+// nm_err_set sets the current error message to the specified format string. If
+// fmt is NULL, the error is cleared. It is safe to use the return value of
+// nm_err as an argument. If fmt was not NULL, true is returned.
+NM_PRIVATE bool nm_err_set(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+
+// NM_ERR_SET set is like nm_err_set, but also includes information about the
+// current file/line. To set it to NULL, use nm_err_set directly.
+#define NM_ERR_SET(fmt, ...) \
+    nm_err_set((fmt " (%s:%d)"), ##__VA_ARGS__, __FILE__, __LINE__);
+
+// NM_ERR_RET is like NM_ERR_SET, but also returns the specified value.
+#define NM_ERR_RET(ret, fmt, ...) do { \
+    NM_ERR_SET(fmt, ##__VA_ARGS__);    \
+    return (ret);                      \
+} while (0)
+
+// NM_CHECK checks a condition and calls nm_err_set then returns the specified
+// value if the condition is false. Otherwise, nothing happens.
+#define NM_CHECK(ret, cond, fmt, ...) do {                             \
+    if (!(cond)) {                                                     \
+        nm_err_set((fmt " (check failed: %s)"), ##__VA_ARGS__, #cond); \
+        return (ret);                                                  \
+    }                                                                  \
+} while (0)
 
 #ifdef __cplusplus
 }

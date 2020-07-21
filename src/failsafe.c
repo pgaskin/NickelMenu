@@ -16,30 +16,27 @@ struct nm_failsafe_t {
     int  delay;
 };
 
-nm_failsafe_t *nm_failsafe_create(char **err_out) {
-    #define NM_ERR_RET NULL
-
+nm_failsafe_t *nm_failsafe_create() {
     NM_LOG("failsafe: allocating memory");
     nm_failsafe_t *fs;
-    NM_ASSERT((fs = calloc(1, sizeof(nm_failsafe_t))), "could not allocate memory");
+    NM_CHECK(NULL, (fs = calloc(1, sizeof(nm_failsafe_t))), "could not allocate memory");
 
     NM_LOG("failsafe: finding filenames");
     Dl_info info;
-    NM_ASSERT(dladdr(nm_failsafe_create, &info), "could not find own path");
-    NM_ASSERT(info.dli_fname, "dladdr did not return a filename");
+    NM_CHECK(NULL, dladdr(nm_failsafe_create, &info), "could not find own path");
+    NM_CHECK(NULL, info.dli_fname, "dladdr did not return a filename");
     char *d = strrchr(info.dli_fname, '.');
-    NM_ASSERT(!(d && !strcmp(d, ".failsafe")), "lib was loaded from the failsafe for some reason");
-    NM_ASSERT((fs->orig = realpath(info.dli_fname, NULL)), "could not resolve %s", info.dli_fname);
-    NM_ASSERT(asprintf(&fs->tmp, "%s.failsafe", fs->orig) != -1, "could not generate temp filename");
+    NM_CHECK(NULL, !(d && !strcmp(d, ".failsafe")), "lib was loaded from the failsafe for some reason");
+    NM_CHECK(NULL, (fs->orig = realpath(info.dli_fname, NULL)), "could not resolve %s", info.dli_fname);
+    NM_CHECK(NULL, asprintf(&fs->tmp, "%s.failsafe", fs->orig) != -1, "could not generate temp filename");
 
     NM_LOG("failsafe: ensuring own lib remains in memory even if it is dlclosed after being loaded with a dlopen");
-    NM_ASSERT(dlopen(fs->orig, RTLD_LAZY|RTLD_NODELETE), "could not dlopen self");
+    NM_CHECK(NULL, dlopen(fs->orig, RTLD_LAZY|RTLD_NODELETE), "could not dlopen self");
 
     NM_LOG("failsafe: renaming %s to %s", fs->orig, fs->tmp);
-    NM_ASSERT(!rename(fs->orig, fs->tmp), "could not rename lib");
+    NM_CHECK(NULL, !rename(fs->orig, fs->tmp), "could not rename lib");
 
-    NM_RETURN_OK(fs);
-    #undef NM_ERR_RET
+    return fs;
 }
 
 static void *_nm_failsafe_destroy(void* _fs) {

@@ -394,77 +394,64 @@ int nm_kfmon_list_request(const char *restrict ipc_cmd, kfmon_watch_list_t *list
 }
 
 // Giant ladder of fail
-void *nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out) {
-    #define NM_ERR_RET NULL
-
+bool nm_kfmon_error_handler(kfmon_ipc_errno_e status) {
     switch (status) {
-        // NOTE: Should never be passed a success status code!
         case KFMON_IPC_OK:
-            NM_RETURN_OK(NULL);
+            return nm_err_set(NULL);
         // Fail w/ the right log message
         case KFMON_IPC_ETIMEDOUT:
-            NM_RETURN_ERR("Timed out waiting for KFMon");
+            return nm_err_set("Timed out waiting for KFMon");
         case KFMON_IPC_EPIPE:
-            NM_RETURN_ERR("KFMon closed the connection");
+            return nm_err_set("KFMon closed the connection");
         case KFMON_IPC_ENODATA:
-            NM_RETURN_ERR("No more data to read");
+            return nm_err_set("No more data to read");
         case KFMON_IPC_READ_FAILURE:
             // NOTE: Let's hope close() won't mangle errno...
-            NM_RETURN_ERR("read: %m");
+            return nm_err_set("read: %m");
         case KFMON_IPC_SEND_FAILURE:
             // NOTE: Let's hope close() won't mangle errno...
-            NM_RETURN_ERR("send: %m");
+            return nm_err_set("send: %m");
         case KFMON_IPC_SOCKET_FAILURE:
-            NM_RETURN_ERR("Failed to create local KFMon IPC socket (socket: %m)");
+            return nm_err_set("Failed to create local KFMon IPC socket (socket: %m)");
         case KFMON_IPC_CONNECT_FAILURE:
-            NM_RETURN_ERR("KFMon IPC is down (connect: %m)");
+            return nm_err_set("KFMon IPC is down (connect: %m)");
         case KFMON_IPC_POLL_FAILURE:
             // NOTE: Let's hope close() won't mangle errno...
-            NM_RETURN_ERR("poll: %m");
+            return nm_err_set("poll: %m");
         case KFMON_IPC_CALLOC_FAILURE:
-            NM_RETURN_ERR("calloc: %m");
+            return nm_err_set("calloc: %m");
         case KFMON_IPC_REPLY_READ_FAILURE:
             // NOTE: Let's hope close() won't mangle errno...
-            NM_RETURN_ERR("Failed to read KFMon's reply (%m)");
+            return nm_err_set("Failed to read KFMon's reply (%m)");
         case KFMON_IPC_LIST_PARSE_FAILURE:
-            NM_RETURN_ERR("Failed to parse the list of watches (no separator found)");
+            return nm_err_set("Failed to parse the list of watches (no separator found)");
         case KFMON_IPC_ERR_INVALID_ID:
-            NM_RETURN_ERR("Requested to start an invalid watch index");
+            return nm_err_set("Requested to start an invalid watch index");
         case KFMON_IPC_ERR_INVALID_NAME:
-            NM_RETURN_ERR("Requested to trigger an invalid watch filename (expected the basename of the image trigger)");
+            return nm_err_set("Requested to trigger an invalid watch filename (expected the basename of the image trigger)");
         case KFMON_IPC_WARN_ALREADY_RUNNING:
-            NM_RETURN_ERR("Requested watch is already running");
+            return nm_err_set("Requested watch is already running");
         case KFMON_IPC_WARN_SPAWN_BLOCKED:
-            NM_RETURN_ERR("A spawn blocker is currently running");
+            return nm_err_set("A spawn blocker is currently running");
         case KFMON_IPC_WARN_SPAWN_INHIBITED:
-            NM_RETURN_ERR("Spawns are currently inhibited");
+            return nm_err_set("Spawns are currently inhibited");
         case KFMON_IPC_ERR_REALLY_MALFORMED_CMD:
-            NM_RETURN_ERR("KFMon couldn't parse our command");
+            return nm_err_set("KFMon couldn't parse our command");
         case KFMON_IPC_ERR_MALFORMED_CMD:
-            NM_RETURN_ERR("Bad command syntax");
+            return nm_err_set("Bad command syntax");
         case KFMON_IPC_ERR_INVALID_CMD:
-            NM_RETURN_ERR("Command wasn't recognized by KFMon");
+            return nm_err_set("Command wasn't recognized by KFMon");
         case KFMON_IPC_UNKNOWN_REPLY:
-            NM_RETURN_ERR("We couldn't make sense of KFMon's reply");
+            return nm_err_set("We couldn't make sense of KFMon's reply");
         case KFMON_IPC_EAGAIN:
         default:
             // Should never happen
-            NM_RETURN_ERR("Something went wrong");
+            return nm_err_set("Something went wrong");
     }
-
-    #undef NM_ERR_RET
 }
 
-nm_action_result_t *nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out) {
-    #define NM_ERR_RET NULL
-
-    switch (status) {
-        case KFMON_IPC_OK:
-            NM_RETURN_OK(nm_action_result_silent());
-        // Fail w/ the right log message
-        default:
-            return nm_kfmon_error_handler(status, err_out);
-    }
-
-    #undef NM_ERR_RET
+nm_action_result_t *nm_kfmon_return_handler(kfmon_ipc_errno_e status) {
+    if (!nm_kfmon_error_handler(status))
+        return nm_action_result_silent();
+    return NULL;
 }

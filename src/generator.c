@@ -13,13 +13,14 @@
 nm_menu_item_t **nm_generator_do(nm_generator_t *gen, size_t *sz_out) {
     NM_LOG("generator: running generator (%s) (%s) (%d) (%p)", gen->desc, gen->arg, gen->loc, gen->generate);
 
-    char *err;
     struct timespec old = gen->time;
     size_t sz = (size_t)(-1); // this should always be set by generate upon success, but we'll initialize it just in case
-    nm_menu_item_t **items = gen->generate(gen->arg, &gen->time, &sz, &err);
+    nm_menu_item_t **items = gen->generate(gen->arg, &gen->time, &sz);
 
     if (items && old.tv_sec == gen->time.tv_sec && old.tv_nsec == gen->time.tv_nsec)
         NM_LOG("generator: bug: new items were returned, but time wasn't changed");
+
+    const char *err = nm_err();
 
     if (!old.tv_sec && !old.tv_nsec && !err && !items)
         NM_LOG("generator: warning: no existing items (time == 0), but no new items or error were returned");
@@ -39,7 +40,6 @@ nm_menu_item_t **nm_generator_do(nm_generator_t *gen, size_t *sz_out) {
         asprintf(&items[0]->action->arg, "%s: %s", gen->desc, err);
         items[0]->action->on_failure = true;
         items[0]->action->on_success = true;
-        free(err);
     }
 
     if (!err && !items && (old.tv_sec != gen->time.tv_sec || old.tv_nsec != gen->time.tv_nsec))

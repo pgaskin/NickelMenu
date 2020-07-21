@@ -60,8 +60,7 @@ void (*MainWindowController_toast)(MainWindowController*, QString const&, QStrin
 static void (*LightMenuSeparator_LightMenuSeparator)(void*, QWidget*);
 static void (*BoldMenuSeparator_BoldMenuSeparator)(void*, QWidget*);
 
-extern "C" int nm_menu_hook(void *libnickel, char **err_out) {
-    #define NM_ERR_RET 1
+extern "C" int nm_menu_hook(void *libnickel) {
     //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
     reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem) = dlsym(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_");
     //libnickel 4.6 * _ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb
@@ -77,26 +76,25 @@ extern "C" int nm_menu_hook(void *libnickel, char **err_out) {
     //libnickel 4.6 * _ZN17BoldMenuSeparatorC1EP7QWidget
     reinterpret_cast<void*&>(BoldMenuSeparator_BoldMenuSeparator) = dlsym(libnickel, "_ZN17BoldMenuSeparatorC1EP7QWidget");
 
-    NM_ASSERT(AbstractNickelMenuController_createMenuTextItem, "unsupported firmware: could not find AbstractNickelMenuController::createMenuTextItem(void* _this, QMenu*, QString, bool, bool, QString const&)");
-    NM_ASSERT(AbstractNickelMenuController_createAction, "unsupported firmware: could not find AbstractNickelMenuController::createAction(void* _this, QMenu*, QWidget*, bool, bool, bool)");
-    NM_ASSERT(ConfirmationDialogFactory_showOKDialog, "unsupported firmware: could not find ConfirmationDialogFactory::showOKDialog(String const&, QString const&)");
-    NM_ASSERT(MainWindowController_sharedInstance, "unsupported firmware: could not find MainWindowController::sharedInstance()");
-    NM_ASSERT(MainWindowController_toast, "unsupported firmware: could not find MainWindowController::toast(QString const&, QString const&, int)");
+    NM_CHECK(1, AbstractNickelMenuController_createMenuTextItem, "unsupported firmware: could not find AbstractNickelMenuController::createMenuTextItem(void* _this, QMenu*, QString, bool, bool, QString const&)");
+    NM_CHECK(1, AbstractNickelMenuController_createAction, "unsupported firmware: could not find AbstractNickelMenuController::createAction(void* _this, QMenu*, QWidget*, bool, bool, bool)");
+    NM_CHECK(1, ConfirmationDialogFactory_showOKDialog, "unsupported firmware: could not find ConfirmationDialogFactory::showOKDialog(String const&, QString const&)");
+    NM_CHECK(1, MainWindowController_sharedInstance, "unsupported firmware: could not find MainWindowController::sharedInstance()");
+    NM_CHECK(1, MainWindowController_toast, "unsupported firmware: could not find MainWindowController::toast(QString const&, QString const&, int)");
+
     if (!LightMenuSeparator_LightMenuSeparator)
         NM_LOG("warning: could not find LightMenuSeparator constructor, falling back to generic separators");
     if (!BoldMenuSeparator_BoldMenuSeparator)
         NM_LOG("warning: could not find BoldMenuSeparator constructor, falling back to generic separators");
 
     void* nmh = dlsym(RTLD_DEFAULT, "_nm_menu_hook");
-    NM_ASSERT(nmh, "internal error: could not dlsym _nm_menu_hook");
+    NM_CHECK(1, nmh, "internal error: could not dlsym _nm_menu_hook");
 
-    char *err;
     //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
-    reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem_orig) = nm_dlhook(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", nmh, &err);
-    NM_ASSERT(AbstractNickelMenuController_createMenuTextItem_orig, "failed to hook _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_: %s", err);
+    reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem_orig) = nm_dlhook(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", nmh);
+    NM_CHECK(1, AbstractNickelMenuController_createMenuTextItem_orig, "failed to hook _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_: %s", nm_err());
 
-    NM_RETURN_OK(0);
-    #undef NM_ERR_RET
+    return 0;
 }
 
 // AbstractNickelMenuController_createAction_before wraps
@@ -141,7 +139,7 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
     int rev_o = menu->property("nm_config_rev").toInt();
 
     NM_LOG("checking for config updates (current revision: %d)", rev_o);
-    int rev_n = nm_global_config_update(NULL); // if there was an error it will be returned as a menu item anyways (and updated will be true)
+    int rev_n = nm_global_config_update(); // if there was an error it will be returned as a menu item anyways (and updated will be true)
     NM_LOG("new revision = %d%s", rev_n, rev_n == rev_o ? "" : " (changed)");
 
     NM_LOG("checking for existing items added by nm");
@@ -202,7 +200,7 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
 }
 
 void nm_menu_item_do(nm_menu_item_t *it) {
-    char *err = NULL;
+    const char *err = NULL;
     bool success = true;
     int skip = 0;
 
@@ -220,9 +218,9 @@ void nm_menu_item_do(nm_menu_item_t *it) {
             continue;
         }
 
-        free(err); // free the previous error if it is not NULL (so the last error can be saved for later)
+        nm_action_result_t *res = cur->act(cur->arg);
+        err = nm_err();
 
-        nm_action_result_t *res = cur->act(cur->arg, &err);
         if (err == NULL && res && res->type == NM_ACTION_RESULT_TYPE_SKIP) {
             NM_LOG("...not updating success flag (value=%d) for skip result", success);
         } else if (!(success = err == NULL)) {
@@ -266,7 +264,6 @@ void nm_menu_item_do(nm_menu_item_t *it) {
     if (err) {
         NM_LOG("last action returned error %s", err);
         ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(err));
-        free(err);
     }
 }
 

@@ -4,6 +4,7 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -73,11 +74,12 @@ void kfmon_teardown_list(kfmon_watch_list_t *list);
 // Allocate a single new node to the list
 int kfmon_grow_list(kfmon_watch_list_t *list);
 
-// Given one of the error codes listed above, return with a formatted error message
-void *nm_kfmon_error_handler(kfmon_ipc_errno_e status, char **err_out);
+// If status is success, false is returned. Otherwise, true is returned and
+// nm_err is set.
+bool nm_kfmon_error_handler(kfmon_ipc_errno_e status);
 
-// Given one of the error codes listed above, return properly from an action. Success is silent.
-nm_action_result_t *nm_kfmon_return_handler(kfmon_ipc_errno_e status, char **err_out);
+// Given one of the error codes listed above, return properly from an action.
+nm_action_result_t *nm_kfmon_return_handler(kfmon_ipc_errno_e status);
 
 // Send a simple KFMon IPC request, one where the reply is only used for its diagnostic value.
 int nm_kfmon_simple_request(const char *restrict ipc_cmd, const char *restrict ipc_arg);

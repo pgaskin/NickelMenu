@@ -15,8 +15,6 @@
 #include "util.h"
 
 __attribute__((constructor)) void nm_init() {
-    char *err;
-
     NM_LOG("version: " NM_VERSION);
     #ifdef NM_UNINSTALL_CONFIGDIR
     NM_LOG("feature: NM_UNINSTALL_CONFIGDIR: true");
@@ -28,9 +26,8 @@ __attribute__((constructor)) void nm_init() {
     NM_LOG("init: creating failsafe");
 
     nm_failsafe_t *fs;
-    if (!(fs = nm_failsafe_create(&err)) && err) {
-        NM_LOG("error: could not create failsafe: %s, stopping", err);
-        free(err);
+    if (!(fs = nm_failsafe_create())) {
+        NM_LOG("error: could not create failsafe: %s, stopping", nm_err());
         goto stop;
     }
 
@@ -55,10 +52,9 @@ __attribute__((constructor)) void nm_init() {
 
     NM_LOG("init: updating config");
 
-    int rev = nm_global_config_update(&err);
-    if (err) {
-        NM_LOG("init: error parsing config, will show a menu item with the error: %s", err);
-    }
+    int rev = nm_global_config_update();
+    if (nm_err_peek())
+        NM_LOG("init: error parsing config, will show a menu item with the error: %s", nm_err());
 
     size_t ntmp = SIZE_MAX;
     if (rev == -1) {
@@ -82,9 +78,8 @@ __attribute__((constructor)) void nm_init() {
 
     NM_LOG("init: hooking libnickel");
 
-    if (nm_menu_hook(libnickel, &err) && err) {
-        NM_LOG("error: could not hook libnickel: %s, stopping", err);
-        free(err);
+    if (nm_menu_hook(libnickel)) {
+        NM_LOG("error: could not hook libnickel: %s, stopping", nm_err());
         goto stop_fs;
     }
 
@@ -154,31 +149,29 @@ static void nm_global_config_replace(nm_config_t *cfg, const char *err) {
         NM_LOG("could not allocate memory");
 }
 
-int nm_global_config_update(char **err_out) {
-    #define NM_ERR_RET nm_global_menu_config_rev
-
-    char *err;
-
+int nm_global_config_update() {
     NM_LOG("global: scanning for config files");
-    bool updated = nm_config_files_update(&nm_global_menu_config_files, &err);
-    if (err) {
+    int state = nm_config_files_update(&nm_global_menu_config_files);
+    if (state == -1) {
+        const char *err = nm_err();
         NM_LOG("... error: %s", err);
         NM_LOG("global: freeing old config and replacing with error item");
         nm_global_config_replace(NULL, err);
         nm_global_menu_config_rev++;
-        NM_RETURN_ERR("scan for config files: %s", err);
+        NM_ERR_RET(nm_global_menu_config_rev, "scan for config files: %s", err);
     }
-    NM_LOG("global:%s changes detected", updated ? "" : " no");
+    NM_LOG("global:%s changes detected", state == 0 ? "" : " no");
 
-    if (updated) {
+    if (state == 0) {
         NM_LOG("global: parsing new config");
-        nm_config_t *cfg = nm_config_parse(nm_global_menu_config_files, &err);
-        if (err) {
+        nm_config_t *cfg = nm_config_parse(nm_global_menu_config_files);
+        if (!cfg) {
+            const char *err = nm_err();
             NM_LOG("... error: %s", err);
             NM_LOG("global: freeing old config and replacing with error item");
             nm_global_config_replace(NULL, err);
             nm_global_menu_config_rev++;
-            NM_RETURN_ERR("parse config files: %s", err);
+            NM_ERR_RET(nm_global_menu_config_rev, "parse config files: %s", err);
         }
 
         NM_LOG("global: config updated, freeing old config and replacing with new one");
@@ -210,7 +203,6 @@ int nm_global_config_update(char **err_out) {
         NM_LOG("done replacing items");
     }
 
-    NM_RETURN_OK(nm_global_menu_config_rev);
-
-    #undef NM_ERR_RET
+    nm_err_set(NULL);
+    return nm_global_menu_config_rev;
 }
