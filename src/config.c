@@ -226,12 +226,13 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
     nm_menu_action_t tmp_act;
     nm_generator_t   tmp_gn;
 
-    #define RETERR(fmt, ...) do {                  \
-        if (cfgfile)                               \
-            fclose(cfgfile);                       \
-        free(line);                                \
-        nm_config_free(state.cfg_c);               \
-        NM_ERR_RET(NULL, fmt, ##__VA_ARGS__);      \
+    #define RETERR(fmt, ...) do {       \
+        NM_ERR_SET(fmt, ##__VA_ARGS__); \
+        if (cfgfile)                    \
+            fclose(cfgfile);            \
+        free(line);                     \
+        nm_config_free(state.cfg_c);    \
+        return NULL;                    \
     } while (0)
 
     for (nm_config_file_t *cf = files; cf; cf = cf->next) {
