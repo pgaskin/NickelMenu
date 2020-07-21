@@ -1,4 +1,4 @@
-include src/nh/NickelHook.mk
+include nh/NickelHook.mk
 
 override PKGCONF  += Qt5Widgets
 override LIBRARY  := src/libnm.so
@@ -12,4 +12,4 @@ strip:
 	$(STRIP) --strip-unneeded src/libnm.so
 .PHONY: strip
 
-include src/nh/NickelHook.mk
+include nh/NickelHook.mk
