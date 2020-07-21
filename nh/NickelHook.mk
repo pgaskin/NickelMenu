@@ -179,7 +179,7 @@ $(OBJECTS_MOC): %.moc.o: %.moc
 $(MOCS_MOC): %.moc: %.h
 	$(call nh_cmd_moch,$@,$^)
 
-override nh_clangd_file = {"directory": "$(realpath $(CURDIR))", "file": "$(2)", "command": "$(subst \,\\,$(subst ",\",$(call $(1),$(2),$(3))))"}
+override nh_clangd_file = {"directory": "$(realpath $(CURDIR))", "file": "$(3)", "command": "$(subst \,\\,$(subst ",\",$(call $(1),$(2),$(3))))"}
 override nh_clangd_objs = $(foreach object,$(3),$(nh_comma) $(call nh_clangd_file,nh_cmd_$(1),$(object),$(patsubst %.o,$(2),$(object))))
 
 clangd:
