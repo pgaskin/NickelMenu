@@ -76,7 +76,7 @@ override GENERATED   += KoboRoot.tgz $(LIBRARY) $(OBJECTS_C) $(OBJECTS_CXX) $(MO
 
 ## gitignore
 # override GITIGNORE += <pattern>
-override GITIGNORE += .kdev4/ *.kdev4 .kateconfig .vscode/ .idea/ .clangd/ compile_commands.json $(addprefix /,$(GENERATED))
+override GITIGNORE += .kdev4/ *.kdev4 .kateconfig .vscode/ .idea/ .clangd/ .cache/ compile_commands.json $(addprefix /,$(GENERATED))
 
 ###
 

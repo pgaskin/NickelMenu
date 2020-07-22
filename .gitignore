@@ -5,6 +5,7 @@
 .vscode/
 .idea/
 .clangd/
+.cache/
 compile_commands.json
 /KoboRoot.tgz
 /src/libnm.so
