@@ -210,12 +210,12 @@ override nh_namel := $(shell echo "$(nh_names)" | tr '[:upper:]' '[:lower:]')
 $(if $(nh_namet),,$(error NAME must contain at least one uppercase letter, preferably more to be unique))
 
 LIBRARY  ?= lib$(nh_namel).so
-NHSOURCE ?= src/$(patsubst lib%,%,$(patsubst %.so,%,$(LIBRARY))).cc
+NHSOURCE ?= src/$(nh_namel).cc
 SOURCES  ?= $(wildcard src/*.c src/*.cc)
 
 override nh_dir    := $(dir $(lastword $(MAKEFILE_LIST)))
 override nh_mkdir   = @echo "$@"; mkdir $@
-override nh_create  = @echo "$@"; echo > $@
+override nh_create  = @echo "$@"; echo -n > $@
 override nh_write   = @echo "| $(subst ",\",$(1))"; echo "$(subst ",\",$(1))" >> $@
 
 $(if $(wildcard $(NHSOURCE)),$(info Warning: File named $(NHSOURCE) found in src dir, not generating NickelHook base.))
