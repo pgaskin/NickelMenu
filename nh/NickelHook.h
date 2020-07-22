@@ -17,8 +17,6 @@ extern "C" {
         __VA_ARGS__                        \
     };                                     \
 
-#define NH_LOG(fmt, ...) syslog(LOG_DEBUG, "(%s) " fmt, NickelHook.info->name, ##__VA_ARGS__)
-
 #define nh_symptr(sym) *(void**)(&sym)
 #define nh_symoutptr(sym) (void**)(&sym)
 
