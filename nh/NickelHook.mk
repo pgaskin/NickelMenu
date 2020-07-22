@@ -55,7 +55,7 @@ override LDFLAGS  += -Wl,--no-undefined -Wl,-rpath,/usr/local/Kobo -Wl,-rpath,/u
 # override LIBRARY := <soname>
 $(if $(LIBRARY),,$(error LIBRARY must be set to the soname of the target library (example: libnm.so)))
 
-## variable: sources (*.c, *.cc)
+## variable: sources (*.c, *.cc, *.cpp)
 $(if $(SOURCES),,$(error SOURCES must be set to the *.c, *.cc source files))
 override SOURCES += $(NICKELHOOK)nh.c
 
@@ -68,11 +68,12 @@ override KOBOROOT += $(LIBRARY):/usr/local/Kobo/imageformats/$(notdir $(LIBRARY)
 
 ## generated files
 # override GENERATED += <file>
-override OBJECTS_C   := $(patsubst %.c,%.o,$(filter %.c,$(SOURCES)))
-override OBJECTS_CXX := $(patsubst %.cc,%.o,$(filter %.cc,$(SOURCES)))
-override MOCS_MOC    := $(patsubst %.h,%.moc,$(filter %.h,$(MOCS)))
-override OBJECTS_MOC := $(addsuffix .o,$(MOCS_MOC))
-override GENERATED   += KoboRoot.tgz $(LIBRARY) $(OBJECTS_C) $(OBJECTS_CXX) $(MOCS_MOC) $(OBJECTS_MOC)
+override OBJECTS_C    := $(filter %.o,$(SOURCES:%.c=%.o))
+override OBJECTS_CXX  := $(filter %.o,$(SOURCES:%.cc=%.o))
+override OBJECTS_CXX1 := $(filter %.o,$(SOURCES:%.cpp=%.o))
+override MOCS_MOC     := $(filter %.moc,$(MOCS:%.h=%.moc))
+override OBJECTS_MOC  := $(MOCS_MOC:%=%.o)
+override GENERATED    += KoboRoot.tgz $(LIBRARY) $(OBJECTS_C) $(OBJECTS_CXX) $(OBJECTS_CXX1) $(MOCS_MOC) $(OBJECTS_MOC)
 
 ## gitignore
 # override GITIGNORE += <pattern>
@@ -160,7 +161,7 @@ koboroot:
 %.so clangd: override CXXFLAGS += -fPIC
 %.so clangd: override LDFLAGS  += -Wl,-soname,$(notdir $@)
 
-$(LIBRARY): $(OBJECTS_C) $(OBJECTS_CXX) $(OBJECTS_MOC)
+$(LIBRARY): $(OBJECTS_C) $(OBJECTS_CXX) $(OBJECTS_CXX1) $(OBJECTS_MOC)
 
 override nh_cmd_so   = $(CXX) $(CPPFLAGS) $(CXXFLAGS) -shared -o $(1) $(2) $(LDFLAGS)
 override nh_cmd_c    = $(CC) $(CPPFLAGS) $(CFLAGS) -c $(2) -o $(1)
@@ -173,6 +174,8 @@ $(LIBRARY): %.so:
 $(OBJECTS_C): %.o: %.c
 	$(call nh_cmd_c,$@,$^)
 $(OBJECTS_CXX): %.o: %.cc
+	$(call nh_cmd_cc,$@,$^)
+$(OBJECTS_CXX1): %.o: %.cpp
 	$(call nh_cmd_cc,$@,$^)
 $(OBJECTS_MOC): %.moc.o: %.moc
 	$(call nh_cmd_moco,$@,$^)
@@ -188,6 +191,7 @@ clangd:
 	echo -n "$(subst ",\",$(strip \
 		$(call nh_clangd_objs,c,%.c,$(OBJECTS_C)) \
 		$(call nh_clangd_objs,cc,%.cc,$(OBJECTS_CXX)) \
+		$(call nh_clangd_objs,cc,%.cpp,$(OBJECTS_CXX1)) \
 		$(call nh_clangd_objs,moco,%,$(OBJECTS_MOC)) \
 	))" | tail -c+3 | sed 's/ , /,\n    /g' >> compile_commands.json
 	echo -n "\n]" >> compile_commands.json
