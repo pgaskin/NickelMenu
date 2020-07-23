@@ -1,4 +1,4 @@
-include nh/NickelHook.mk
+include NickelHook/NickelHook.mk
 
 override PKGCONF  += Qt5Widgets
 override LIBRARY  := src/libnm.so
@@ -16,4 +16,4 @@ ifeq ($(NM_UNINSTALL_CONFIGDIR),1)
 override CPPFLAGS += -DNM_UNINSTALL_CONFIGDIR
 endif
 
-include nh/NickelHook.mk
+include NickelHook/NickelHook.mk

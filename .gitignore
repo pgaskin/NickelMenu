@@ -16,8 +16,5 @@ compile_commands.json
 /src/generator_c.o
 /src/kfmon.o
 /src/util.o
-/nh/nh.o
 /src/action_cc.o
 /src/nickelmenu.o
-/nh/nhplugin.moc
-/nh/nhplugin.moc.o
