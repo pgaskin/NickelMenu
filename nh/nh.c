@@ -107,6 +107,7 @@ void nh_init() {
         nh_log("(NickelHook) checking for uninstall flag '%s'", nh->info->uninstall_flag);
         if (!access(nh->info->uninstall_flag, F_OK)) {
             nh_log("(NickelHook) ... info: flag found, uninstalling");
+            unlink(nh->info->uninstall_flag);
             nh_failsafe_uninstall(fs);
             goto nh_init_return_no_fs;
         }
