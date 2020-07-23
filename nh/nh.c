@@ -7,11 +7,13 @@
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <syslog.h>
+#include <time.h>
 #include <unistd.h>
 
 // --- public api
@@ -62,10 +64,15 @@ __attribute__((visibility("hidden"))) void nh_failsafe_destroy(nh_failsafe_t *fs
 // used afterwards.
 __attribute__((visibility("hidden"))) void nh_failsafe_uninstall(nh_failsafe_t *fs);
 
-// --- implementation
+// --- init
 
 void nh_init() {
     const struct nh *nh = &NickelHook;
+
+    if (!nh->info) {
+        syslog(LOG_DEBUG, "(NickelHook) fatal: NickelHook->info is NULL");
+        return;
+    }
 
     nh_log("(NickelHook) initializing '%s' (version: %s)", nh->info->name, NH_VERSION);
 
@@ -131,7 +138,7 @@ void nh_init() {
     nh_log("(NickelHook) resolving symbols");
 
     for (struct nh_dlsym *v = nh->dlsym; v && v->name; v++) {
-        nh_log("(NickelHook) info: nh_dlsym: loading symbol '%s' from RTLD_DEFAULT to %p%s%s%s%s", v->name, v->out, v->desc ? " (desc: " : "", v->desc ? v->desc : "", v->desc ? ")" : "", v->optional ? " (optional)" : "");
+        nh_log("(NickelHook) info: nh_dlsym: loading symbol '%s' from RTLD_DEFAULT to %p%s%s%s%s", v->name, v->out, v->desc ? " (desc: " : "", v->desc ?: "", v->desc ? ")" : "", v->optional ? " (optional)" : "");
         if (!(*v->out = dlsym(RTLD_DEFAULT, v->name))) {
             if (!v->optional) {
                 nh_log("(NickelHook) ... fatal: could not load symbol: %s", dlerror());
@@ -146,7 +153,7 @@ void nh_init() {
     struct nh_hook *e = NULL;
 
     for (struct nh_hook *v = nh->hook; v && v->sym; v++) {
-        nh_log("(NickelHook) info: nh_hook: setting hook on ('%s', '%s') to (self, '%s')%s%s%s%s", v->lib, v->sym, v->sym_new, v->desc ? " (desc: " : "", v->desc ? v->desc : "", v->desc ? ")" : "", v->optional ? " (optional)" : "");
+        nh_log("(NickelHook) info: nh_hook: setting hook on ('%s', '%s') to (self, '%s')%s%s%s%s", v->lib, v->sym, v->sym_new, v->desc ? " (desc: " : "", v->desc ?: "", v->desc ? ")" : "", v->optional ? " (optional)" : "");
 
         *v->out = NULL;
 
@@ -213,7 +220,7 @@ nh_init_return_err_rhook:
     }
 
 nh_init_return_err:
-    nh_log("(NickelHook) error");
+    nh_log("(NickelHook) fatal error");
     nh_dump_log();
 
 nh_init_return:
@@ -229,24 +236,33 @@ nh_init_return_no_fs:
     return;
 }
 
+// --- log
+
 void nh_log(const char *fmt, ...) {
     static __thread char buf[256] = {0};
+    int n;
 
-    size_t n = 0;
-    if (NickelHook.info->name)
-        n = snprintf(buf, sizeof(buf), "(%s) ", NickelHook.info->name);
+    if ((n = snprintf(buf, sizeof(buf), "(%s) ", NickelHook.info->name ?: "???")) < 0)
+        n = 0;
 
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(&buf[n], sizeof(buf)-n, fmt, args);
-    va_end(args);
+    if (fmt) {
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(&buf[n], sizeof(buf)-n, fmt, args);
+        va_end(args);
+    }
 
     buf[sizeof(buf)-1] = '\0';
     syslog(LOG_DEBUG, "%s", buf);
 }
 
 void nh_dump_log() {
-    nh_log("log dump not implemented yet, use logread or devmode instead");
+    char cmd[PATH_MAX];
+    time_t t = time(NULL);
+    struct tm *l = localtime(&t);
+    if (!l || snprintf(cmd, sizeof(cmd), "logread > '/mnt/onboard/%s_%d-%02d-%02d_%02d-%02d-%02d.log'", NickelHook.info->name ?: "NickelHook", l->tm_year, l->tm_mon, l->tm_mday, l->tm_hour, l->tm_min, l->tm_sec) < 0)
+        strcpy(cmd, "logread > '/mnt/onboard/NickelHook.log'");
+    system(cmd);
 }
 
 // --- dlhook

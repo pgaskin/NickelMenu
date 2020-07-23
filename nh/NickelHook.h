@@ -67,12 +67,10 @@ struct nh_dlsym {
 // for all logging. Messages larger than 256 bytes will be silently  truncated.
 __attribute__((visibility("default"))) void nh_log(const char *fmt, ...) __attribute((format(printf, 1, 2)));
 
-// nh_dump_log dumps recent log messages to a file on the SD card in the format
-// `/mnt/onboard/.kobo/NickelHook_{NickelHook.info->name}.log`. This is not
-// implemented yet and does nothing (it will be implemented as a 256KB ring
-// buffer). This is intended for debugging or for dumping the log after a
-// failure. It is not recommended to dump the log for minor errors, especially
-// if they occur often.
+// nh_dump_log dumps the syslog to a file on the user storage in the format
+// `/mnt/onboard/.kobo/{NickelHook.info->name ?: "NickelHook"}_YYYY-MM-DD_HH-MM-SS.log`.
+// This is intended for debugging or for dumping the log after a failure. It
+// will be automatically called by NickelHook if initialization fails.
 __attribute__((visibility("default"))) void nh_dump_log();
 
 #ifdef __cplusplus
