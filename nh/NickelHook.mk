@@ -12,11 +12,11 @@ endef
 ifneq ($(firstword $(MAKEFILE_LIST)),$(lastword $(MAKEFILE_LIST)))
 
 ifndef nh_top
-CROSS_COMPILE  = arm-nickel-linux-gnueabihf-
-MOC            = moc
-CC             = $(CROSS_COMPILE)gcc
-CXX            = $(CROSS_COMPILE)g++
-PKG_CONFIG     = $(CROSS_COMPILE)pkg-config
+CROSS_COMPILE = arm-nickel-linux-gnueabihf-
+MOC           = moc
+CC            = $(CROSS_COMPILE)gcc
+CXX           = $(CROSS_COMPILE)g++
+PKG_CONFIG    = $(CROSS_COMPILE)pkg-config
 
 DESTDIR =
 
@@ -84,6 +84,12 @@ override GITIGNORE += .kdev4/ *.kdev4 .kateconfig .vscode/ .idea/ .clangd/ .cach
 ifneq ($(if $(MAKECMDGOALS),$(if $(filter-out $(SKIPCONFIGURE),$(MAKECMDGOALS)),YES,NO),YES),YES)
  $(info -- Skipping configure)
 else
+
+ifeq ($(CROSS_COMPILE),arm-nickel-linux-gnueabihf-)
+$(if $(shell which $(CROSS_COMPILE)gcc),,$(error Could not find NickelTC. NickelTC can be downloaded from https://github.com/pgaskin/NickelTC/actions?query=branch%3Amaster+is%3Asuccess or used from the Docker image geek1011/nickeltc))
+else
+$(if $(filter clangd,$(MAKECMDGOALS)),,$(info -- Warning: Not using NickelTC (or it was compiled with a different prefix), built library may not work properly on the device.))
+endif
 
 # get version info
 ifndef VERSION
@@ -227,7 +233,7 @@ $(if $(wildcard Makefile),$(info Warning: Makefile already exists, not generatin
 
 all: Makefile src $(NHSOURCE)
 	@echo "Finishing up."
-	make gitignore
+	$(MAKE) gitignore
 .PHONY: all
 
 Makefile:
