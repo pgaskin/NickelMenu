@@ -12,4 +12,8 @@ strip:
 	$(STRIP) --strip-unneeded src/libnm.so
 .PHONY: strip
 
+ifeq ($(NM_UNINSTALL_CONFIGDIR),1)
+override CPPFLAGS += -DNM_UNINSTALL_CONFIGDIR
+endif
+
 include nh/NickelHook.mk
