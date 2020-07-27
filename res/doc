@@ -168,3 +168,8 @@
 # or manually uninstall it by deleting libnm.so. You can also uninstall it by
 # triggering the failsafe mechanism by turning your Kobo off within 20 seconds
 # of turning it on.
+#
+# Note: If you are embedding a NickelMenu config in your own mod, please name it
+# something unique to avoid overwriting someone's existing configuration. In
+# addition, please do not include NickelMenu itself in it unless you are
+# planning to update it as new releases are made.
