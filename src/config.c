@@ -13,7 +13,6 @@
 #include "action.h"
 #include "config.h"
 #include "generator.h"
-#include "menu.h"
 #include "util.h"
 
 struct nm_config_file_t {
@@ -21,7 +20,6 @@ struct nm_config_file_t {
     struct timespec  mtime;
     nm_config_file_t *next;
 };
-
 
 // nm_config_files_filter skips special files, including:
 // - dotfiles
@@ -670,4 +668,119 @@ void nm_config_free(nm_config_t *cfg) {
 
         cfg = n;
     }
+}
+
+// note: not thread safe
+static nm_config_file_t  *nm_global_menu_config_files = NULL; // updated in-place by nm_global_config_update
+static      nm_config_t  *nm_global_menu_config       = NULL; // updated by nm_global_config_update, replaced by nm_global_config_replace, NULL on error
+static   nm_menu_item_t **nm_global_menu_config_items = NULL; // updated by nm_global_config_replace to an error message or the items from nm_global_menu_config
+static           size_t   nm_global_menu_config_n     = 0;    // ^
+static              int   nm_global_menu_config_rev   = -1;   // incremented by nm_global_config_update whenever the config items change for any reason
+
+nm_menu_item_t **nm_global_config_items(size_t *n_out) {
+    if (n_out)
+        *n_out = nm_global_menu_config_n;
+    return nm_global_menu_config_items;
+}
+
+static void nm_global_config_replace(nm_config_t *cfg, const char *err) {
+    if (nm_global_menu_config_n)
+        nm_global_menu_config_n = 0;
+
+    if (nm_global_menu_config_items) {
+        free(nm_global_menu_config_items);
+        nm_global_menu_config_items = NULL;
+    }
+
+    if (nm_global_menu_config) {
+        nm_config_free(nm_global_menu_config);
+        nm_global_menu_config = NULL;
+    }
+
+    if (err && cfg)
+        nm_config_free(cfg);
+
+    // this isn't strictly necessary, but we should always try to reparse it
+    // every time just in case the error was temporary
+    if (err && nm_global_menu_config_files) {
+        nm_config_files_free(nm_global_menu_config_files);
+        nm_global_menu_config_files = NULL;
+    }
+
+    if (err) {
+        nm_global_menu_config_n        = 1;
+        nm_global_menu_config_items    = calloc(nm_global_menu_config_n, sizeof(nm_menu_item_t*));
+        nm_global_menu_config_items[0] = calloc(1, sizeof(nm_menu_item_t));
+        nm_global_menu_config_items[0]->loc = NM_MENU_LOCATION_MAIN_MENU;
+        nm_global_menu_config_items[0]->lbl = strdup("Config Error");
+        nm_global_menu_config_items[0]->action = calloc(1, sizeof(nm_menu_action_t));
+        nm_global_menu_config_items[0]->action->arg = strdup(err);
+        nm_global_menu_config_items[0]->action->act = NM_ACTION(dbg_msg);
+        nm_global_menu_config_items[0]->action->on_failure = true;
+        nm_global_menu_config_items[0]->action->on_success = true;
+        return;
+    }
+
+    nm_global_menu_config = cfg;
+    nm_global_menu_config_items = nm_config_get_menu(cfg, &nm_global_menu_config_n);
+    if (!nm_global_menu_config_items)
+        NM_LOG("could not allocate memory");
+}
+
+int nm_global_config_update() {
+    NM_LOG("global: scanning for config files");
+    int state = nm_config_files_update(&nm_global_menu_config_files);
+    if (state == -1) {
+        const char *err = nm_err();
+        NM_LOG("... error: %s", err);
+        NM_LOG("global: freeing old config and replacing with error item");
+        nm_global_config_replace(NULL, err);
+        nm_global_menu_config_rev++;
+        NM_ERR_RET(nm_global_menu_config_rev, "scan for config files: %s", err);
+    }
+    NM_LOG("global:%s changes detected", state == 0 ? "" : " no");
+
+    if (state == 0) {
+        NM_LOG("global: parsing new config");
+        nm_config_t *cfg = nm_config_parse(nm_global_menu_config_files);
+        if (!cfg) {
+            const char *err = nm_err();
+            NM_LOG("... error: %s", err);
+            NM_LOG("global: freeing old config and replacing with error item");
+            nm_global_config_replace(NULL, err);
+            nm_global_menu_config_rev++;
+            NM_ERR_RET(nm_global_menu_config_rev, "parse config files: %s", err);
+        }
+
+        NM_LOG("global: config updated, freeing old config and replacing with new one");
+        nm_global_config_replace(cfg, NULL);
+        nm_global_menu_config_rev++;
+        NM_LOG("global: done swapping config");
+    }
+
+    NM_LOG("global: running generators");
+    bool g_updated = nm_config_generate(nm_global_menu_config, false);
+    NM_LOG("global:%s generators updated", g_updated ? "" : " no");
+
+    if (g_updated) {
+        NM_LOG("global: generators updated, freeing old items and replacing with new ones");
+
+        if (nm_global_menu_config_n)
+            nm_global_menu_config_n = 0;
+
+        if (nm_global_menu_config_items) {
+            free(nm_global_menu_config_items);
+            nm_global_menu_config_items = NULL;
+        }
+
+        nm_global_menu_config_items = nm_config_get_menu(nm_global_menu_config, &nm_global_menu_config_n);
+        if (!nm_global_menu_config_items) 
+            NM_LOG("could not allocate memory");
+
+        nm_global_menu_config_rev++;
+        NM_LOG("done replacing items");
+    }
+
+    nm_err_set(NULL);
+    return nm_global_menu_config_rev;
 }

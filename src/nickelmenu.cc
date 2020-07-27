@@ -5,11 +5,10 @@
 #include <QWidget>
 
 #include <cstdlib>
-#include <dlfcn.h>
 
-#include "dlhook.h"
-#include "init.h"
-#include "menu.h"
+#include <NickelHook.h>
+
+#include "config.h"
 #include "util.h"
 
 typedef QWidget MenuTextItem; // it's actually a subclass, but we don't need its functionality directly, so we'll stay on the safe side
@@ -21,7 +20,6 @@ typedef void MainWindowController;
 // search menu for an example of this being used). IDK what the last parameter
 // is for, but I suspect it might be passed to QObject::setObjectName (I haven't
 // tested it directly, and it's been empty in the menus I've tried so far).
-static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem_orig)(void*, QMenu*, QString const&, bool, bool, QString const&) = NULL;
 static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem)(void*, QMenu*, QString const&, bool, bool, QString const&);
 
 // AbstractNickelMenuController::createAction finishes adding the action to the
@@ -60,42 +58,42 @@ void (*MainWindowController_toast)(MainWindowController*, QString const&, QStrin
 static void (*LightMenuSeparator_LightMenuSeparator)(void*, QWidget*);
 static void (*BoldMenuSeparator_BoldMenuSeparator)(void*, QWidget*);
 
-extern "C" int nm_menu_hook(void *libnickel) {
-    //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
-    reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem) = dlsym(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_");
-    //libnickel 4.6 * _ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb
-    reinterpret_cast<void*&>(AbstractNickelMenuController_createAction) = dlsym(libnickel, "_ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb");
-    //libnickel 4.6 * _ZN25ConfirmationDialogFactory12showOKDialogERK7QStringS2_
-    reinterpret_cast<void*&>(ConfirmationDialogFactory_showOKDialog) = dlsym(libnickel, "_ZN25ConfirmationDialogFactory12showOKDialogERK7QStringS2_");
-    //libnickel 4.6 * _ZN20MainWindowController14sharedInstanceEv
-    reinterpret_cast<void*&>(MainWindowController_sharedInstance) = dlsym(libnickel, "_ZN20MainWindowController14sharedInstanceEv");
-    //libnickel 4.6 * _ZN20MainWindowController5toastERK7QStringS2_i
-    reinterpret_cast<void*&>(MainWindowController_toast) = dlsym(libnickel, "_ZN20MainWindowController5toastERK7QStringS2_i");
-    //libnickel 4.6 * _ZN18LightMenuSeparatorC2EP7QWidget
-    reinterpret_cast<void*&>(LightMenuSeparator_LightMenuSeparator) = dlsym(libnickel, "_ZN18LightMenuSeparatorC2EP7QWidget");
-    //libnickel 4.6 * _ZN17BoldMenuSeparatorC1EP7QWidget
-    reinterpret_cast<void*&>(BoldMenuSeparator_BoldMenuSeparator) = dlsym(libnickel, "_ZN17BoldMenuSeparatorC1EP7QWidget");
+static struct nh_info NickelMenu = (struct nh_info){
+    .name            = "NickelMenu",
+    .desc            = "Integrated launcher for Nickel.",
+    .uninstall_flag  = NM_CONFIG_DIR "/uninstall",
+#ifdef NM_UNINSTALL_CONFIGDIR
+    .uninstall_xflag = NM_CONFIG_DIR,
+#else
+    .uninstall_xflag = NULL,
+#endif
+    .failsafe_delay  = 2,
+};
 
-    NM_CHECK(1, AbstractNickelMenuController_createMenuTextItem, "unsupported firmware: could not find AbstractNickelMenuController::createMenuTextItem(void* _this, QMenu*, QString, bool, bool, QString const&)");
-    NM_CHECK(1, AbstractNickelMenuController_createAction, "unsupported firmware: could not find AbstractNickelMenuController::createAction(void* _this, QMenu*, QWidget*, bool, bool, bool)");
-    NM_CHECK(1, ConfirmationDialogFactory_showOKDialog, "unsupported firmware: could not find ConfirmationDialogFactory::showOKDialog(String const&, QString const&)");
-    NM_CHECK(1, MainWindowController_sharedInstance, "unsupported firmware: could not find MainWindowController::sharedInstance()");
-    NM_CHECK(1, MainWindowController_toast, "unsupported firmware: could not find MainWindowController::toast(QString const&, QString const&, int)");
+static struct nh_hook NickelMenuHook[] = {
+    {.sym = "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", .sym_new = "_nm_menu_hook", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(AbstractNickelMenuController_createMenuTextItem)}, //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
+    {0},
+};
 
-    if (!LightMenuSeparator_LightMenuSeparator)
-        NM_LOG("warning: could not find LightMenuSeparator constructor, falling back to generic separators");
-    if (!BoldMenuSeparator_BoldMenuSeparator)
-        NM_LOG("warning: could not find BoldMenuSeparator constructor, falling back to generic separators");
+static struct nh_dlsym NickelMenuDlsym[] = {
+    {.name = "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", .out = nh_symoutptr(AbstractNickelMenuController_createMenuTextItem)}, //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
+    {.name = "_ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb",                .out = nh_symoutptr(AbstractNickelMenuController_createAction)},       //libnickel 4.6 * _ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb
+    {.name = "_ZN25ConfirmationDialogFactory12showOKDialogERK7QStringS2_",                   .out = nh_symoutptr(ConfirmationDialogFactory_showOKDialog)},          //libnickel 4.6 * _ZN25ConfirmationDialogFactory12showOKDialogERK7QStringS2_
+    {.name = "_ZN20MainWindowController14sharedInstanceEv",                                  .out = nh_symoutptr(MainWindowController_sharedInstance)},             //libnickel 4.6 * _ZN20MainWindowController14sharedInstanceEv
+    {.name = "_ZN20MainWindowController5toastERK7QStringS2_i",                               .out = nh_symoutptr(MainWindowController_toast)},                      //libnickel 4.6 * _ZN20MainWindowController5toastERK7QStringS2_i
+    {.name = "_ZN18LightMenuSeparatorC2EP7QWidget",                                          .out = nh_symoutptr(LightMenuSeparator_LightMenuSeparator)},           //libnickel 4.6 * _ZN18LightMenuSeparatorC2EP7QWidget
+    {.name = "_ZN17BoldMenuSeparatorC1EP7QWidget",                                           .out = nh_symoutptr(BoldMenuSeparator_BoldMenuSeparator)},             //libnickel 4.6 * _ZN17BoldMenuSeparatorC1EP7QWidget
+    {0},
+};
 
-    void* nmh = dlsym(RTLD_DEFAULT, "_nm_menu_hook");
-    NM_CHECK(1, nmh, "internal error: could not dlsym _nm_menu_hook");
+static int nm_init();
 
-    //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
-    reinterpret_cast<void*&>(AbstractNickelMenuController_createMenuTextItem_orig) = nm_dlhook(libnickel, "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", nmh);
-    NM_CHECK(1, AbstractNickelMenuController_createMenuTextItem_orig, "failed to hook _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_: %s", nm_err());
-
-    return 0;
-}
+NickelHook(
+    .init  = &nm_init,
+    .info  = &NickelMenu,
+    .hook  = NickelMenuHook,
+    .dlsym = NickelMenuDlsym,
+)
 
 // AbstractNickelMenuController_createAction_before wraps
 // AbstractNickelMenuController::createAction to use the correct separator for
@@ -106,12 +104,39 @@ QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_me
 
 // nm_menu_item_do runs a nm_menu_item_t and must be called from the thread of a
 // signal handler.
-void nm_menu_item_do(nm_menu_item_t *it);
+static void nm_menu_item_do(nm_menu_item_t *it);
 
 // _nm_menu_inject handles the QMenu::aboutToShow signal and injects menu items.
-void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at);
+static void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at);
 
-extern "C" NM_PUBLIC MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& label, bool checkable, bool checked, QString const& thingy) {
+static int nm_init() {
+    #ifdef NM_UNINSTALL_CONFIGDIR
+    NM_LOG("feature: NM_UNINSTALL_CONFIGDIR: true");
+    #else
+    NM_LOG("feature: NM_UNINSTALL_CONFIGDIR: false");
+    #endif
+
+    NM_LOG("updating config");
+
+    int rev = nm_global_config_update();
+    if (nm_err_peek())
+        NM_LOG("... warning: error parsing config, will show a menu item with the error: %s", nm_err());
+
+    size_t ntmp = SIZE_MAX;
+    if (rev == -1) {
+        NM_LOG("... info: no config file changes detected for initial config update (it should always return an error or update), stopping (this is a bug; err should have been returned instead)");
+    } else if (!nm_global_config_items(&ntmp)) {
+        NM_LOG("... warning: no menu items returned by nm_global_config_items, ignoring for now (this is a bug; it should always have a menu item whether the default, an error, or the actual config)");
+    } else if (ntmp == SIZE_MAX) {
+        NM_LOG("... warning: no size returned by nm_global_config_items, ignoring for now (this is a bug)");
+    } else if (!ntmp) {
+        NM_LOG("... warning: size returned by nm_global_config_items is 0, ignoring for now (this is a bug; it should always have a menu item whether the default, an error, or the actual config)");
+    }
+
+    return 0;
+}
+
+extern "C" __attribute__((visibility("default"))) MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QString const& label, bool checkable, bool checked, QString const& thingy) {
     NM_LOG("AbstractNickelMenuController::createMenuTextItem(%p, `%s`, %d, %d, `%s`)", menu, qPrintable(label), checkable, checked, qPrintable(thingy));
 
     QString trmm = QCoreApplication::translate("StatusBarMenuController", "Settings");
@@ -130,7 +155,7 @@ extern "C" NM_PUBLIC MenuTextItem* _nm_menu_hook(void* _this, QMenu* menu, QStri
     if (loc)
         QObject::connect(menu, &QMenu::aboutToShow, std::bind(_nm_menu_inject, _this, menu, loc, menu->actions().count()));
 
-    return AbstractNickelMenuController_createMenuTextItem_orig(_this, menu, label, checkable, checked, thingy);
+    return AbstractNickelMenuController_createMenuTextItem(_this, menu, label, checkable, checked, thingy);
 }
 
 void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
@@ -185,7 +210,7 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
 
         NM_LOG("adding item '%s'...", it->lbl);
 
-        MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem_orig(nmc, menu, QString::fromUtf8(it->lbl), false, false, "");
+        MenuTextItem* item = AbstractNickelMenuController_createMenuTextItem(nmc, menu, QString::fromUtf8(it->lbl), false, false, "");
         QAction* action = AbstractNickelMenuController_createAction_before(before, loc, i == items_n-1, nmc, menu, item, true, true, true);
 
         QObject::connect(action, &QAction::triggered, [it](bool){
@@ -306,3 +331,4 @@ QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_me
 
     return action;
 }
+

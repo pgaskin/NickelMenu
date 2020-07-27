@@ -9,18 +9,7 @@ extern "C" {
 #include <string.h>
 #include <syslog.h>
 
-// Fallback version tag
-#ifndef NM_VERSION
-#define NM_VERSION "dev"
-#endif
-
-#ifndef NM_LOG_NAME
-#define NM_LOG_NAME "NickelMenu"
-#endif
-
-// Symbol visibility (to prevent conflicts when reusing parts of NM)
-#define NM_PUBLIC  __attribute__((visibility("default")))
-#define NM_PRIVATE __attribute__((visibility("hidden")))
+#include <NickelHook.h>
 
 // strtrim trims ASCII whitespace in-place (i.e. don't give it a string literal)
 // from the left/right of the string.
@@ -34,22 +23,22 @@ inline char *strtrim(char *s) {
 }
 
 // NM_LOG writes a log message.
-#define NM_LOG(fmt, ...) syslog(LOG_DEBUG, ("(" NM_LOG_NAME ") " fmt " (%s:%d)"), ##__VA_ARGS__, __FILE__, __LINE__)
+#define NM_LOG(fmt, ...) nh_log(fmt " (%s:%d)", ##__VA_ARGS__, __FILE__, __LINE__)
 
 // Error handling (thread-safe):
 
 // nm_err returns the current error message and clears the error state. If there
 // isn't any error set, NULL is returned. The returned string is only valid on
 // the current thread until nm_err_set is called.
-NM_PRIVATE const char *nm_err();
+const char *nm_err();
 
 // nm_err_peek is like nm_err, but doesn't clear the error state.
-NM_PRIVATE const char *nm_err_peek();
+const char *nm_err_peek();
 
 // nm_err_set sets the current error message to the specified format string. If
 // fmt is NULL, the error is cleared. It is safe to use the return value of
 // nm_err as an argument. If fmt was not NULL, true is returned.
-NM_PRIVATE bool nm_err_set(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+bool nm_err_set(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 // NM_ERR_SET set is like nm_err_set, but also includes information about the
 // current file/line. To set it to NULL, use nm_err_set directly.

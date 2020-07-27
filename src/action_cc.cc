@@ -310,7 +310,6 @@ NM_ACTION_(nickel_setting) {
 }
 
 NM_ACTION_(nickel_extras) {
-
     const char* mimetype;
     if (strchr(arg, '/'))                   mimetype = arg;
     else if (!strcmp(arg, "unblock_it"))    mimetype = "application/x-games-RushHour";
@@ -330,7 +329,6 @@ NM_ACTION_(nickel_extras) {
 }
 
 NM_ACTION_(nickel_browser) {
-
     bool modal;
     QUrl *url;
     QString *css;
@@ -494,12 +492,11 @@ NM_ACTION_(power) {
 }
 
 NM_ACTION_(nickel_wifi) {
-
     //libnickel 4.6 * _ZN23WirelessWorkflowManager14sharedInstanceEv
     WirelessWorkflowManager *(*WirelessWorkflowManager_sharedInstance)();
     reinterpret_cast<void*&>(WirelessWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager14sharedInstanceEv");
     NM_CHECK(nullptr, WirelessWorkflowManager_sharedInstance, "could not dlsym WirelessWorkflowManager::sharedInstance");
-    
+
     WirelessWorkflowManager *wfm = WirelessWorkflowManager_sharedInstance();
     NM_CHECK(nullptr, wfm, "could not get shared wireless manager pointer");
 
@@ -578,7 +575,6 @@ NM_ACTION_(cmd_spawn) {
 }
 
 NM_ACTION_(cmd_output) {
-
     // split the timeout into timeout, put the command into cmd
     char *tmp = strdup(arg);
     char *cmd = tmp;
