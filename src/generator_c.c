@@ -91,7 +91,7 @@ NM_GENERATOR_(_test_time) {
 NM_GENERATOR_(kfmon) {
     struct stat sb;
     if (stat(KFMON_IPC_SOCKET, &sb))
-        NM_ERR_RET(NULL, "error checking '%s': stat: %s", KFMON_IPC_SOCKET, strerror(errno));
+        NM_ERR_RET(NULL, "error checking '%s': stat: %m", KFMON_IPC_SOCKET);
 
     if (time_in_out->tv_sec == sb.st_mtim.tv_sec && time_in_out->tv_nsec == sb.st_mtim.tv_nsec) {
         nm_err_set(NULL);

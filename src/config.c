@@ -51,7 +51,7 @@ nm_config_file_t *nm_config_files() {
 
     struct dirent **nl;
     int n = scandir(NM_CONFIG_DIR, &nl, nm_config_files_filter, alphasort);
-    NM_CHECK(NULL, n != -1, "could not scan config dir: %s", strerror(errno));
+    NM_CHECK(NULL, n != -1, "could not scan config dir: %m");
 
     for (int i = 0; i < n; i++) {
         struct dirent *de = nl[i];
@@ -240,7 +240,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
         cfgfile = fopen(cf->path, "r");
 
         if (!cfgfile)
-            RETERR("could not open file: %s", strerror(errno));
+            RETERR("could not open file: %m");
 
         while ((line_sz = getline(&line, &line_bufsz, cfgfile)) != -1) {
             line_n++;

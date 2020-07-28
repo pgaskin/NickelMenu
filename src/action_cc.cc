@@ -446,10 +446,10 @@ NM_ACTION_(nickel_misc) {
     } else if (!strcmp(arg, "force_usb_connection")) {
         // we could call libnickel directly, but I prefer not to
         FILE *nhs;
-        NM_CHECK(nullptr, (nhs = fopen("/tmp/nickel-hardware-status", "w")), "could not open nickel hardware status pipe: %s", strerror(errno));
+        NM_CHECK(nullptr, (nhs = fopen("/tmp/nickel-hardware-status", "w")), "could not open nickel hardware status pipe: %m");
 
         const char *msg = "usb plug add";
-        NM_CHECK(nullptr, fputs(msg, nhs) >= 0, "could not write message '%s' to pipe: %s", msg, strerror(errno));
+        NM_CHECK(nullptr, fputs(msg, nhs) >= 0, "could not write message '%s' to pipe: %m", msg);
 
         fclose(nhs);
     } else {
