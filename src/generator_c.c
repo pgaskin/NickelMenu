@@ -1,5 +1,4 @@
 #define _GNU_SOURCE // asprintf
-#include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
