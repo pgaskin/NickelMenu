@@ -28,8 +28,8 @@ typedef struct {
     nm_menu_action_t *action;
 } nm_menu_item_t;
 
-#ifndef NM_CONFIG_DIR
-#define NM_CONFIG_DIR "/mnt/onboard/.adds/nm"
+#if !(defined(NM_CONFIG_DIR) && defined(NM_CONFIG_DIR_DISP))
+#error "NM_CONFIG_DIR not set (it should be done by the Makefile)"
 #endif
 
 #ifndef NM_CONFIG_MAX_MENU_ITEMS_PER_MENU
@@ -40,8 +40,8 @@ typedef struct nm_config_t nm_config_t;
 
 typedef struct nm_config_file_t nm_config_file_t;
 
-// nm_config_parse lists the configuration files in /mnt/onboard/.adds/nm. If
-// there are errors reading the dir, NULL is returned and nm_err is set.
+// nm_config_parse lists the configuration files in NM_CONFIG_DIR. If there are
+// errors reading the dir, NULL is returned and nm_err is set.
 nm_config_file_t *nm_config_files();
 
 // nm_config_files_update checks if the configuration files are up to date and

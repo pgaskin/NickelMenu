@@ -7,10 +7,9 @@
 # it has a lot of error checking, and a failsafe mechanism which automatically
 # uninstalls it as a last resort.
 #
-# Place your configuration files in this folder (/mnt/onboard/.adds/nm). They
-# can be named anything, and should consist of multiple lines either starting
-# with # for a comment, or in one of the the following formats (spaces around
-# fields are ignored):
+# Place your configuration files in this folder. They can be named anything, and
+# should consist of multiple lines either starting with # for a comment, or in
+# one of the the following formats (spaces around fields are ignored):
 #
 #   menu_item:<location>:<label>:<action>:<arg>
 #     Adds a menu item.
@@ -131,7 +130,7 @@
 #                              gui - only enumerate non-hidden active KFMon watches (this is the default)
 #                              all - enumerate all active KFMon watches
 #
-# For example, you might have a configuration file in KOBOeReader/.adds/nm/mystuff like:
+# For example, you might have a configuration file named "mystuff" like:
 #
 #   menu_item :main   :Show an Error   :dbg_error      :This is an error message!
 #   menu_item :main   :Do Nothing      :cmd_spawn      :sleep 60
@@ -164,7 +163,7 @@
 # which can be viewed over telnet or SSH (the username is root) with the command
 # logread.
 #
-# To uninstall NickelMenu, create a file named KOBOeReader/.adds/nm/uninstall,
+# To uninstall NickelMenu, create a file in this directory named "uninstall",
 # or manually uninstall it by deleting libnm.so. You can also uninstall it by
 # triggering the failsafe mechanism by turning your Kobo off within 20 seconds
 # of turning it on.

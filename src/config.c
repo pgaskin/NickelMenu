@@ -300,7 +300,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
             .act        = NM_ACTION(dbg_toast),
             .on_failure = true,
             .on_success = true,
-            .arg        = "See .adds/nm/doc for instructions on how to customize this menu.",
+            .arg        = "See " NM_CONFIG_DIR_DISP "/doc for instructions on how to customize this menu.",
             .next       = NULL,
         }))) RETERR("error appending default action to empty config: %s", nm_config_parse__strerror(ret));
     }
