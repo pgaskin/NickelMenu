@@ -168,6 +168,18 @@
 # triggering the failsafe mechanism by turning your Kobo off within 20 seconds
 # of turning it on.
 #
+# To use NickelMenu to launch other software, you can usually use cmd_spawn with
+# the normal launch script. For example, KOReader and Plato will work as-is (or
+# with NiLuJe's one-click install packages which include NM). For specific
+# instructions, you should see their documentation (most newer software has
+# information about NickelMenu). If using cmd_spawn directly doesn't work, you
+# can also try using KFMon and the kfmon action/generator.
+#
+# - NiLuJe's KOReader/Plato packages: https://www.mobileread.com/forums/showthread.php?t=314220
+# - KOReader: https://github.com/koreader/koreader/wiki/Installation-on-Kobo-devices
+# - Plato: https://github.com/baskerville/plato/blob/master/doc/GUIDE.md
+# - Vlasovsoft: https://wiki.vlasovsoft.net/doku.php?id=en:installation
+#
 # Note: If you are embedding a NickelMenu config in your own mod, please name it
 # something unique to avoid overwriting someone's existing configuration. In
 # addition, please do not include NickelMenu itself in it unless you are
