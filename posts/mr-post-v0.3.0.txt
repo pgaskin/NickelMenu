@@ -1,0 +1,11 @@
+[B][SIZE=5]NickelMenu v0.3.0[/SIZE][/B]
+
+This release improves the documentation and has a lot of internal refactoring and cleanup. There should not be any noticeable change for users.
+[LIST]
+[*] [B]Breaking change:[/B] Support for being loaded using LD_PRELOAD or /etc/ld.so.preload has been removed. This has been deprecated and unused since the initial release, so it will not affect any current users.
+[*] Error handling has been refactored.
+[*] Most general hook-related code has been refactored into a new [URL="https://github.com/pgaskin/NickelHook"]NickelHook[/URL] library, which is now used by other mods like [URL="https://www.mobileread.com/forums/showthread.php?p=4013888"]NickelSeries[/URL] and [URL="https://github.com/pgaskin/kobo-mods/tree/master/kobo-dotfile-hack-ng"]kobo-dotfile-hack[/URL].
+[*] There are various improvements to the documentation including more information on how to launch other software.
+[*] NM_CONFIG_DIR can now be set from the Makefile when building (but this is highly discouraged).
+[/LIST]
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.3.0"]release[/URL] on GitHub for more details.
