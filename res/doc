@@ -100,6 +100,7 @@
 #                   power          - one of:
 #                                      shutdown (4.13.12638+)
 #                                      reboot (4.13.12638+)
+#                                      sleep (4.13.12638+)
 #                   skip           - the number of actions to skip, or -1 to skip all remaining ones (i.e. end the chain)
 #
 #   chain_success:<action>:<arg>

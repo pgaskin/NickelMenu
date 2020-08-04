@@ -459,7 +459,7 @@ NM_ACTION_(nickel_misc) {
 }
 
 NM_ACTION_(power) {
-    if (!strcmp(arg, "shutdown") || !strcmp(arg, "reboot")) {
+    if (!strcmp(arg, "shutdown") || !strcmp(arg, "reboot") || !strcmp(arg, "sleep")) {
         //libnickel 4.13.12638 * _ZN22N3PowerWorkflowManager14sharedInstanceEv
         N3PowerWorkflowManager *(*N3PowerWorkflowManager_sharedInstance)();
         reinterpret_cast<void*&>(N3PowerWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager14sharedInstanceEv");
@@ -484,6 +484,14 @@ NM_ACTION_(power) {
 
             N3PowerWorkflowManager_reboot(pwm);
             return nm_action_result_toast("Rebooting...");
+        } else if (!strcmp(arg, "sleep")) {
+            //libnickel 4.13.12638 * _ZN22N3PowerWorkflowManager12requestSleepEv
+            void (*N3PowerWorkflowManager_requestSleep)(N3PowerWorkflowManager*);
+            reinterpret_cast<void*&>(N3PowerWorkflowManager_requestSleep) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager12requestSleepEv");
+            NM_CHECK(nullptr, N3PowerWorkflowManager_requestSleep, "could not dlsym N3PowerWorkflowManager::requestSleep");
+
+            N3PowerWorkflowManager_requestSleep(pwm);
+            return nm_action_result_silent();
         }
     } else {
         NM_ERR_RET(nullptr, "unknown power action '%s'", arg);
