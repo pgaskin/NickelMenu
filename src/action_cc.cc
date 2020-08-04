@@ -552,6 +552,73 @@ NM_ACTION_(nickel_wifi) {
     return nm_action_result_silent();
 }
 
+NM_ACTION_(nickel_orientation) {
+    Qt::ScreenOrientation o;
+
+    if      (!strcmp(arg, "portrait"))           o = Qt::PortraitOrientation;
+    else if (!strcmp(arg, "landscape"))          o = Qt::LandscapeOrientation;
+    else if (!strcmp(arg, "inverted_portrait"))  o = Qt::InvertedPortraitOrientation;
+    else if (!strcmp(arg, "inverted_landscape")) o = Qt::InvertedLandscapeOrientation;
+    // TODO: maybe "invert", "rotate_cw", "rotate_ccw" options.
+    else NM_ERR_RET(nullptr, "unknown nickel_orientation action '%s'", arg);
+
+    // We're basically doing the same thing as the signal handler which updates
+    // the orientation from the sensor does. This prevents us from needing to
+    // deal with the additional complexity of the locked orientation handling,
+    // which is hardcoded to only non-inverted portrait/landscape in many
+    // places. See issue #67 for more details.
+    //
+    // As of 4.22.15268, this action will only take full effect if the "Auto"
+    // orientation is selected. The orientation set by this action will not
+    // persist if a different locked orientation is selected then changed back
+    // to "Auto". But, if a portrait/landscape locked orientation is selected,
+    // the inverted portrait/landscape options will take effect as well (but
+    // will revert back to the non-inverted option after a reboot). In short, it
+    // works the same way as the orientation sensor would.
+    //
+    // The orientation sensor controls QWindowSystemInterface
+    // ::handleScreenOrientationChange, which is then limited by whether the bit
+    // for that orientation is set in ApplicationSettings::lockedOrientation
+    // (e.g. Auto's value for LockedOrientation is 0xF, or 0b1111, which is all
+    // of the Qt::ScreenOrientation values ORed together). If DevSettings'
+    // ForceAllowLandscape option is not true, this is further limited by
+    // MainWindowController::allowableOrientations, which is based on the
+    // current view (e.g. the home screen won't go landscape) and if Device
+    // ::hasOrientationSensor.
+    //
+    // If the device has an orientation sensor, it will override this action the
+    // moment the reading changes (i.e. almost instantly). Theoretically, it
+    // would be possible to disable the sensor when using this action, but I
+    // don't see the point (there are a few options in the config to tune the
+    // sensor if it isn't satisfactory), so I'm not going to implement that.
+    //
+    // As a result, to use this action, ForceAllowLandscape must be enabled on
+    // devices without an orientation sensor, and the currently selected option
+    // (Auto, Portrait, Landscape) must allow the chosen orientation.
+    //
+    // Note: this is actually a Qt symbol in the private QPA API, but Nickel
+    // uses it itself (and we want to check if it's still that way).
+
+    //libnickel 4.6 * _ZN22QWindowSystemInterface29handleScreenOrientationChangeEP7QScreenN2Qt17ScreenOrientationE
+    void (*QWindowSystemInterface_handleScreenOrientationChange)(QScreen*, Qt::ScreenOrientation);
+    reinterpret_cast<void*&>(QWindowSystemInterface_handleScreenOrientationChange) = dlsym(RTLD_DEFAULT, "_ZN22QWindowSystemInterface29handleScreenOrientationChangeEP7QScreenN2Qt17ScreenOrientationE");
+    NM_CHECK(nullptr, QWindowSystemInterface_handleScreenOrientationChange, "could not dlsym QWindowSystemInterface::handleScreenOrientationChange (did the way Nickel handles the screen orientation sensor change?)");
+
+    QWindowSystemInterface_handleScreenOrientationChange(QGuiApplication::primaryScreen(), o);
+
+    // TODO: some checks to return errors explaining what happened if nothing changes (and a "quiet" option to silence them)?
+    // - if (!Device::hasOrientationSensor && !DevSettings::ForceAllowLandscape)
+    //   show toast about needing to enable ForceAllowLandscape
+    // - if (ApplicationSettings::lockedOrientation&o == 0)
+    //   show toast about not taking effect (or maybe use RotatePopupView::on{Landscape,Portrait,Auto} to make it take effect?)
+    // - if (Device::hasOrientationSensor && ApplicationSettings::lockedOrientation == 0xF)
+    //   maybe show toast about orientation sensor overriding it?
+    // - if (MainWindowController::allowableOrientations(MainWindowController::topController)&o == 0)
+    //   maybe show syslog or toast about not having any effect on the current view (and that ForceAllowLandscape would force it to work)?
+
+    return nm_action_result_silent();
+}
+
 NM_ACTION_(cmd_spawn) {
     char *tmp = strdup(arg); // strsep and strtrim will modify it
     char *tmp1 = tmp; // so we can still free tmp later

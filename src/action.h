@@ -35,22 +35,23 @@ void nm_action_result_free(nm_action_result_t *res);
 #define NM_ACTION_(name) nm_action_result_t *NM_ACTION(name)(const char *arg)
 #endif
 
-#define NM_ACTIONS    \
-    X(cmd_spawn)      \
-    X(cmd_output)     \
-    X(dbg_syslog)     \
-    X(dbg_error)      \
-    X(dbg_msg)        \
-    X(dbg_toast)      \
-    X(kfmon)          \
-    X(kfmon_id)       \
-    X(nickel_setting) \
-    X(nickel_extras)  \
-    X(nickel_browser) \
-    X(nickel_misc)    \
-    X(nickel_open)    \
-    X(nickel_wifi)    \
-    X(power)          \
+#define NM_ACTIONS        \
+    X(cmd_spawn)          \
+    X(cmd_output)         \
+    X(dbg_syslog)         \
+    X(dbg_error)          \
+    X(dbg_msg)            \
+    X(dbg_toast)          \
+    X(kfmon)              \
+    X(kfmon_id)           \
+    X(nickel_setting)     \
+    X(nickel_extras)      \
+    X(nickel_browser)     \
+    X(nickel_misc)        \
+    X(nickel_open)        \
+    X(nickel_wifi)        \
+    X(nickel_orientation) \
+    X(power)              \
     X(skip)
 
 #define X(name) NM_ACTION_(name);

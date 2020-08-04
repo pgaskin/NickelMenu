@@ -19,89 +19,95 @@
 #                   reader - the overflow menu in the reader
 #     <label>     the label to show on the menu item (must not contain :)
 #     <action>    the type of action to run, one of:
-#                   cmd_spawn      - starts a command in the background
-#                   cmd_output     - runs a command, waits for it to exit, and optionally displays the output
-#                   dbg_syslog     - writes a message to syslog (for testing)
-#                   dbg_error      - always returns an error (for testing)
-#                   dbg_msg        - shows a message (for testing)
-#                   dbg_toast      - shows a toast (for testing)
-#                   kfmon          - triggers a kfmon action
-#                   nickel_setting - changes a setting
-#                   nickel_extras  - opens one of the beta features
-#                   nickel_browser - opens the browser
-#                   nickel_misc    - other stuff which isn't significant enough for its own category
-#                   nickel_open    - opens a view
-#                   nickel_wifi    - controls wifi (note: it doesn't wait for it to connect or disconnect, neither does it check for success)
-#                   power          - gracefully controls the power state
-#                   skip           - skips a number of actions after the current one (mainly useful for more complex conditional chains) (this action will not update the success/failure flag)
+#                   cmd_spawn          - starts a command in the background
+#                   cmd_output         - runs a command, waits for it to exit, and optionally displays the output
+#                   dbg_syslog         - writes a message to syslog (for testing)
+#                   dbg_error          - always returns an error (for testing)
+#                   dbg_msg            - shows a message (for testing)
+#                   dbg_toast          - shows a toast (for testing)
+#                   kfmon              - triggers a kfmon action
+#                   nickel_setting     - changes a setting
+#                   nickel_extras      - opens one of the beta features
+#                   nickel_browser     - opens the browser
+#                   nickel_misc        - other stuff which isn't significant enough for its own category
+#                   nickel_open        - opens a view
+#                   nickel_wifi        - controls wifi (note: it doesn't wait for it to connect or disconnect, neither does it check for success)
+#                   nickel_orientation - controls screen orientation (devices without an orientation sensor need to set the config option [DeveloperSettings] ForceAllowLandscape=true or use the kobopatch patch) (this doesn't currently do anything useful on devices with an orientation sensor)
+#                   power              - gracefully controls the power state
+#                   skip               - skips a number of actions after the current one (mainly useful for more complex conditional chains) (this action will not update the success/failure flag)
 #     <arg>       the argument passed to the action:
-#                   cmd_spawn      - the command line to pass to /bin/sh -c (started in /)
-#                                    It can be prefixed with "quiet:" to prevent the toast with the process PID from being displayed.
-#                   cmd_output     - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
-#                                    It can be prefixed with "quiet:" to prevent the message box with the output from being displayed (i.e. you'd use this where you'd normally use >/dev/null 2>&1).
-#                   dbg_syslog     - the text to write
-#                   dbg_error      - the error message
-#                   dbg_msg        - the message
-#                   dbg_toast      - the message
-#                   kfmon          - the filename of the KFMon watched item to launch.
-#                                    This is actually the basename of the watch's filename as specified in its KFMon config (i.e., the png).
-#                                    You can also check the output of the 'list' command via the kfmon-ipc tool.
-#                   nickel_setting - <action>:<setting>
-#                                    action if one of:
-#                                       toggle  - toggles between true/false
-#                                       enable  - sets to true
-#                                       disable - sets to false
-#                                    setting is one of:
-#                                      invert      - FeatureSettings.InvertScreen
-#                                      lockscreen  - PowerSettings.UnlockEnabled (4.12.12111+)
-#                                      screenshots - FeatureSettings.Screenshots
-#                                      force_wifi  - DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
-#                   nickel_extras  - the mimetype of the plugin, or one of:
-#                                      unblock_it
-#                                      sketch_pad
-#                                      solitaire
-#                                      sudoku
-#                                      word_scramble
-#                   nickel_browser - one of:
-#                                                        - opens the web browser to the default homepage (note that the line should end with a colon even though the argument is blank)
-#                                      <url>             - opens the web browser to the specified URL
-#                                      <url> <css>       - opens the web browser to the specified URL and injects the specified CSS (which can contain spaces and colons) into all pages
-#                                      modal             - opens the web browser to the default homepage as a pop-up window
-#                                      modal:<url>       - see above
-#                                      modal:<url> <css> - see above
-#                   nickel_misc    - one of:
-#                                      home                 - goes to the home screen
-#                                      force_usb_connection - forces a usb connection dialog to be shown
-#                                      rescan_books         - forces nickel to rescan books (4.13.12638+)
-#                                      rescan_books_full    - forces a full usb connect/disconnect cycle (4.13.12638+)
-#                   nickel_open    - one of:
-#                                      discover:storefront       - Kobo Store
-#                                      discover:wishlist         - Wishlist
-#                                      library:library           - My Books (with last filter)
-#                                      library:library2          - My Books (with last tab and filter)
-#                                      library:all               - Books
-#                                      library:authors           - Authors
-#                                      library:series            - Series (4.20.14601+)
-#                                      library:shelves           - Collections
-#                                      library:pocket            - Articles
-#                                      library:dropbox           - Dropbox (4.18.13737+)
-#                                      reading_life:reading_life - Activity (with last tab)
-#                                      reading_life:stats        - Activity
-#                                      reading_life:awards       - Awards
-#                                      reading_life:words        - My Words
-#                                      store:overdrive           - OverDrive (4.10.11655+) (note: if you don't have an active OverDrive account, it will give you a "Network Error")
-#                                      store:search              - Search
-#                   nickel_wifi    - one of:
-#                                      autoconnect        - attempts to enable and connect to wifi (similar to what happens when you open a link)
-#                                      autoconnect_silent - attempts to connect to wifi in the background (does nothing if wifi is disabled, the battery is low, is already connected, or there aren't any known networks in range) (no errors are shown) (similar to what happens when you turn on the Kobo)
-#                                      enable             - enables WiFi (but doesn't necessarily connect to it)
-#                                      disable            - disables WiFi
-#                                      toggle             - toggles WiFi (but doesn't necessarily connect to it)
-#                   power          - one of:
-#                                      shutdown (4.13.12638+)
-#                                      reboot (4.13.12638+)
-#                                      sleep (4.13.12638+)
-#                   skip           - the number of actions to skip, or -1 to skip all remaining ones (i.e. end the chain)
+#                   cmd_spawn          - the command line to pass to /bin/sh -c (started in /)
+#                                        It can be prefixed with "quiet:" to prevent the toast with the process PID from being displayed.
+#                   cmd_output         - the timeout in milliseconds (0 < t < 10000), a colon, then the command line to pass to /bin/sh -c (started in /)
+#                                        It can be prefixed with "quiet:" to prevent the message box with the output from being displayed (i.e. you'd use this where you'd normally use >/dev/null 2>&1).
+#                   dbg_syslog         - the text to write
+#                   dbg_error          - the error message
+#                   dbg_msg            - the message
+#                   dbg_toast          - the message
+#                   kfmon              - the filename of the KFMon watched item to launch.
+#                                        This is actually the basename of the watch's filename as specified in its KFMon config (i.e., the png).
+#                                        You can also check the output of the 'list' command via the kfmon-ipc tool.
+#                   nickel_setting     - <action>:<setting>
+#                                        action if one of:
+#                                           toggle  - toggles between true/false
+#                                           enable  - sets to true
+#                                           disable - sets to false
+#                                        setting is one of:
+#                                          invert      - FeatureSettings.InvertScreen
+#                                          lockscreen  - PowerSettings.UnlockEnabled (4.12.12111+)
+#                                          screenshots - FeatureSettings.Screenshots
+#                                          force_wifi  - DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
+#                   nickel_extras      - the mimetype of the plugin, or one of:
+#                                          unblock_it
+#                                          sketch_pad
+#                                          solitaire
+#                                          sudoku
+#                                          word_scramble
+#                   nickel_browser     - one of:
+#                                                            - opens the web browser to the default homepage (note that the line should end with a colon even though the argument is blank)
+#                                          <url>             - opens the web browser to the specified URL
+#                                          <url> <css>       - opens the web browser to the specified URL and injects the specified CSS (which can contain spaces and colons) into all pages
+#                                          modal             - opens the web browser to the default homepage as a pop-up window
+#                                          modal:<url>       - see above
+#                                          modal:<url> <css> - see above
+#                   nickel_misc        - one of:
+#                                          home                 - goes to the home screen
+#                                          force_usb_connection - forces a usb connection dialog to be shown
+#                                          rescan_books         - forces nickel to rescan books (4.13.12638+)
+#                                          rescan_books_full    - forces a full usb connect/disconnect cycle (4.13.12638+)
+#                   nickel_open        - one of:
+#                                          discover:storefront       - Kobo Store
+#                                          discover:wishlist         - Wishlist
+#                                          library:library           - My Books (with last filter)
+#                                          library:library2          - My Books (with last tab and filter)
+#                                          library:all               - Books
+#                                          library:authors           - Authors
+#                                          library:series            - Series (4.20.14601+)
+#                                          library:shelves           - Collections
+#                                          library:pocket            - Articles
+#                                          library:dropbox           - Dropbox (4.18.13737+)
+#                                          reading_life:reading_life - Activity (with last tab)
+#                                          reading_life:stats        - Activity
+#                                          reading_life:awards       - Awards
+#                                          reading_life:words        - My Words
+#                                          store:overdrive           - OverDrive (4.10.11655+) (note: if you don't have an active OverDrive account, it will give you a "Network Error")
+#                                          store:search              - Search
+#                   nickel_wifi        - one of:
+#                                          autoconnect        - attempts to enable and connect to wifi (similar to what happens when you open a link)
+#                                          autoconnect_silent - attempts to connect to wifi in the background (does nothing if wifi is disabled, the battery is low, is already connected, or there aren't any known networks in range) (no errors are shown) (similar to what happens when you turn on the Kobo)
+#                                          enable             - enables WiFi (but doesn't necessarily connect to it)
+#                                          disable            - disables WiFi
+#                                          toggle             - toggles WiFi (but doesn't necessarily connect to it)
+#                   nickel_orientation - one of:
+#                                          portrait           (works if the selected orientation is Auto or Portrait)
+#                                          landscape          (works if the selected orientation is Auto or Landscape)
+#                                          inverted_portrait  (works if the selected orientation is Auto or Portrait)
+#                                          inverted_landscape (works if the selected orientation is Auto or Landscape)
+#                   power              - one of:
+#                                          shutdown (4.13.12638+)
+#                                          reboot (4.13.12638+)
+#                                          sleep (4.13.12638+)
+#                   skip               - the number of actions to skip, or -1 to skip all remaining ones (i.e. end the chain)
 #
 #   chain_success:<action>:<arg>
 #   chain_failure:<action>:<arg>
