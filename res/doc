@@ -157,7 +157,7 @@
 #       chain_failure                   :dbg_toast      :Error starting Telnet server on port 2023
 #       chain_always:skip:-1
 #     chain_success                     :dbg_toast      :Stopped Telnet server on port 2023
-#   menu_item :main    :Import Books    :nickel_misc    :rescan_books_full
+#   menu_item :library :Import books    :nickel_misc    :rescan_books_full
 #   menu_item :browser :Invert Screen   :nickel_setting :toggle :invert
 #   menu_item :browser :Open Pop-Up     :nickel_browser :modal
 #
