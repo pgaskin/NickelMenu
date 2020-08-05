@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QProcess>
+#include <QScreen>
 #include <QString>
 #include <QStringList>
 #include <QUrl>
@@ -51,6 +52,7 @@ typedef void BrowserWorkflowManager;
 typedef void N3SettingsExtrasController;
 typedef void N3PowerWorkflowManager;
 typedef void WirelessWorkflowManager;
+typedef void StatusBarView;
 
 NM_ACTION_(nickel_open) {
     char *tmp1 = strdupa(arg); // strsep and strtrim will modify it
@@ -548,6 +550,177 @@ NM_ACTION_(nickel_wifi) {
     } else {
         NM_ERR_RET(nullptr, "unknown wifi action '%s'", arg);
     }
+
+    return nm_action_result_silent();
+}
+
+NM_ACTION_(nickel_orientation) {
+    Qt::ScreenOrientation o;
+    if      (!strcmp(arg, "portrait"))           o = Qt::PortraitOrientation;
+    else if (!strcmp(arg, "landscape"))          o = Qt::LandscapeOrientation;
+    else if (!strcmp(arg, "inverted_portrait"))  o = Qt::InvertedPortraitOrientation;
+    else if (!strcmp(arg, "inverted_landscape")) o = Qt::InvertedLandscapeOrientation;
+    else if (!strcmp(arg, "invert") || !strcmp(arg, "swap")) {
+        switch ((o = QGuiApplication::primaryScreen()->orientation())) {
+        case Qt::PrimaryOrientation:           NM_ERR_RET(nullptr, "could not get current screen orientation");                         break;
+        case Qt::PortraitOrientation:          o = !strcmp(arg, "invert") ? Qt::InvertedPortraitOrientation : Qt::LandscapeOrientation; break;
+        case Qt::LandscapeOrientation:         o = !strcmp(arg, "invert") ? Qt::InvertedLandscapeOrientation : Qt::PortraitOrientation; break;
+        case Qt::InvertedPortraitOrientation:  o = !strcmp(arg, "invert") ? Qt::PortraitOrientation : Qt::InvertedLandscapeOrientation; break;
+        case Qt::InvertedLandscapeOrientation: o = !strcmp(arg, "invert") ? Qt::LandscapeOrientation : Qt::InvertedPortraitOrientation; break;
+        default:                               NM_ERR_RET(nullptr, "unknown screen orientation %d", o);                                 break;
+        }
+    }
+    else NM_ERR_RET(nullptr, "unknown nickel_orientation action '%s'", arg);
+
+    // ---
+
+    //libnickel 4.6 * _ZN22QWindowSystemInterface29handleScreenOrientationChangeEP7QScreenN2Qt17ScreenOrientationE
+    void (*QWindowSystemInterface_handleScreenOrientationChange)(QScreen*, Qt::ScreenOrientation);
+    reinterpret_cast<void*&>(QWindowSystemInterface_handleScreenOrientationChange) = dlsym(RTLD_DEFAULT, "_ZN22QWindowSystemInterface29handleScreenOrientationChangeEP7QScreenN2Qt17ScreenOrientationE");
+    NM_CHECK(nullptr, QWindowSystemInterface_handleScreenOrientationChange, "could not dlsym QWindowSystemInterface::handleScreenOrientationChange (did the way Nickel handles the screen orientation sensor change?)");
+
+    //libnickel 4.6 * _ZN6Device16getCurrentDeviceEv
+    Device *(*Device_getCurrentDevice)();
+    reinterpret_cast<void*&>(Device_getCurrentDevice) = dlsym(RTLD_DEFAULT, "_ZN6Device16getCurrentDeviceEv");
+    NM_CHECK(nullptr, Device_getCurrentDevice, "could not dlsym Device::getCurrentDevice");
+
+    //libnickel 4.11.11911 * _ZNK6Device20hasOrientationSensorEv
+    bool (*Device_hasOrientationSensor)(Device*);
+    reinterpret_cast<void*&>(Device_hasOrientationSensor) = dlsym(RTLD_DEFAULT, "_ZNK6Device20hasOrientationSensorEv");
+    NM_CHECK(nullptr, Device_getCurrentDevice, "could not dlsym Device::hasOrientationSensor");
+
+    //libnickel 4.6 * _ZN8SettingsC2ERK6Deviceb _ZN8SettingsC2ERK6Device
+    void *(*Settings_Settings)(Settings*, Device*, bool);
+    void *(*Settings_SettingsLegacy)(Settings*, Device*);
+    reinterpret_cast<void*&>(Settings_Settings) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Deviceb");
+    reinterpret_cast<void*&>(Settings_SettingsLegacy) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Device");
+    NM_CHECK(nullptr, Settings_Settings || Settings_SettingsLegacy, "could not dlsym Settings constructor (new and/or old)");
+
+    //libnickel 4.6 * _ZN8SettingsD2Ev
+    void *(*Settings_SettingsD)(Settings*);
+    reinterpret_cast<void*&>(Settings_SettingsD) = dlsym(RTLD_DEFAULT, "_ZN8SettingsD2Ev");
+    NM_CHECK(nullptr, Settings_SettingsD, "could not dlsym Settings destructor");
+
+    void *ApplicationSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV19ApplicationSettings");
+    NM_CHECK(nullptr, ApplicationSettings_vtable, "could not dlsym the vtable for ApplicationSettings");
+
+    //libnickel 4.13.12638 * _ZN19ApplicationSettings20setLockedOrientationE6QFlagsIN2Qt17ScreenOrientationEE
+    bool (*ApplicationSettings_setLockedOrientation)(Settings*, Qt::ScreenOrientation);
+    reinterpret_cast<void*&>(ApplicationSettings_setLockedOrientation) = dlsym(RTLD_DEFAULT, "_ZN19ApplicationSettings20setLockedOrientationE6QFlagsIN2Qt17ScreenOrientationEE");
+    NM_CHECK(nullptr, ApplicationSettings_setLockedOrientation, "could not dlsym ApplicationSettings::setLockedOrientation");
+
+    //libnickel 4.13.12638 * _ZN19ApplicationSettings17lockedOrientationEv
+    int (*ApplicationSettings_lockedOrientation)(Settings*);
+    reinterpret_cast<void*&>(ApplicationSettings_lockedOrientation) = dlsym(RTLD_DEFAULT, "_ZN19ApplicationSettings17lockedOrientationEv");
+    NM_CHECK(nullptr, ApplicationSettings_lockedOrientation, "could not dlsym ApplicationSettings::lockedOrientation");
+
+    Device *dev = Device_getCurrentDevice();
+    NM_CHECK(nullptr, dev, "could not get shared nickel device pointer");
+
+    Settings *settings = alloca(128); // way larger than it is, but better to be safe
+    if (Settings_Settings)
+        Settings_Settings(settings, dev, false);
+    else if (Settings_SettingsLegacy)
+        Settings_SettingsLegacy(settings, dev);
+
+    #define vtable_ptr(x) *reinterpret_cast<void**&>(x)
+    #define vtable_target(x) reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(x)+8)
+
+    // ---
+
+    // note: these notes were last updated for 4.22.15268, but should remain
+    // correct for the forseeable future and should be relevant for all
+    // supported versions (4.13.12638+).
+
+    // Prevent the sensor (if active) from changing to a different orientation
+    // behind our backs.
+    //
+    // Without this, the orientation sensor may override our orientation if the
+    // sensor is in auto mode, and may invert our orientation if the sensor is
+    // in portrait/landscape mode. This would happen the moment the sensor
+    // reading is updated, which would be essentially instantly if the device
+    // isn't on a perfectly still surface.
+
+    QGuiApplication::primaryScreen()->setOrientationUpdateMask(o);
+
+    // Set the current locked orientation to the new one to ensure our new
+    // orientation will be allowed.
+    //
+    // Without this, our orientation may not have any effect since the
+    // orientation set by QWindowSystemInterface::handleScreenOrientationChange
+    // is limited by if the orientation's bit is set in [ApplicationSettings]
+    // LockedOrientation (note that auto is all of them, and portrait/landscape
+    // is the normal and inverted variants) (it's a bitmask of
+    // Qt::ScreenOrientation).
+
+    vtable_ptr(settings) = vtable_target(ApplicationSettings_vtable);
+    int icon_mask = ApplicationSettings_lockedOrientation(settings);
+
+    vtable_ptr(settings) = vtable_target(ApplicationSettings_vtable);
+    ApplicationSettings_setLockedOrientation(settings, o);
+
+    // If the device doesn't have an orientation sensor, the user needs to set
+    // the [DeveloperSettings] ForceAllowLandscape setting to true or apply the
+    // "Allow rotation on all devices" patch (the patch will also show the
+    // built-in rotation menu in the reader and other views). If this is not
+    // done, this action will silently fail to work. We can't really check this
+    // specifically since kobopatch only changes a few places which call
+    // Device::hasOrientationSensor, not the function itself.
+    //
+    // If the device has an orientation sensor, the user can optionally set the
+    // [DeveloperSettings] ForceAllowLandscape setting to true or apply the
+    // "Allow rotation on all devices" patch to make the rotation take effect
+    // even if the current view doesn't normally allow it.
+    //
+    // This is because in addition to the previous limitation, if
+    // [DeveloperSettings] ForceAllowLandscape if not true, the orientation is
+    // limited based on if Device::hasOrientationSensor and the allowed
+    // orientations for the current view.
+
+    NM_LOG(Device_hasOrientationSensor(dev)
+        ? "nickel_orientation: if this didn't do anything, you may need to set [DeveloperSettings] ForceAllowLandscape=true to allow landscape orientations on all views"
+        : "nickel_orientation: if this didn't do anything, ensure you have applied the 'Allow rotation on all devices' kobopatch patch, or that you have set [DeveloperSettings] ForceAllowLandscape=true");
+
+    // Set the orientation.
+    //
+    // This is the only thing which is really required here, but if used alone,
+    // the orientation sensor may override it, and the orientation will only be
+    // set if it is within the constraints of the current rotation mode of
+    // auto/portrait/landscape.
+    //
+    // Note that this function is actually part of the private Qt QPA API, and
+    // Nickel really should be doing this part of the rotation logic (including
+    // the sensors) from the libkobo QPA plugin. But, this is how Nickel does
+    // it, so we need to do it the same way (this does make it easier for both
+    // us and Kobo, I guess, due to how intertwined the orientation stuff is).
+    //
+    // This is the same function which is called by Nickel's handler for the
+    // orientation sensor's reading.
+
+    QWindowSystemInterface_handleScreenOrientationChange(QGuiApplication::primaryScreen(), o);
+
+    // We don't update the status bar rotation icon, since we would need to get
+    // ahold of the StatusBarView, and I don't like the current options for
+    // doing that in a version-agnostic way: walking the entire QObject tree,
+    // hooking the constructor, or using offsets directly to get ahold of the
+    // StatusBarView from the StatusBarController from the MainWindowController.
+    // I might reconsider this in the future if there is demand for it.
+
+    if ((icon_mask&o) == 0)
+        NM_LOG("nickel_orientation: the status bar rotate icon may be out of date (this is expected)");
+
+    // If we ever wanted to add an option for setting to rotation to auto/locked
+    // portrait/locked landscape, we'd need to call RotatePopupController
+    // ::on{Auto,Portrait,Landscape} on StatusBarView::rotatePopupController.
+    // This is how the rotate popup and the dropdown in the reading settings
+    // does it.
+
+    // ---
+
+    #undef vtable_ptr
+    #undef vtable_target
+
+    Settings_SettingsD(settings);
 
     return nm_action_result_silent();
 }
