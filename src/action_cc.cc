@@ -6,7 +6,6 @@
 #include <QUrl>
 #include <QVariant>
 #include <QWidget>
-#include <QWindow>
 
 #include <initializer_list>
 
@@ -20,7 +19,6 @@
 #include <unistd.h>
 
 #include "action.h"
-#include "qnamespace.h"
 #include "util.h"
 
 // A note about Nickel dlsyms:
@@ -577,7 +575,7 @@ NM_ACTION_(nickel_orientation) {
     reinterpret_cast<void*&>(Device_getCurrentDevice) = dlsym(RTLD_DEFAULT, "_ZN6Device16getCurrentDeviceEv");
     NM_CHECK(nullptr, Device_getCurrentDevice, "could not dlsym Device::getCurrentDevice");
 
-    //libnickel 4.6 * _ZNK6Device20hasOrientationSensorEv
+    //libnickel 4.11.11911 * _ZNK6Device20hasOrientationSensorEv
     bool (*Device_hasOrientationSensor)(Device*);
     reinterpret_cast<void*&>(Device_hasOrientationSensor) = dlsym(RTLD_DEFAULT, "_ZNK6Device20hasOrientationSensorEv");
     NM_CHECK(nullptr, Device_getCurrentDevice, "could not dlsym Device::hasOrientationSensor");
