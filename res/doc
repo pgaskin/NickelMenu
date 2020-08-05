@@ -32,7 +32,10 @@
 #                   nickel_misc        - other stuff which isn't significant enough for its own category
 #                   nickel_open        - opens a view
 #                   nickel_wifi        - controls wifi (note: it doesn't wait for it to connect or disconnect, neither does it check for success)
-#                   nickel_orientation - controls screen orientation (devices without an orientation sensor need to set the config option [DeveloperSettings] ForceAllowLandscape=true or use the kobopatch patch) (this doesn't currently do anything useful on devices with an orientation sensor)
+#                   nickel_orientation - controls screen orientation
+#                                        (devices without an orientation sensor need to use the kobopatch patch "Allow rotation on all devices" or set [DeveloperSettings] ForceAllowLandscape=true)
+#                                        (devices with an orientation sensor don't need to do anything, but can set the config setting to make this work on all views)
+#                                        (this will override the rotation icon/popup until it is set to something different or the device is rebooted)
 #                   power              - gracefully controls the power state
 #                   skip               - skips a number of actions after the current one (mainly useful for more complex conditional chains) (this action will not update the success/failure flag)
 #     <arg>       the argument passed to the action:
@@ -99,10 +102,10 @@
 #                                          disable            - disables WiFi
 #                                          toggle             - toggles WiFi (but doesn't necessarily connect to it)
 #                   nickel_orientation - one of:
-#                                          portrait           (works if the selected orientation is Auto or Portrait)
-#                                          landscape          (works if the selected orientation is Auto or Landscape)
-#                                          inverted_portrait  (works if the selected orientation is Auto or Portrait)
-#                                          inverted_landscape (works if the selected orientation is Auto or Landscape)
+#                                          portrait (4.13.12638+)
+#                                          landscape (4.13.12638+)
+#                                          inverted_portrait (4.13.12638+)
+#                                          inverted_landscape (4.13.12638+)
 #                   power              - one of:
 #                                          shutdown (4.13.12638+)
 #                                          reboot (4.13.12638+)
