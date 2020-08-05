@@ -140,7 +140,7 @@ extern "C" __attribute__((visibility("default"))) MenuTextItem* _nm_menu_hook(vo
     NM_LOG("AbstractNickelMenuController::createMenuTextItem(%p, `%s`, %d, %d, `%s`)", menu, qPrintable(label), checkable, checked, qPrintable(thingy));
 
     QString trmm = QCoreApplication::translate("StatusBarMenuController", "Settings");
-    QString trrm = QCoreApplication::translate("DictionaryActionProxy", "Set Page as Home");
+    QString trrm = QCoreApplication::translate("DictionaryActionProxy", "Dictionary");
     QString trbm = QCoreApplication::translate("N3BrowserSettingsMenuController", "Keyboard");
     NM_LOG("Comparing against '%s', '%s', '%s'", qPrintable(trmm), qPrintable(trrm), qPrintable(trbm));
 
