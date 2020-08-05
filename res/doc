@@ -18,6 +18,7 @@
 #                   main    - the menu in the top-left corner of the home screen
 #                   reader  - the overflow menu in the reader
 #                   browser - the menu in the bottom-right of the web browser
+#                   library - the menu in the filter bar for the "My Books" and "My Articles" library views
 #     <label>     the label to show on the menu item (must not contain :)
 #     <action>    the type of action to run, one of:
 #                   cmd_spawn      - starts a command in the background
