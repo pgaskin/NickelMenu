@@ -102,14 +102,16 @@
 #                                          disable            - disables WiFi
 #                                          toggle             - toggles WiFi (but doesn't necessarily connect to it)
 #                   nickel_orientation - one of:
-#                                          portrait (4.13.12638+)
-#                                          landscape (4.13.12638+)
-#                                          inverted_portrait (4.13.12638+)
+#                                          portrait           (4.13.12638+)
+#                                          landscape          (4.13.12638+)
+#                                          inverted_portrait  (4.13.12638+)
 #                                          inverted_landscape (4.13.12638+)
+#                                          invert             (4.13.12638+) - Toggles between inverted/non-inverted (preserves side) (this will not work if used in a chain with swap)
+#                                          swap               (4.13.12638+) - Toggles between portrait/landscape (preserves inversion) (this will not work if used in a chain with invert)
 #                   power              - one of:
 #                                          shutdown (4.13.12638+)
-#                                          reboot (4.13.12638+)
-#                                          sleep (4.13.12638+)
+#                                          reboot   (4.13.12638+)
+#                                          sleep    (4.13.12638+)
 #                   skip               - the number of actions to skip, or -1 to skip all remaining ones (i.e. end the chain)
 #
 #   chain_success:<action>:<arg>

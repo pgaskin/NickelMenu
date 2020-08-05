@@ -560,7 +560,16 @@ NM_ACTION_(nickel_orientation) {
     else if (!strcmp(arg, "landscape"))          o = Qt::LandscapeOrientation;
     else if (!strcmp(arg, "inverted_portrait"))  o = Qt::InvertedPortraitOrientation;
     else if (!strcmp(arg, "inverted_landscape")) o = Qt::InvertedLandscapeOrientation;
-    // TODO: "invert", "swap" options.
+    else if (!strcmp(arg, "invert") || !strcmp(arg, "swap")) {
+        switch ((o = QGuiApplication::primaryScreen()->orientation())) {
+        case Qt::PrimaryOrientation:           NM_ERR_RET(nullptr, "could not get current screen orientation");                         break;
+        case Qt::PortraitOrientation:          o = !strcmp(arg, "invert") ? Qt::InvertedPortraitOrientation : Qt::LandscapeOrientation; break;
+        case Qt::LandscapeOrientation:         o = !strcmp(arg, "invert") ? Qt::InvertedLandscapeOrientation : Qt::PortraitOrientation; break;
+        case Qt::InvertedPortraitOrientation:  o = !strcmp(arg, "invert") ? Qt::PortraitOrientation : Qt::InvertedLandscapeOrientation; break;
+        case Qt::InvertedLandscapeOrientation: o = !strcmp(arg, "invert") ? Qt::LandscapeOrientation : Qt::InvertedPortraitOrientation; break;
+        default:                               NM_ERR_RET(nullptr, "unknown screen orientation %d", o);                                 break;
+        }
+    }
     else NM_ERR_RET(nullptr, "unknown nickel_orientation action '%s'", arg);
 
     // ---
