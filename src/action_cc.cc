@@ -198,7 +198,7 @@ NM_ACTION_(nickel_setting) {
     // address plus 8 (for the vtable header), then look up the address in
     // reverse to find that it refers to a GOT relocation for a vtable symbol.
 
-    #define vtable_ptr(x) *reinterpret_cast<void**&>(settings)
+    #define vtable_ptr(x) *reinterpret_cast<void**&>(x)
     #define vtable_target(x) reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(x)+8)
 
     //libnickel 4.6 * _ZTV8Settings

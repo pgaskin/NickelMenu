@@ -10,8 +10,10 @@ extern "C" {
 #include "action.h"
 
 typedef enum {
-    NM_MENU_LOCATION_MAIN_MENU   = 1,
-    NM_MENU_LOCATION_READER_MENU = 2,
+    NM_MENU_LOCATION_MAIN_MENU    = 1,
+    NM_MENU_LOCATION_READER_MENU  = 2,
+    NM_MENU_LOCATION_BROWSER_MENU = 3,
+    NM_MENU_LOCATION_LIBRARY_MENU = 4,
 } nm_menu_location_t;
 
 typedef struct nm_menu_action_t {

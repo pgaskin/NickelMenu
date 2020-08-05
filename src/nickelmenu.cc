@@ -141,7 +141,9 @@ extern "C" __attribute__((visibility("default"))) MenuTextItem* _nm_menu_hook(vo
 
     QString trmm = QCoreApplication::translate("StatusBarMenuController", "Settings");
     QString trrm = QCoreApplication::translate("DictionaryActionProxy", "Dictionary");
-    NM_LOG("Comparing against '%s', '%s'", qPrintable(trmm), qPrintable(trrm));
+    QString trbm = QCoreApplication::translate("N3BrowserSettingsMenuController", "Keyboard");
+    QString trlm = QCoreApplication::translate("LibraryViewMenuController", "Manage downloads");
+    NM_LOG("Comparing against '%s', '%s', '%s', '%s'", qPrintable(trmm), qPrintable(trrm), qPrintable(trbm), qPrintable(trlm));
 
     nm_menu_location_t loc = {};
     if (label == trmm && !checkable) {
@@ -150,6 +152,12 @@ extern "C" __attribute__((visibility("default"))) MenuTextItem* _nm_menu_hook(vo
     } else if (label == trrm && !checkable) {
         NM_LOG("Intercepting reader menu (label=Dictionary, checkable=false)...");
         loc = NM_MENU_LOCATION_READER_MENU;
+    } else if (label == trbm && !checkable) {
+        NM_LOG("Intercepting browser menu (label=Keyboard, checkable=false)...");
+        loc = NM_MENU_LOCATION_BROWSER_MENU;
+    } else if (label == trlm && !checkable) {
+        NM_LOG("Intercepting library menu (label=Manage downloads, checkable=false)...");  // this is actually two menus: in "My Books", and in "My Articles"
+        loc = NM_MENU_LOCATION_LIBRARY_MENU;
     }
 
     if (loc)

@@ -305,7 +305,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
         }))) RETERR("error appending default action to empty config: %s", nm_config_parse__strerror(ret));
     }
 
-    size_t mm = 0, rm = 0;
+    size_t mm = 0, rm = 0, bm = 0, lm = 0;
     for (nm_config_t *cur = state.cfg_s; cur; cur = cur->next) {
         switch (cur->type) {
         case NM_CONFIG_TYPE_MENU_ITEM:
@@ -313,8 +313,10 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
             for (nm_menu_action_t *cur_act = cur->value.menu_item->action; cur_act; cur_act = cur_act->next)
                 NM_LOG("...cfg(NM_CONFIG_TYPE_MENU_ITEM) (%s%s%s) : %p:%s", cur_act->on_success ? "on_success" : "", (cur_act->on_success && cur_act->on_failure) ? ", " : "", cur_act->on_failure ? "on_failure" : "", cur_act->act, cur_act->arg);
             switch (cur->value.menu_item->loc) {
-                case NM_MENU_LOCATION_MAIN_MENU:   mm++; break;
-                case NM_MENU_LOCATION_READER_MENU: rm++; break;
+                case NM_MENU_LOCATION_MAIN_MENU:    mm++; break;
+                case NM_MENU_LOCATION_READER_MENU:  rm++; break;
+                case NM_MENU_LOCATION_BROWSER_MENU: bm++; break;
+                case NM_MENU_LOCATION_LIBRARY_MENU: lm++; break;
             }
             break;
         case NM_CONFIG_TYPE_GENERATOR:
@@ -327,6 +329,10 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
         RETERR("too many menu items in main menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
     if (rm > NM_CONFIG_MAX_MENU_ITEMS_PER_MENU)
         RETERR("too many menu items in reader menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
+    if (bm > NM_CONFIG_MAX_MENU_ITEMS_PER_MENU)
+        RETERR("too many menu items in browser menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
+    if (lm > NM_CONFIG_MAX_MENU_ITEMS_PER_MENU)
+        RETERR("too many menu items in library menu (> %d)", NM_CONFIG_MAX_MENU_ITEMS_PER_MENU);
 
     return state.cfg_s;
 }
@@ -340,9 +346,11 @@ static bool nm_config_parse__line_item(const char *type, char **line, nm_menu_it
     *it_out = (nm_menu_item_t){0};
 
     char *s_loc = strtrim(strsep(line, ":"));
-    if      (!s_loc)                   NM_ERR_RET(NULL, "field 2: expected location, got end of line");
-    else if (!strcmp(s_loc, "main"))   it_out->loc = NM_MENU_LOCATION_MAIN_MENU;
-    else if (!strcmp(s_loc, "reader")) it_out->loc = NM_MENU_LOCATION_READER_MENU;
+    if      (!s_loc)                    NM_ERR_RET(NULL, "field 2: expected location, got end of line");
+    else if (!strcmp(s_loc, "main"))    it_out->loc = NM_MENU_LOCATION_MAIN_MENU;
+    else if (!strcmp(s_loc, "reader"))  it_out->loc = NM_MENU_LOCATION_READER_MENU;
+    else if (!strcmp(s_loc, "browser")) it_out->loc = NM_MENU_LOCATION_BROWSER_MENU;
+    else if (!strcmp(s_loc, "library")) it_out->loc = NM_MENU_LOCATION_LIBRARY_MENU;
     else NM_ERR_RET(NULL, "field 2: unknown location '%s'", s_loc);
 
     char *p_lbl = strtrim(strsep(line, ":"));
