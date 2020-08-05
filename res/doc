@@ -134,29 +134,31 @@
 #
 # For example, you might have a configuration file named "mystuff" like:
 #
-#   menu_item :main   :Show an Error   :dbg_error      :This is an error message!
-#   menu_item :main   :Do Nothing      :cmd_spawn      :sleep 60
-#   menu_item :main   :Dump Syslog     :cmd_spawn      :logread > /mnt/onboard/.adds/syslog.log
-#   menu_item :main   :Kernel Version  :cmd_output     :500:uname -a
-#   menu_item :main   :Sketch Pad      :nickel_extras  :sketch_pad
-#   menu_item :main   :Plato           :kfmon          :plato.png
-#   generator :main   :kfmon
-#   menu_item :reader :Invert Screen   :nickel_setting :toggle :invert
-#   menu_item :main   :IP Address      :cmd_output     :500:/sbin/ifconfig | /usr/bin/awk '/inet addr/{print substr($2,6)}'
-#   menu_item :main   :Telnet          :cmd_spawn      :quiet:/bin/mount -t devpts | /bin/grep -q /dev/pts || { /bin/mkdir -p /dev/pts && /bin/mount -t devpts devpts /dev/pts; }
-#     chain_success                    :cmd_spawn      :quiet:/usr/bin/pkill -f "^/usr/bin/tcpsvd -E 0.0.0.0 1023" || true && exec /usr/bin/tcpsvd -E 0.0.0.0 1023 /usr/sbin/telnetd -i -l /bin/login
-#     chain_success                    :dbg_toast      :Started Telnet server on port 1023.
-#   menu_item :main   :FTP             :cmd_spawn      :quiet:/usr/bin/pkill -f "^/usr/bin/tcpsvd -E 0.0.0.0 1021" || true && exec /usr/bin/tcpsvd -E 0.0.0.0 1021 /usr/sbin/ftpd -w -t 30 /mnt/onboard
-#     chain_success                    :dbg_toast      :Started FTP server for KOBOeReader partition on port 1021.
-#   menu_item :main   :Telnet (toggle) :cmd_output     :500:quiet :/usr/bin/pkill -f "^/usr/bin/tcpsvd -E 0.0.0.0 2023"
+#   menu_item :main    :Show an Error   :dbg_error      :This is an error message!
+#   menu_item :main    :Do Nothing      :cmd_spawn      :sleep 60
+#   menu_item :main    :Dump Syslog     :cmd_spawn      :logread > /mnt/onboard/.adds/syslog.log
+#   menu_item :main    :Kernel Version  :cmd_output     :500:uname -a
+#   menu_item :main    :Sketch Pad      :nickel_extras  :sketch_pad
+#   menu_item :main    :Plato           :kfmon          :plato.png
+#   generator :main    :kfmon
+#   menu_item :reader  :Invert Screen   :nickel_setting :toggle :invert
+#   menu_item :main    :IP Address      :cmd_output     :500:/sbin/ifconfig | /usr/bin/awk '/inet addr/{print substr($2,6)}'
+#   menu_item :main    :Telnet          :cmd_spawn      :quiet:/bin/mount -t devpts | /bin/grep -q /dev/pts || { /bin/mkdir -p /dev/pts && /bin/mount -t devpts devpts /dev/pts; }
+#     chain_success                     :cmd_spawn      :quiet:/usr/bin/pkill -f "^/usr/bin/tcpsvd -E 0.0.0.0 1023" || true && exec /usr/bin/tcpsvd -E 0.0.0.0 1023 /usr/sbin/telnetd -i -l /bin/login
+#     chain_success                     :dbg_toast      :Started Telnet server on port 1023.
+#   menu_item :main    :FTP             :cmd_spawn      :quiet:/usr/bin/pkill -f "^/usr/bin/tcpsvd -E 0.0.0.0 1021" || true && exec /usr/bin/tcpsvd -E 0.0.0.0 1021 /usr/sbin/ftpd -w -t 30 /mnt/onboard
+#     chain_success                     :dbg_toast      :Started FTP server for KOBOeReader partition on port 1021.
+#   menu_item :main    :Telnet (toggle) :cmd_output     :500:quiet :/usr/bin/pkill -f "^/usr/bin/tcpsvd -E 0.0.0.0 2023"
 #     chain_success:skip:5
-#       chain_failure                  :cmd_spawn      :quiet :/bin/mount -t devpts | /bin/grep -q /dev/pts || { /bin/mkdir -p /dev/pts && /bin/mount -t devpts devpts /dev/pts; }
-#       chain_success                  :cmd_spawn      :quiet :exec /usr/bin/tcpsvd -E 0.0.0.0 2023 /usr/sbin/telnetd -i -l /bin/login
-#       chain_success                  :dbg_toast      :Started Telnet server on port 2023
-#       chain_failure                  :dbg_toast      :Error starting Telnet server on port 2023
+#       chain_failure                   :cmd_spawn      :quiet :/bin/mount -t devpts | /bin/grep -q /dev/pts || { /bin/mkdir -p /dev/pts && /bin/mount -t devpts devpts /dev/pts; }
+#       chain_success                   :cmd_spawn      :quiet :exec /usr/bin/tcpsvd -E 0.0.0.0 2023 /usr/sbin/telnetd -i -l /bin/login
+#       chain_success                   :dbg_toast      :Started Telnet server on port 2023
+#       chain_failure                   :dbg_toast      :Error starting Telnet server on port 2023
 #       chain_always:skip:-1
-#     chain_success                    :dbg_toast      :Stopped Telnet server on port 2023
-#   menu_item :main   :Import Books    :nickel_misc    :rescan_books_full
+#     chain_success                     :dbg_toast      :Stopped Telnet server on port 2023
+#   menu_item :main    :Import Books    :nickel_misc    :rescan_books_full
+#   menu_item :browser :Invert Screen   :nickel_setting :toggle :invert
+#   menu_item :browser :Open Pop-Up     :nickel_browser :modal
 #
 # You will need to reboot to see any changes.
 #
