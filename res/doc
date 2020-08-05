@@ -51,10 +51,10 @@
 #                                        This is actually the basename of the watch's filename as specified in its KFMon config (i.e., the png).
 #                                        You can also check the output of the 'list' command via the kfmon-ipc tool.
 #                   nickel_setting     - <action>:<setting>
-#                                        action if one of:
-#                                           toggle  - toggles between true/false
-#                                           enable  - sets to true
-#                                           disable - sets to false
+#                                        action is one of:
+#                                          toggle  - toggles between true/false
+#                                          enable  - sets to true
+#                                          disable - sets to false
 #                                        setting is one of:
 #                                          invert      - FeatureSettings.InvertScreen
 #                                          lockscreen  - PowerSettings.UnlockEnabled (4.12.12111+)
