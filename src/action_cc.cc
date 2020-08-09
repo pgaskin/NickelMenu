@@ -278,22 +278,26 @@ NM_ACTION_(nickel_setting) {
 
         NM_CHECK(nullptr, PowerSettings__getUnlockEnabled(settings) == !v, "failed to set setting");
         vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
-    }  else if (!strcmp(arg2, "force_wifi")) {
+    } else if (!strcmp(arg2, "force_wifi") || !strcmp(arg2, "auto_usb_gadget")) {
         //libnickel 4.6 * _ZTV11DevSettings
         void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV11DevSettings");
         NM_CHECK(nullptr, PowerSettings_vtable, "could not dlsym the vtable for DevSettings");
         vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
 
+        const QString st = !strcmp(arg2, "force_wifi")
+            ? QStringLiteral("ForceWifiOn")
+            : QStringLiteral("AutoUsbGadget");
+
         if (mode == mode_toggle) {
-            QVariant v1 = Settings_getSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(false));
+            QVariant v1 = Settings_getSetting(settings, st, QVariant(false));
             vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
             v = v1.toBool();
         }
 
-        Settings_saveSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(!v), false);
+        Settings_saveSetting(settings, st, QVariant(!v), false);
         vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
 
-        QVariant v2 = Settings_getSetting(settings, QStringLiteral("ForceWifiOn"), QVariant(false));
+        QVariant v2 = Settings_getSetting(settings, st, QVariant(false));
         vtable_ptr(settings) = vtable_target(PowerSettings_vtable);
     } else {
         // TODO: more settings?
