@@ -58,10 +58,11 @@
 #                                          enable  - sets to true
 #                                          disable - sets to false
 #                                        setting is one of:
-#                                          invert      - FeatureSettings.InvertScreen
-#                                          lockscreen  - PowerSettings.UnlockEnabled (4.12.12111+)
-#                                          screenshots - FeatureSettings.Screenshots
-#                                          force_wifi  - DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
+#                                          invert          - FeatureSettings.InvertScreen
+#                                          lockscreen      - PowerSettings.UnlockEnabled (4.12.12111+)
+#                                          screenshots     - FeatureSettings.Screenshots
+#                                          force_wifi      - DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
+#                                          auto_usb_gadget - Automatically enable USB mass storage on connection
 #                   nickel_extras      - the mimetype of the plugin, or one of:
 #                                          unblock_it
 #                                          sketch_pad
