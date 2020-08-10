@@ -1,0 +1,10 @@
+[B][SIZE=5]NickelMenu v0.3.1[/SIZE][/B]
+
+This release adds a few new actions and menu locations. In addition, there are some minor improvements to the documentation.
+[LIST]
+[*] You can now add items to the `library` menu. This is perfect for actions like `nickel_misc:rescan_books_full` or other actions mainly only useful in the library, but all actions will work here.
+[*] You can now add items to the `browser` menu. This can be used for actions like `nickel_setting:toggle:invert`, but all actions will work here too.
+[*] The new `power:sleep` action will make the Kobo sleep, the same thing as when you press the power button.
+[*] The new `nickel_orientation` action allows you to control the screen orientation, even on devices which don't have an orientation sensor. This includes access the inverted orientations. There are options for setting the current orientation (`portrait`, `landscape`, `inverted_portrait`, `inverted_landscape`) and for changing it (`invert`, `swap`). See the [URL="https://github.com/pgaskin/NickelMenu/blob/v0.3.1/res/doc#L37-L40"]documentation[/URL] for more details.
+[/LIST]
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.3.1"]release[/URL] on GitHub for more details.
