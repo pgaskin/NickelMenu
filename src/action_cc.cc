@@ -816,3 +816,74 @@ NM_ACTION_(cmd_output) {
         ? nm_action_result_silent()
         : nm_action_result_msg("%s", qPrintable(out));
 }
+
+// --- temporary action to test creating menus from scratch
+
+#include <QMenu>
+
+// NickelTouchMenu:TouchMenu:QMenu:QWidget:QObject.
+typedef void TouchMenu;
+typedef void NickelTouchMenu;
+
+NM_ACTION_(test_menu) {
+    NM_CHECK(nullptr, !arg || !*arg, "unexpected argument '%s'", arg);
+
+    void (*NickelTouchMenu_NickelTouchMenu)(NickelTouchMenu*, QWidget*, /*DecorationPosition*/int); // second is parent, third param is position, 3=top
+    reinterpret_cast<void*&>(NickelTouchMenu_NickelTouchMenu) = dlsym(RTLD_DEFAULT, "_ZN15NickelTouchMenuC2EP7QWidget18DecorationPosition");
+    NM_CHECK(nullptr, NickelTouchMenu_NickelTouchMenu, "could not dlsym NickelTouchMenu_NickelTouchMenu constructor");
+
+    void (*TouchMenu_setVisible)(TouchMenu*, bool); // wrapper around QWidget which also tail-calls TouchMenu::{hiding,showing}
+    reinterpret_cast<void*&>(TouchMenu_setVisible) = dlsym(RTLD_DEFAULT, "_ZN9TouchMenu10setVisibleEb");
+    NM_CHECK(nullptr, NickelTouchMenu_NickelTouchMenu, "could not dlsym TouchMenu::setVisible");
+
+    NickelTouchMenu *menu = calloc(1, 512); // about 3x larger than the largest menu I've seen (most inherit from NickelTouchMenu) to be on the safe side
+    NM_CHECK(nullptr, menu, "could not allocate memory for menu");
+
+    NickelTouchMenu_NickelTouchMenu(menu, nullptr, 3);
+
+    // TODO?: QWidget::setStyleSheet based on old StatusBarMenu.qss
+
+    // TODO?: TouchMenu::setMinScreenPadding(int)
+    //       Device::isTrilogy  - 0xF
+    //       Device::isPhoenix  - 0x14
+    //       Device::isDragon   - 0x1E
+    //       Device::isDaylight - 0x1E
+
+    QWidget::connect(reinterpret_cast<QMenu*>(menu)->addAction("Test"), &QAction::triggered, [=](bool){
+        NM_LOG("triggered");
+        reinterpret_cast<QMenu*>(menu)->hide();
+    });
+
+    reinterpret_cast<QMenu*>(menu)->addSeparator();
+
+    QWidget::connect(reinterpret_cast<QMenu*>(menu)->addAction("Test 1"), &QAction::triggered, [=](bool){
+        NM_LOG("triggered 1");
+        reinterpret_cast<QMenu*>(menu)->hide();
+    });
+
+    reinterpret_cast<QMenu*>(menu)->addSeparator();
+
+    QWidget::connect(reinterpret_cast<QMenu*>(menu)->addAction("Test 2"), &QAction::triggered, [=](bool){
+        NM_LOG("triggered 2");
+        reinterpret_cast<QMenu*>(menu)->hide();
+    });
+
+    // _ZN22AbstractMenuController14grabTapGestureEP15GestureReceiver:
+    // - QWidget::setAttribute(121)
+    // - QWidget::grabGesture(1, 0)
+    // - does something fiddly with a GestureReceiver dynamic_cast'd from a QObject from somewhere
+
+    reinterpret_cast<QMenu*>(menu)->setAttribute(Qt::WA_AcceptTouchEvents);
+    reinterpret_cast<QMenu*>(menu)->grabGesture(Qt::TapGesture, {});
+    // TODO: figure out how to get a GestureReceiver so the events actually work
+
+    // TODO: positioning
+
+    // TODO?: reparenting, object lifetime
+
+    TouchMenu_setVisible(reinterpret_cast<TouchMenu*>(menu), true);
+
+    // TODO: see if anything else needs to be done
+
+    return nm_action_result_silent();
+}

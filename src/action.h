@@ -52,7 +52,8 @@ void nm_action_result_free(nm_action_result_t *res);
     X(nickel_wifi)        \
     X(nickel_orientation) \
     X(power)              \
-    X(skip)
+    X(skip)               \
+    X(test_menu)
 
 #define X(name) NM_ACTION_(name);
 NM_ACTIONS
