@@ -443,12 +443,16 @@ NM_ACTION_(nickel_browser) {
 
 NM_ACTION_(nickel_misc) {
     if (!strcmp(arg, "home")) {
-        //libnickel 4.6 * _ZN19StatusBarController4homeEv
-        void (*StatusBarController_home)();
-        reinterpret_cast<void*&>(StatusBarController_home) = dlsym(RTLD_DEFAULT, "_ZN19StatusBarController4homeEv");
-        NM_CHECK(nullptr, StatusBarController_home, "could not dlsym StatusBarController::home");
+        //libnickel 4.6 * _ZN19StatusBarController4homeEv _ZN17MainNavController4homeEv
+        void (*StatusBarController_home)(void*);
+        void (*MainNavController_home)(void*);
 
-        StatusBarController_home();
+        reinterpret_cast<void*&>(StatusBarController_home) = dlsym(RTLD_DEFAULT, "_ZN19StatusBarController4homeEv");
+        reinterpret_cast<void*&>(MainNavController_home) = dlsym(RTLD_DEFAULT, "_ZN17MainNavController4homeEv");
+        NM_CHECK(nullptr, StatusBarController_home || MainNavController_home, "could not dlsym StatusBarController::home (pre-4.23.15505) or MainNavController::home (4.23.15505+)");
+
+        // technically, we need an instance, but it isn't used so it doesn't matter (and if it does crash, we can fix it later as it's not critical) as of 15505
+        (StatusBarController_home ?: MainNavController_home)(nullptr);
     } else if (!strcmp(arg, "rescan_books")) {
         //libnickel 4.13.12638 * _ZN19PlugWorkflowManager14sharedInstanceEv
         PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
