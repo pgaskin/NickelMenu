@@ -393,9 +393,11 @@ static bool nm_config_parse__line_generator(const char *type, char **line, nm_ge
     *gn_out = (nm_generator_t){0};
 
     char *s_loc = strtrim(strsep(line, ":"));
-    if      (!s_loc)                   NM_ERR_RET(NULL, "field 2: expected location, got end of line");
-    else if (!strcmp(s_loc, "main"))   gn_out->loc = NM_MENU_LOCATION_MAIN_MENU;
-    else if (!strcmp(s_loc, "reader")) gn_out->loc = NM_MENU_LOCATION_READER_MENU;
+    if      (!s_loc)                    NM_ERR_RET(NULL, "field 2: expected location, got end of line");
+    else if (!strcmp(s_loc, "main"))    gn_out->loc = NM_MENU_LOCATION_MAIN_MENU;
+    else if (!strcmp(s_loc, "reader"))  gn_out->loc = NM_MENU_LOCATION_READER_MENU;
+    else if (!strcmp(s_loc, "browser")) gn_out->loc = NM_MENU_LOCATION_BROWSER_MENU;
+    else if (!strcmp(s_loc, "library")) gn_out->loc = NM_MENU_LOCATION_LIBRARY_MENU;
     else NM_ERR_RET(NULL, "field 2: unknown location '%s'", s_loc);
 
     char *s_generate = strtrim(strsep(line, ":"));
