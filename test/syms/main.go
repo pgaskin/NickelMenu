@@ -46,7 +46,7 @@ func main() {
 			if c.EndVersion == "*" || strings.HasPrefix(version+".", c.EndVersion+".") {
 				em++
 			}
-			if versioncmp(c.StartVersion, version) <= 0 && versioncmp(version, c.EndVersion) >= 0 {
+			if versioncmp(c.StartVersion, version) <= 0 && versioncmp(version, c.EndVersion) <= 0 {
 				if _, ok := checks[version]; !ok {
 					checks[version] = map[string][]SymCheck{}
 				}
