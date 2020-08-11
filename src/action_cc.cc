@@ -76,8 +76,6 @@ NM_ACTION_(nickel_open) {
             return nm_action_result_silent();
         }
 
-        // TODO: figure out why library:{library,library2,all,authors,series,shelves,pocket} segfaults.
-
         NM_LOG("nickel_open: no special handling needed for '%s:%s' on fw >15505", arg1, arg2);
     }
 
@@ -136,7 +134,24 @@ NM_ACTION_(nickel_open) {
     NM_CHECK(nullptr, fn_f, "could not find function %s (is your firmware too old?)", sym_f);
     NM_LOG("c: %s = %p; d: %s = %p; f: %s = %p", sym_c, fn_c, sym_d, fn_d, sym_f, fn_f);
 
-    void *obj = alloca(512); // larger than necessary, but better to be safe
+    // HACK: I don't exactly know why this is needed, but without it, most of
+    // the LibraryNavMixin ones segfault. On firmware versions before 15505, it
+    // must be initialized as a QObject (I don't understand why, though). Before
+    // 15505, I used to just declare it as a QObject on the stack like `QObject
+    // obj(nullptr);`, but this doesn't work anymore after 15505 because it's
+    // too small for the pointer to the LibraryBuilder the LibraryNavMixin now
+    // uses. To solve that, we allocate more than enough memory on the stack,
+    // then use placement new to initialize the QObject. Note that I'm not
+    // calling the QObject destructor (even though we should) since I don't feel
+    // comfortable with it because I don't totally understand how the
+    // LibraryNavMixin does its initialization, and there isn't a risk of there
+    // being signals pointing to this stack variable since the nav mixins don't
+    // use signals/slots or keep references to themselves.
+    // TODO: Figure out how this actually works.
+
+    void *obj = alloca(512);
+    new(obj) QObject();
+
     fn_c(obj);
     fn_f(obj);
     fn_d(obj);
