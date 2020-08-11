@@ -31,6 +31,7 @@
 #                   nickel_setting     - changes a setting
 #                   nickel_extras      - opens one of the beta features
 #                   nickel_browser     - opens the browser
+#                                        (on firmware 4.23.15505+, you won't be able to exit the browser unless you use the "modal" option or add "menu_item:browser:Quit:nickel_misc:home" to the config)
 #                   nickel_misc        - other stuff which isn't significant enough for its own category
 #                   nickel_open        - opens a view
 #                   nickel_wifi        - controls wifi (note: it doesn't wait for it to connect or disconnect, neither does it check for success)
