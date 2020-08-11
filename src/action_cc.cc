@@ -60,6 +60,25 @@ NM_ACTION_(nickel_open) {
     char *arg2 = strtrim(tmp1);
     NM_CHECK(nullptr, arg2, "could not find a : in the argument");
 
+    //libnickel 4.23.15505 * _ZN11MainNavViewC1EP7QWidget
+    if (dlsym(RTLD_DEFAULT, "_ZN11MainNavViewC1EP7QWidget")) {
+        NM_LOG("nickel_open: detected firmware >15505 (new nav tab bar), checking special cases");
+
+        if (!strcmp(arg1, "library") && !strcmp(arg2, "dropbox")) {
+            //libnickel 4.23.15505 * _ZN14MoreController7dropboxEv
+            void (*MoreController_dropbox)(void*);
+            reinterpret_cast<void*&>(MoreController_dropbox) = dlsym(RTLD_DEFAULT, "_ZN14MoreController7dropboxEv");
+            NM_CHECK(nullptr, MoreController_dropbox, "could not dlsym MoreController::dropbox");
+
+            // technically, we need a MoreController, but it isn't used as of 15505, so it doesn't matter (and if it ever does, it's not going to crash in a critical place)
+            MoreController_dropbox(nullptr);
+
+            return nm_action_result_silent();
+        }
+
+        NM_LOG("nickel_open: no special handling needed for '%s:%s' on fw >15505", arg1, arg2);
+    }
+
     const char *sym_c = nullptr; // *NavMixin constructor (subclass of QObject)
     const char *sym_d = nullptr; // *NavMixin destructor (D1, not D0 because it also tries to call delete)
     const char *sym_f = nullptr; // *NavMixin::* function
@@ -83,7 +102,7 @@ NM_ACTION_(nickel_open) {
         else if (!strcmp(arg2, "series"))   sym_f = "_ZN15LibraryNavMixin10showSeriesEv";              //libnickel 4.20.14601 * _ZN15LibraryNavMixin10showSeriesEv
         else if (!strcmp(arg2, "shelves"))  sym_f = "_ZN15LibraryNavMixin11showShelvesEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showShelvesEv
         else if (!strcmp(arg2, "pocket"))   sym_f = "_ZN15LibraryNavMixin17showPocketLibraryEv";       //libnickel 4.6 * _ZN15LibraryNavMixin17showPocketLibraryEv
-        else if (!strcmp(arg2, "dropbox"))  sym_f = "_ZN15LibraryNavMixin11showDropboxEv";             //libnickel 4.18.13737 * _ZN15LibraryNavMixin11showDropboxEv
+        else if (!strcmp(arg2, "dropbox"))  sym_f = "_ZN15LibraryNavMixin11showDropboxEv";             //libnickel 4.18.13737 4.22.15268 _ZN15LibraryNavMixin11showDropboxEv
     } else if (!strcmp(arg1, "reading_life")) {
         sym_c = "_ZN19ReadingLifeNavMixinC1Ev"; //libnickel 4.6 * _ZN19ReadingLifeNavMixinC1Ev
         sym_d = "_ZN19ReadingLifeNavMixinD1Ev"; //libnickel 4.6 * _ZN19ReadingLifeNavMixinD1Ev
@@ -104,9 +123,9 @@ NM_ACTION_(nickel_open) {
     NM_CHECK(nullptr, sym_d, "destructor not specified (this is a bug)");
     NM_CHECK(nullptr, sym_f, "unknown view '%s' (in '%s:%s')", arg2, arg1, arg2);
 
-    void (*fn_c)(QObject *_this);
-    void (*fn_d)(QObject *_this);
-    void (*fn_f)(QObject *_this);
+    void (*fn_c)(void *_this);
+    void (*fn_d)(void *_this);
+    void (*fn_f)(void *_this);
 
     reinterpret_cast<void*&>(fn_c) = dlsym(RTLD_DEFAULT, sym_c);
     reinterpret_cast<void*&>(fn_d) = dlsym(RTLD_DEFAULT, sym_d);
@@ -117,10 +136,27 @@ NM_ACTION_(nickel_open) {
     NM_CHECK(nullptr, fn_f, "could not find function %s (is your firmware too old?)", sym_f);
     NM_LOG("c: %s = %p; d: %s = %p; f: %s = %p", sym_c, fn_c, sym_d, fn_d, sym_f, fn_f);
 
-    QObject obj(nullptr);
-    fn_c(&obj);
-    fn_f(&obj);
-    fn_d(&obj);
+    // HACK: I don't exactly know why this is needed, but without it, most of
+    // the LibraryNavMixin ones segfault. On firmware versions before 15505, it
+    // must be initialized as a QObject (I don't understand why, though). Before
+    // 15505, I used to just declare it as a QObject on the stack like `QObject
+    // obj(nullptr);`, but this doesn't work anymore after 15505 because it's
+    // too small for the pointer to the LibraryBuilder the LibraryNavMixin now
+    // uses. To solve that, we allocate more than enough memory on the stack,
+    // then use placement new to initialize the QObject. Note that I'm not
+    // calling the QObject destructor (even though we should) since I don't feel
+    // comfortable with it because I don't totally understand how the
+    // LibraryNavMixin does its initialization, and there isn't a risk of there
+    // being signals pointing to this stack variable since the nav mixins don't
+    // use signals/slots or keep references to themselves.
+    // TODO: Figure out how this actually works.
+
+    void *obj = alloca(512);
+    new(obj) QObject();
+
+    fn_c(obj);
+    fn_f(obj);
+    fn_d(obj);
 
     return nm_action_result_silent();
 }
