@@ -820,15 +820,19 @@ NM_ACTION_(cmd_output) {
 // --- temporary action to test creating menus from scratch
 
 #include <QMenu>
+#include <QWidgetAction>
 
 // NickelTouchMenu:TouchMenu:QMenu:QWidget:QObject.
 typedef void TouchMenu;
 typedef void NickelTouchMenu;
 
+// MenuTextItem::ReversibleTouchWidget::QWidget::QObject
+typedef void MenuTextItem;
+
 NM_ACTION_(test_menu) {
     NM_CHECK(nullptr, !arg || !*arg, "unexpected argument '%s'", arg);
 
-    void (*NickelTouchMenu_NickelTouchMenu)(NickelTouchMenu*, QWidget*, /*DecorationPosition*/int); // second is parent, third param is position, 3=top
+    void (*NickelTouchMenu_NickelTouchMenu)(NickelTouchMenu*, QWidget*, /*DecorationPosition*/int); // this, parent, position (3=top)
     reinterpret_cast<void*&>(NickelTouchMenu_NickelTouchMenu) = dlsym(RTLD_DEFAULT, "_ZN15NickelTouchMenuC2EP7QWidget18DecorationPosition");
     NM_CHECK(nullptr, NickelTouchMenu_NickelTouchMenu, "could not dlsym NickelTouchMenu_NickelTouchMenu constructor");
 
@@ -836,7 +840,19 @@ NM_ACTION_(test_menu) {
     reinterpret_cast<void*&>(TouchMenu_setVisible) = dlsym(RTLD_DEFAULT, "_ZN9TouchMenu10setVisibleEb");
     NM_CHECK(nullptr, NickelTouchMenu_NickelTouchMenu, "could not dlsym TouchMenu::setVisible");
 
-    NickelTouchMenu *menu = calloc(1, 512); // about 3x larger than the largest menu I've seen (most inherit from NickelTouchMenu) to be on the safe side
+    void (*MenuTextItem_MenuTextItem)(MenuTextItem*, QWidget*, bool, bool); // this, parent, checkable, italics
+    reinterpret_cast<void*&>(MenuTextItem_MenuTextItem) = dlsym(RTLD_DEFAULT, "_ZN12MenuTextItemC1EP7QWidgetbb");
+    NM_CHECK(nullptr, MenuTextItem_MenuTextItem, "could not dlsym MenuTextItem constructor");
+
+    void (*MenuTextItem_setText)(MenuTextItem*, QString const&);
+    reinterpret_cast<void*&>(MenuTextItem_setText) = dlsym(RTLD_DEFAULT, "_ZN12MenuTextItem7setTextERK7QString");
+    NM_CHECK(nullptr, MenuTextItem_setText, "could not dlsym MenuTextItem::setText");
+
+    void (*MenuTextItem_registerForTapGestures)(MenuTextItem*);
+    reinterpret_cast<void*&>(MenuTextItem_registerForTapGestures) = dlsym(RTLD_DEFAULT, "_ZN12MenuTextItem22registerForTapGesturesEv");
+    NM_CHECK(nullptr, MenuTextItem_registerForTapGestures, "could not dlsym MenuTextItem::registerForTapGestures");
+
+    NickelTouchMenu *menu = calloc(1, 512); // about 3x larger than the largest menu I've seen in 15505 (most inherit from NickelTouchMenu) to be on the safe side
     NM_CHECK(nullptr, menu, "could not allocate memory for menu");
 
     NickelTouchMenu_NickelTouchMenu(menu, nullptr, 3);
@@ -849,24 +865,43 @@ NM_ACTION_(test_menu) {
     //       Device::isDragon   - 0x1E
     //       Device::isDaylight - 0x1E
 
-    QWidget::connect(reinterpret_cast<QMenu*>(menu)->addAction("Test"), &QAction::triggered, [=](bool){
-        NM_LOG("triggered");
-        reinterpret_cast<QMenu*>(menu)->hide();
-    });
+    for (int i = 0; i < 3; i++) {
+        QString text = QString("Test %1").arg(i);
+        bool checkable = false;
+        bool italic = true;
+        bool close = true;
+        bool separator = i != 3-1;
 
-    reinterpret_cast<QMenu*>(menu)->addSeparator();
+        // based on _ZN23SelectionMenuController18createMenuTextItemEP7QWidgetRK7QString
+        // (also see _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_, which seems to do the gestures itself instead of calling registerForTapGestures)
 
-    QWidget::connect(reinterpret_cast<QMenu*>(menu)->addAction("Test 1"), &QAction::triggered, [=](bool){
-        NM_LOG("triggered 1");
-        reinterpret_cast<QMenu*>(menu)->hide();
-    });
+        MenuTextItem *it = calloc(1, 256); // about 3x larger than the 15505 size (92)
+        NM_CHECK(nullptr, menu, "could not allocate memory for menu item");
 
-    reinterpret_cast<QMenu*>(menu)->addSeparator();
+        MenuTextItem_MenuTextItem(it, reinterpret_cast<QWidget*>(menu), checkable, italic);
+        MenuTextItem_setText(it, text);
+        MenuTextItem_registerForTapGestures(it); // this only makes the MenuTextItem::tapped signal connect so it highlights on tap, doesn't apply to the QAction::triggered below (which needs another GestureReceiver somewhere)
 
-    QWidget::connect(reinterpret_cast<QMenu*>(menu)->addAction("Test 2"), &QAction::triggered, [=](bool){
-        NM_LOG("triggered 2");
-        reinterpret_cast<QMenu*>(menu)->hide();
-    });
+        // based on _ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb
+
+        QWidgetAction *ac = new QWidgetAction(reinterpret_cast<QWidget*>(menu));
+        ac->setDefaultWidget(reinterpret_cast<QWidget*>(it));
+        ac->setEnabled(true);
+
+        reinterpret_cast<QMenu*>(menu)->addAction(ac);
+
+        if (close)
+            QWidget::connect(ac, &QAction::triggered, [=] { reinterpret_cast<QMenu*>(menu)->hide(); });
+
+        if (separator)
+            reinterpret_cast<QMenu*>(menu)->addSeparator();
+
+        // event handler
+
+        QWidget::connect(ac, &QAction::triggered, [=] {
+            NM_LOG("triggered %d", i);
+        });
+    }
 
     // _ZN22AbstractMenuController14grabTapGestureEP15GestureReceiver:
     // - QWidget::setAttribute(121)
