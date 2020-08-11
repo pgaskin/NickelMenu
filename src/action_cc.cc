@@ -876,7 +876,10 @@ NM_ACTION_(test_menu) {
         // (also see _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_, which seems to do the gestures itself instead of calling registerForTapGestures)
 
         MenuTextItem *it = calloc(1, 256); // about 3x larger than the 15505 size (92)
-        NM_CHECK(nullptr, menu, "could not allocate memory for menu item");
+        if (!it) {
+            reinterpret_cast<QMenu*>(menu)->deleteLater();
+            NM_ERR_RET(nullptr, "could not allocate memory for menu item");
+        }
 
         MenuTextItem_MenuTextItem(it, reinterpret_cast<QWidget*>(menu), checkable, italic);
         MenuTextItem_setText(it, text);
@@ -896,6 +899,14 @@ NM_ACTION_(test_menu) {
         if (separator)
             reinterpret_cast<QMenu*>(menu)->addSeparator();
 
+        // shim so we don't need to deal with GestureReceiver directly like _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_ does
+        // (similar to _ZN23SelectionMenuController11addMenuItemEP17SelectionMenuViewP12MenuTextItemPKc)
+
+        if (!QWidget::connect(reinterpret_cast<QWidget*>(it), SIGNAL(tapped(bool)), ac, SIGNAL(triggered()))) {
+            reinterpret_cast<QMenu*>(menu)->deleteLater();
+            NM_ERR_RET(nullptr, "could not handle touch events for menu item (connection of SIGNAL(tapped(bool)) on MenuTextItem to SIGNAL(triggered()) on QWidgetAction failed)");
+        }
+
         // event handler
 
         QWidget::connect(ac, &QAction::triggered, [=] {
@@ -903,22 +914,9 @@ NM_ACTION_(test_menu) {
         });
     }
 
-    // _ZN22AbstractMenuController14grabTapGestureEP15GestureReceiver:
-    // - QWidget::setAttribute(121)
-    // - QWidget::grabGesture(1, 0)
-    // - does something fiddly with a GestureReceiver dynamic_cast'd from a QObject from somewhere
-
-    reinterpret_cast<QMenu*>(menu)->setAttribute(Qt::WA_AcceptTouchEvents);
-    reinterpret_cast<QMenu*>(menu)->grabGesture(Qt::TapGesture, {});
-    // TODO: figure out how to get a GestureReceiver so the events actually work
-
     // TODO: positioning
 
-    // TODO?: reparenting, object lifetime
-
     TouchMenu_setVisible(reinterpret_cast<TouchMenu*>(menu), true);
-
-    // TODO: see if anything else needs to be done
 
     return nm_action_result_silent();
 }
