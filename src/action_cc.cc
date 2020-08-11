@@ -865,8 +865,8 @@ NM_ACTION_(test_menu) {
     //       Device::isDragon   - 0x1E
     //       Device::isDaylight - 0x1E
 
-    for (int i = 0; i < 3; i++) {
-        QString text = QString("Test %1").arg(i);
+    for (int i = 0; i < 20; i++) {
+        QString text = QString("Test %1 (long name)").arg(i); // long name to test sizing and columns
         bool checkable = false;
         bool italic = true;
         bool close = true;
@@ -894,7 +894,7 @@ NM_ACTION_(test_menu) {
         reinterpret_cast<QMenu*>(menu)->addAction(ac);
 
         if (close)
-            QWidget::connect(ac, &QAction::triggered, [=] { reinterpret_cast<QMenu*>(menu)->hide(); });
+            QWidget::connect(ac, &QAction::triggered, [=] { reinterpret_cast<QMenu*>(menu)->hide(); /* note: memory leak since the NickelTouchMenu isn't destroyed */ });
 
         if (separator)
             reinterpret_cast<QMenu*>(menu)->addSeparator();
