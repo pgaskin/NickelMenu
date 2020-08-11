@@ -33,7 +33,7 @@ func main() {
 		"4.11.11982", "4.11.12019", "4.12.12111", "4.13.12638", "4.14.12777",
 		"4.15.12920", "4.16.13162", "4.17.13651", "4.17.13694", "4.18.13737",
 		"4.19.14123", "4.20.14601", "4.20.14617", "4.20.14622", "4.21.15015",
-		"4.22.15190", "4.23.15505",
+		"4.22.15190", "4.22.15268", "4.23.15505",
 	}
 
 	checks := map[string]map[string][]SymCheck{}
@@ -46,7 +46,7 @@ func main() {
 			if c.EndVersion == "*" || strings.HasPrefix(version+".", c.EndVersion+".") {
 				em++
 			}
-			if versioncmp(c.StartVersion, version) <= 0 && versioncmp(version, c.EndVersion) >= 0 {
+			if versioncmp(c.StartVersion, version) <= 0 && versioncmp(version, c.EndVersion) <= 0 {
 				if _, ok := checks[version]; !ok {
 					checks[version] = map[string][]SymCheck{}
 				}

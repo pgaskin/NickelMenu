@@ -175,8 +175,6 @@
 #   menu_item :browser :Invert Screen      :nickel_setting     :toggle :invert
 #   menu_item :browser :Open Pop-Up        :nickel_browser     :modal
 #
-# You will need to reboot to see any changes.
-#
 # If there is an error in the configuration, an item which displays it will be
 # added to the main menu. If an internal error occurs, it is written to syslog,
 # which can be viewed over telnet or SSH (the username is root) with the command
