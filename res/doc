@@ -86,8 +86,7 @@
 #                   nickel_open        - one of:
 #                                          discover:storefront       - Kobo Store
 #                                          discover:wishlist         - Wishlist
-#                                          library:library           - My Books (with last filter)
-#                                          library:library2          - My Books (with last tab and filter)
+#                                          library:library           - My Books (with last tab and filter)
 #                                          library:all               - Books
 #                                          library:authors           - Authors
 #                                          library:series            - Series (4.20.14601+)
