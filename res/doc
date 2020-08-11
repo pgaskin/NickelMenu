@@ -16,7 +16,7 @@
 #
 #     <location>  the menu to add the item to, one of:
 #                   main    - the menu in the top-left corner of the home screen
-#                             (in firmware 4.23.15505+, this menu was removed, so NickelMenu will add a new trigger for a custom one beside the clock)
+#                             (in firmware 4.23.15505+, this menu was removed, so a new item will be added to the tabs on the bottom-right)
 #                   reader  - the overflow menu in the reader
 #                   browser - the menu in the bottom-right of the web browser
 #                   library - the menu in the filter bar for the "My Books" and "My Articles" library views

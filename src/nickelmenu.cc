@@ -61,14 +61,15 @@ void (*MainWindowController_toast)(MainWindowController*, QString const&, QStrin
 static void (*LightMenuSeparator_LightMenuSeparator)(void*, QWidget*);
 static void (*BoldMenuSeparator_BoldMenuSeparator)(void*, QWidget*);
 
-// TimeLabel::TimeLabel initializes the clock in the status bar on the main and
-// reader views. The QWidget is the parent widget.
-void (*TimeLabel_TimeLabel)(void*, QWidget*);
-
-void (*TouchLabel_TouchLabel)(void*, QWidget*, QFlags<Qt::WindowType>);
-
-// MainNavView::MainNavView is the new bottom tab bar on 15505+.
-void (*MainNavView_MainNavView)(void*, QWidget*);
+// New bottom tab bar which replaced the main menu on 15505+.
+typedef QWidget MainNavButton;
+typedef QWidget MainNavView;
+void (*MainNavView_MainNavView)(MainNavView*, QWidget*);
+void (*MainNavButton_MainNavButton)(MainNavButton*, QWidget*);
+void (*MainNavButton_setPixmap)(MainNavButton*, QString const&);
+void (*MainNavButton_setActivePixmap)(MainNavButton*, QString const&);
+void (*MainNavButton_setText)(MainNavButton*, QString const&);
+void (*MainNavButton_tapped)(MainNavButton*); // signal
 
 static struct nh_info NickelMenu = (struct nh_info){
     .name            = "NickelMenu",
@@ -86,8 +87,8 @@ static struct nh_hook NickelMenuHook[] = {
     // menu injection
     {.sym = "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", .sym_new = "_nm_menu_hook", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(AbstractNickelMenuController_createMenuTextItem)}, //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
 
-    // trigger for custom main menu after removal in 15505
-    {.sym = "_ZN9TimeLabelC1EP7QWidget", .sym_new = "_nm_menu_hook_15505_main_clocktrigger", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(TimeLabel_TimeLabel), .desc = "status bar time label on 15505+", .optional = true},  //libnickel 4.23.15505 * _ZN9TimeLabelC1EP7QWidget
+    // bottom nav main menu button injection (15505+)
+    {.sym = "_ZN11MainNavViewC1EP7QWidget", .sym_new = "_nm_menu_hook_15505_main", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(MainNavView_MainNavView), .desc = "bottom nav main menu button injection (15505+)", .optional = true},  //libnickel 4.23.15505 * _ZN11MainNavViewC1EP7QWidget
 
     // null
     {0},
@@ -103,11 +104,12 @@ static struct nh_dlsym NickelMenuDlsym[] = {
     {.name = "_ZN18LightMenuSeparatorC2EP7QWidget",                                          .out = nh_symoutptr(LightMenuSeparator_LightMenuSeparator)},           //libnickel 4.6 * _ZN18LightMenuSeparatorC2EP7QWidget
     {.name = "_ZN17BoldMenuSeparatorC1EP7QWidget",                                           .out = nh_symoutptr(BoldMenuSeparator_BoldMenuSeparator)},             //libnickel 4.6 * _ZN17BoldMenuSeparatorC1EP7QWidget
 
-    // trigger for custom main menu after removal in 15505
-    {.name = "_ZN10TouchLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeEE", .out = nh_symoutptr(TouchLabel_TouchLabel), .desc = "status bar trigger label on 15505+", .optional = true}, //libnickel 4.23.15505 * _ZN10TouchLabelC1EP7QWidget6QFlagsIN2Qt10WindowTypeE
-
-    // feature checks
-    {.name = "_ZN11MainNavViewC1EP7QWidget", .out = nh_symoutptr(MainNavView_MainNavView), .desc = "new bottom nav on 15505+", .optional = true}, //libnickel 4.23.15505 * _ZN11MainNavViewC1EP7QWidget
+    // bottom nav main menu button injection (15505+)
+    {.name = "_ZN13MainNavButtonC1EP7QWidget",                 .out = nh_symoutptr(MainNavButton_MainNavButton),   .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN13MainNavButtonC1EP7QWidget
+    {.name = "_ZN13MainNavButton9setPixmapERK7QString",        .out = nh_symoutptr(MainNavButton_setPixmap),       .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN13MainNavButton9setPixmapERK7QString
+    {.name = "_ZN13MainNavButton15setActivePixmapERK7QString", .out = nh_symoutptr(MainNavButton_setActivePixmap), .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN13MainNavButton15setActivePixmapERK7QString
+    {.name = "_ZN13MainNavButton7setTextERK7QString",          .out = nh_symoutptr(MainNavButton_setText),         .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN13MainNavButton7setTextERK7QString
+    {.name = "_ZN13MainNavButton6tappedEv",                    .out = nh_symoutptr(MainNavButton_tapped),          .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN13MainNavButton6tappedEv
 
     // null
     {0},
@@ -160,13 +162,6 @@ static int nm_init() {
         NM_LOG("... warning: size returned by nm_global_config_items is 0, ignoring for now (this is a bug; it should always have a menu item whether the default, an error, or the actual config)");
     }
 
-    if (MainNavView_MainNavView) {
-        if (!TimeLabel_TimeLabel)
-            NM_LOG("... warning: clock constructor not found, will not add custom main menu trigger on 15505+, main menu will not be accessible");
-        if (!TouchLabel_TouchLabel)
-            NM_LOG("... warning: TouchLabel constructor not found, will not add custom main menu trigger on 15505+, main menu will not be accessible");
-    }
-
     return 0;
 }
 
@@ -200,61 +195,50 @@ extern "C" __attribute__((visibility("default"))) MenuTextItem* _nm_menu_hook(vo
     return AbstractNickelMenuController_createMenuTextItem(_this, menu, label, checkable, checked, thingy);
 }
 
-extern "C" __attribute__((visibility("default"))) void _nm_menu_hook_15505_main_clocktrigger(void *_this, QWidget *parent) {
-    NM_LOG("TimeLabel::TimeLabel(%p, %p)", _this, parent);
+extern "C" __attribute__((visibility("default"))) void _nm_menu_hook_15505_main(MainNavView *_this, QWidget *parent) {
+    NM_LOG("MainNavView::MainNavView(%p, %p)", _this, parent);
+    MainNavView_MainNavView(_this, parent);
 
-    QHBoxLayout *pl;
-    QLabel *tmp;
-    QPushButton *signalHack;
+    NM_LOG("Adding main menu button in tab bar for firmware 4.23.15505+.");
 
-    if (!TouchLabel_TouchLabel) {
-        NM_LOG("Could not find TouchLabel constructor, cannot add trigger for custom main menu.");
-        goto _nm_menu_hook_15505_main_clocktrigger_orig;
+    if (!MainNavButton_MainNavButton || !MainNavButton_setPixmap || !MainNavButton_setActivePixmap || !MainNavButton_setText || !MainNavButton_setText) {
+        NM_LOG("Could not find required MainNavButton symbols, cannot add tab button for NickelMenu main menu.");
+        return;
     }
 
-    if (!parent) {
-        NM_LOG("No parent widget provided, cannot add trigger for custom main menu.");
-        goto _nm_menu_hook_15505_main_clocktrigger_orig;
+    QHBoxLayout *bl = _this->findChild<QHBoxLayout*>();
+    if (!bl) {
+        NM_LOG("Could not find QHBoxLayout(should contain MainNavButtons and be contained in the QVBoxLayout of MainNavView) in MainNavView, cannot add tab button for NickelMenu main menu.");
+        return;
     }
 
-    if (parent->objectName() != "statusbarContainer") {
-        NM_LOG("Parent widget '%s' != 'statusbarContainer', not adding trigger for custom main menu.", qPrintable(parent->objectName()));
-        goto _nm_menu_hook_15505_main_clocktrigger_orig;
+    MainNavButton *btn = reinterpret_cast<MainNavButton*>(calloc(1, 256));
+    if (!btn) { // way larger than a MainNavButton, but better to be safe
+        NM_LOG("Failed to allocate memory for MainNavButton, cannot add tab button for NickelMenu main menu.");
+        return;
     }
 
-    if (!parent->layout()) {
-        NM_LOG("Parent widget layout is nullptr, cannot add trigger for custom main menu.");
-        goto _nm_menu_hook_15505_main_clocktrigger_orig;
+    MainNavButton_MainNavButton(btn, parent);
+    MainNavButton_setPixmap(btn, QStringLiteral(":/images/home/main_nav_more.png"));
+    MainNavButton_setActivePixmap(btn, QStringLiteral(":/images/home/main_nav_more_active.png"));
+    MainNavButton_setText(btn, "NickelMenu");
+    btn->setObjectName("nmButton");
+
+    QPushButton *sh = new QPushButton(_this); // HACK: we use a QPushButton as an adaptor so we can connect an old-style signal with the new-style connect without needing a custom QObject
+    if (!QWidget::connect(btn, SIGNAL(tapped()), sh, SIGNAL(pressed()))) {
+        NM_LOG("Failed to connect SIGNAL(tapped()) on TouchLabel to SIGNAL(pressed()) on the QPushButton shim, cannot add tab button for NickelMenu main menu.");
+        return;
     }
+    sh->setVisible(false);
 
-    if (!(pl = qobject_cast<QHBoxLayout*>(parent->layout()))) {
-        NM_LOG("Parent widget layout is not a QHBoxLayout, cannot add trigger for custom main menu.");
-        goto _nm_menu_hook_15505_main_clocktrigger_orig;
-    }
-
-    NM_LOG("%s (size: %dx%d) (layout: %s)", qPrintable(parent->objectName()), parent->width(), parent->height(), parent->layout()->metaObject()->className());
-
-    tmp = reinterpret_cast<QLabel*>(calloc(1, 256)); // way larger than a TouchLabel, but better to be safe
-    TouchLabel_TouchLabel(tmp, parent, Qt::Widget);
-    tmp->setText(QStringLiteral("NickelMenu"));
-    pl->addWidget(tmp);
-
-    // TODO: padding, sizing
-    // TODO: figure out why this makes the clock disappear
-
-    signalHack = new QPushButton(nullptr); // HACK: we use a QPushButton as an adaptor so we can connect an old-style signal with the new-style connect witout needing a custom QObject
-    if (!QWidget::connect(tmp, SIGNAL(tapped(bool)), signalHack, SIGNAL(clicked(bool)))) {
-        NM_LOG("Cannot connect SIGNAL(tapped(bool)) on TouchLabel, cannot add trigger for custom main menu.");
-        goto _nm_menu_hook_15505_main_clocktrigger_orig;
-    }
-    QWidget::connect(signalHack, &QPushButton::clicked, [=] {
+    QWidget::connect(sh, &QPushButton::pressed, [=] {
         NM_ACTION(test_menu)("");
     });
 
-    NM_LOG("Added trigger for custom main menu.");
+    bl->addWidget(btn, 1);
+    _this->ensurePolished();
 
-_nm_menu_hook_15505_main_clocktrigger_orig:
-    TimeLabel_TimeLabel(_this, parent);
+    NM_LOG("Added button.");
 }
 
 void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
