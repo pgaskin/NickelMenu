@@ -725,7 +725,7 @@ NM_ACTION_(nickel_orientation) {
 
     NM_LOG(Device_hasOrientationSensor(dev)
         ? "nickel_orientation: if this didn't do anything, you may need to set [DeveloperSettings] ForceAllowLandscape=true to allow landscape orientations on all views"
-        : "nickel_orientation: if this didn't do anything, ensure you have applied the 'Allow rotation on all devices' kobopatch patch, or that you have set [DeveloperSettings] ForceAllowLandscape=true");
+        : "nickel_orientation: if this didn't do anything, you may need to apply the 'Allow rotation on all devices' kobopatch patch, or that you have set [DeveloperSettings] ForceAllowLandscape=true");
 
     // Set the orientation.
     //

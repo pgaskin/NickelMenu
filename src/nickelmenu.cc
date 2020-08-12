@@ -1,6 +1,5 @@
 #include <QAction>
 #include <QCoreApplication>
-#include <QLabel>
 #include <QLayout>
 #include <QMenu>
 #include <QPushButton>
@@ -90,7 +89,7 @@ static struct nh_info NickelMenu = (struct nh_info){
 #else
     .uninstall_xflag = NULL,
 #endif
-    .failsafe_delay  = 2,
+    .failsafe_delay  = 3,
 };
 
 static struct nh_hook NickelMenuHook[] = {
@@ -98,7 +97,7 @@ static struct nh_hook NickelMenuHook[] = {
     {.sym = "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", .sym_new = "_nm_menu_hook", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(AbstractNickelMenuController_createMenuTextItem)}, //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
 
     // bottom nav main menu button injection (15505+)
-    {.sym = "_ZN11MainNavViewC1EP7QWidget", .sym_new = "_nm_menu_hook_15505_main", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(MainNavView_MainNavView), .desc = "bottom nav main menu button injection (15505+)", .optional = true},  //libnickel 4.23.15505 * _ZN11MainNavViewC1EP7QWidget
+    {.sym = "_ZN11MainNavViewC1EP7QWidget", .sym_new = "_nm_menu_hook2", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(MainNavView_MainNavView), .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN11MainNavViewC1EP7QWidget
 
     // null
     {0},
@@ -209,7 +208,7 @@ extern "C" __attribute__((visibility("default"))) MenuTextItem* _nm_menu_hook(vo
     return AbstractNickelMenuController_createMenuTextItem(_this, menu, label, checkable, checked, thingy);
 }
 
-extern "C" __attribute__((visibility("default"))) void _nm_menu_hook_15505_main(MainNavView *_this, QWidget *parent) {
+extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavView *_this, QWidget *parent) {
     NM_LOG("MainNavView::MainNavView(%p, %p)", _this, parent);
     MainNavView_MainNavView(_this, parent);
 
