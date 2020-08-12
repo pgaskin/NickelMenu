@@ -13,7 +13,7 @@ After it installs, you will find a new menu item named `NickelMenu` with further
 
 To uninstall NickelMenu, just create a new file named `uninstall` in `.adds/nm/`, or trigger the failsafe mechanism by immediately powering off the Kobo after it starts booting.
 
-Most errors, if any, will be displayed as a menu item in the main menu in the top-left corner of the home screen. If no new menu entries appear here after a reboot, try reinstalling NickelMenu. If that still doesn't work, connect over telnet or SSH and check the output of `logread`.
+Most errors, if any, will be displayed as a menu item in the main menu. If no new menu entries appear here after a reboot, try reinstalling NickelMenu. If that still doesn't work, connect over telnet or SSH and check the output of `logread`.
 
 ## Compiling
 

@@ -1,8 +1,11 @@
 #include <QAction>
 #include <QCoreApplication>
+#include <QLayout>
 #include <QMenu>
+#include <QPushButton>
 #include <QString>
 #include <QWidget>
+#include <QWidgetAction>
 
 #include <cstdlib>
 
@@ -58,6 +61,25 @@ void (*MainWindowController_toast)(MainWindowController*, QString const&, QStrin
 static void (*LightMenuSeparator_LightMenuSeparator)(void*, QWidget*);
 static void (*BoldMenuSeparator_BoldMenuSeparator)(void*, QWidget*);
 
+// New bottom tab bar which replaced the main menu on 15505+.
+typedef QWidget MainNavButton;
+typedef QWidget MainNavView;
+void (*MainNavView_MainNavView)(MainNavView*, QWidget*);
+void (*MainNavButton_MainNavButton)(MainNavButton*, QWidget*);
+void (*MainNavButton_setPixmap)(MainNavButton*, QString const&);
+void (*MainNavButton_setActivePixmap)(MainNavButton*, QString const&);
+void (*MainNavButton_setText)(MainNavButton*, QString const&);
+void (*MainNavButton_tapped)(MainNavButton*); // signal
+
+// Creating menus from scratch (for the menu above on 15505+).
+typedef QMenu TouchMenu;
+typedef TouchMenu NickelTouchMenu;
+typedef int DecorationPosition;
+void (*NickelTouchMenu_NickelTouchMenu)(NickelTouchMenu*, QWidget* parent, DecorationPosition position);
+void (*MenuTextItem_MenuTextItem)(MenuTextItem*, QWidget* parent, bool checkable, bool italic);
+void (*MenuTextItem_setText)(MenuTextItem*, QString const&);
+void (*MenuTextItem_registerForTapGestures)(MenuTextItem*);
+
 static struct nh_info NickelMenu = (struct nh_info){
     .name            = "NickelMenu",
     .desc            = "Integrated launcher for Nickel.",
@@ -67,15 +89,22 @@ static struct nh_info NickelMenu = (struct nh_info){
 #else
     .uninstall_xflag = NULL,
 #endif
-    .failsafe_delay  = 2,
+    .failsafe_delay  = 3,
 };
 
 static struct nh_hook NickelMenuHook[] = {
+    // menu injection
     {.sym = "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", .sym_new = "_nm_menu_hook", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(AbstractNickelMenuController_createMenuTextItem)}, //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
+
+    // bottom nav main menu button injection (15505+)
+    {.sym = "_ZN11MainNavViewC1EP7QWidget", .sym_new = "_nm_menu_hook2", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(MainNavView_MainNavView), .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN11MainNavViewC1EP7QWidget
+
+    // null
     {0},
 };
 
 static struct nh_dlsym NickelMenuDlsym[] = {
+    // menu injection
     {.name = "_ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_", .out = nh_symoutptr(AbstractNickelMenuController_createMenuTextItem)}, //libnickel 4.6 * _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_
     {.name = "_ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb",                .out = nh_symoutptr(AbstractNickelMenuController_createAction)},       //libnickel 4.6 * _ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb
     {.name = "_ZN25ConfirmationDialogFactory12showOKDialogERK7QStringS2_",                   .out = nh_symoutptr(ConfirmationDialogFactory_showOKDialog)},          //libnickel 4.6 * _ZN25ConfirmationDialogFactory12showOKDialogERK7QStringS2_
@@ -83,6 +112,19 @@ static struct nh_dlsym NickelMenuDlsym[] = {
     {.name = "_ZN20MainWindowController5toastERK7QStringS2_i",                               .out = nh_symoutptr(MainWindowController_toast)},                      //libnickel 4.6 * _ZN20MainWindowController5toastERK7QStringS2_i
     {.name = "_ZN18LightMenuSeparatorC2EP7QWidget",                                          .out = nh_symoutptr(LightMenuSeparator_LightMenuSeparator)},           //libnickel 4.6 * _ZN18LightMenuSeparatorC2EP7QWidget
     {.name = "_ZN17BoldMenuSeparatorC1EP7QWidget",                                           .out = nh_symoutptr(BoldMenuSeparator_BoldMenuSeparator)},             //libnickel 4.6 * _ZN17BoldMenuSeparatorC1EP7QWidget
+
+    // bottom nav main menu button injection (15505+)
+    {.name = "_ZN13MainNavButtonC1EP7QWidget",                       .out = nh_symoutptr(MainNavButton_MainNavButton),         .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN13MainNavButtonC1EP7QWidget
+    {.name = "_ZN13MainNavButton9setPixmapERK7QString",              .out = nh_symoutptr(MainNavButton_setPixmap),             .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN13MainNavButton9setPixmapERK7QString
+    {.name = "_ZN13MainNavButton15setActivePixmapERK7QString",       .out = nh_symoutptr(MainNavButton_setActivePixmap),       .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN13MainNavButton15setActivePixmapERK7QString
+    {.name = "_ZN13MainNavButton7setTextERK7QString",                .out = nh_symoutptr(MainNavButton_setText),               .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN13MainNavButton7setTextERK7QString
+    {.name = "_ZN13MainNavButton6tappedEv",                          .out = nh_symoutptr(MainNavButton_tapped),                .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN13MainNavButton6tappedEv
+    {.name = "_ZN15NickelTouchMenuC2EP7QWidget18DecorationPosition", .out = nh_symoutptr(NickelTouchMenu_NickelTouchMenu),     .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN15NickelTouchMenuC2EP7QWidget18DecorationPosition
+    {.name = "_ZN12MenuTextItemC1EP7QWidgetbb",                      .out = nh_symoutptr(MenuTextItem_MenuTextItem),           .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN12MenuTextItemC1EP7QWidgetbb
+    {.name = "_ZN12MenuTextItem7setTextERK7QString",                 .out = nh_symoutptr(MenuTextItem_setText),                .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN12MenuTextItem7setTextERK7QString
+    {.name = "_ZN12MenuTextItem22registerForTapGesturesEv",          .out = nh_symoutptr(MenuTextItem_registerForTapGestures), .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN12MenuTextItem22registerForTapGesturesEv
+
+    // null
     {0},
 };
 
@@ -164,6 +206,141 @@ extern "C" __attribute__((visibility("default"))) MenuTextItem* _nm_menu_hook(vo
         QObject::connect(menu, &QMenu::aboutToShow, std::bind(_nm_menu_inject, _this, menu, loc, menu->actions().count()));
 
     return AbstractNickelMenuController_createMenuTextItem(_this, menu, label, checkable, checked, thingy);
+}
+
+extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavView *_this, QWidget *parent) {
+    NM_LOG("MainNavView::MainNavView(%p, %p)", _this, parent);
+    MainNavView_MainNavView(_this, parent);
+
+    NM_LOG("Adding main menu button in tab bar for firmware 4.23.15505+.");
+
+    if (!MainNavButton_MainNavButton || !MainNavButton_setPixmap || !MainNavButton_setActivePixmap || !MainNavButton_setText || !MainNavButton_setText) {
+        NM_LOG("Could not find required MainNavButton symbols, cannot add tab button for NickelMenu main menu.");
+        return;
+    }
+
+    QHBoxLayout *bl = _this->findChild<QHBoxLayout*>();
+    if (!bl) {
+        NM_LOG("Could not find QHBoxLayout(should contain MainNavButtons and be contained in the QVBoxLayout of MainNavView) in MainNavView, cannot add tab button for NickelMenu main menu.");
+        return;
+    }
+
+    MainNavButton *btn = reinterpret_cast<MainNavButton*>(calloc(1, 256));
+    if (!btn) { // way larger than a MainNavButton, but better to be safe
+        NM_LOG("Failed to allocate memory for MainNavButton, cannot add tab button for NickelMenu main menu.");
+        return;
+    }
+
+    MainNavButton_MainNavButton(btn, parent);
+    MainNavButton_setPixmap(btn, QStringLiteral(":/images/home/main_nav_more.png"));
+    MainNavButton_setActivePixmap(btn, QStringLiteral(":/images/home/main_nav_more_active.png"));
+    MainNavButton_setText(btn, "NickelMenu");
+    btn->setObjectName("nmButton");
+
+    QPushButton *sh = new QPushButton(_this); // HACK: we use a QPushButton as an adaptor so we can connect an old-style signal with the new-style connect without needing a custom QObject
+    if (!QWidget::connect(btn, SIGNAL(tapped()), sh, SIGNAL(pressed()))) {
+        NM_LOG("Failed to connect SIGNAL(tapped()) on TouchLabel to SIGNAL(pressed()) on the QPushButton shim, cannot add tab button for NickelMenu main menu.");
+        return;
+    }
+    sh->setVisible(false);
+
+    QWidget::connect(sh, &QPushButton::pressed, [btn] {
+        if (!NickelTouchMenu_NickelTouchMenu || !MenuTextItem_MenuTextItem || !MenuTextItem_setText || !MenuTextItem_registerForTapGestures) {
+            NM_LOG("could not find required NickelTouchMenu and MenuTextItem symbols for generating menu");
+            ConfirmationDialogFactory_showOKDialog(QLatin1String("NickelMenu"), QLatin1String("Could not find required NickelTouchMenu and MenuTextItem symbols for generating menu (this is a bug)."));
+            return;
+        }
+
+        NM_LOG("checking for config updates");
+        int rev = nm_global_config_update();
+        NM_LOG("revision = %d", rev);
+
+        NM_LOG("building menu");
+
+        size_t items_n;
+        nm_menu_item_t **items = nm_global_config_items(&items_n);
+
+        if (!items) {
+            NM_LOG("failed to get menu items");
+            ConfirmationDialogFactory_showOKDialog(QLatin1String("NickelMenu"), QLatin1String("Failed to get menu items (this might be a bug)."));
+            return;
+        }
+
+        NickelTouchMenu *menu = reinterpret_cast<NickelTouchMenu*>(calloc(1, 512)); // about 3x larger than the largest menu I've seen in 15505 (most inherit from NickelTouchMenu) to be on the safe side
+        if (!menu) {
+            NM_LOG("failed to allocate memory for menu");
+            ConfirmationDialogFactory_showOKDialog(QLatin1String("NickelMenu"), QLatin1String("Failed to allocate memory for menu."));
+            return;
+        }
+
+        NickelTouchMenu_NickelTouchMenu(menu, nullptr, 3);
+
+        for (size_t i = 0; i < items_n; i++) {
+            nm_menu_item_t *it = items[i];
+            if (it->loc != NM_MENU_LOCATION_MAIN_MENU)
+                continue;
+
+            NM_LOG("adding item '%s'...", it->lbl);
+
+            // based on _ZN23SelectionMenuController18createMenuTextItemEP7QWidgetRK7QString
+            // (also see _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_, which seems to do the gestures itself instead of calling registerForTapGestures)
+
+            MenuTextItem *mti = reinterpret_cast<MenuTextItem*>(calloc(1, 256)); // about 3x larger than the 15505 size (92)
+            if (!it) {
+                NM_LOG("failed to allocate memory for config item");
+                menu->deleteLater();
+                ConfirmationDialogFactory_showOKDialog(QLatin1String("NickelMenu"), QLatin1String("Failed to allocate memory for menu item."));
+                return;
+            }
+
+            MenuTextItem_MenuTextItem(mti, menu, false, true);
+            MenuTextItem_setText(mti, QString::fromUtf8(it->lbl));
+            MenuTextItem_registerForTapGestures(mti); // this only makes the MenuTextItem::tapped signal connect so it highlights on tap, doesn't apply to the QAction::triggered below (which needs another GestureReceiver somewhere)
+
+            // based on _ZN22AbstractMenuController12createActionEP5QMenuP7QWidgetbbb
+
+            QWidgetAction *ac = new QWidgetAction(menu);
+            ac->setDefaultWidget(mti);
+            ac->setEnabled(true);
+
+            menu->addAction(ac);
+
+            QWidget::connect(ac, &QAction::triggered, menu, &QMenu::hide);
+
+            if (i != items_n-1)
+                menu->addSeparator();
+
+            // shim so we don't need to deal with GestureReceiver directly like _ZN28AbstractNickelMenuController18createMenuTextItemEP5QMenuRK7QStringbbS4_ does
+            // (similar to _ZN23SelectionMenuController11addMenuItemEP17SelectionMenuViewP12MenuTextItemPKc)
+
+            if (!QWidget::connect(mti, SIGNAL(tapped(bool)), ac, SIGNAL(triggered()))) {
+                NM_LOG("could not handle touch events for menu item (connection of SIGNAL(tapped(bool)) on MenuTextItem to SIGNAL(triggered()) on QWidgetAction failed)");
+                menu->deleteLater();
+                ConfirmationDialogFactory_showOKDialog(QLatin1String("NickelMenu"), QLatin1String("Could not attach touch event handlers to menu item (this is a bug)."));
+                return;
+            }
+
+            // event handler
+
+            QObject::connect(ac, &QAction::triggered, [it](bool) {
+                NM_LOG("item '%s' pressed...", it->lbl);
+                nm_menu_item_do(it);
+                NM_LOG("done");
+            }); // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
+        }
+
+        NM_LOG("showing menu");
+
+        QWidget::connect(menu, &QMenu::aboutToHide, menu, &QWidget::deleteLater);
+
+        menu->ensurePolished();
+        menu->popup(btn->mapToGlobal(btn->geometry().topRight() - QPoint(0, menu->sizeHint().height())));
+    });
+
+    bl->addWidget(btn, 1);
+    _this->ensurePolished();
+
+    NM_LOG("Added button.");
 }
 
 void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
