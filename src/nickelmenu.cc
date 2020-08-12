@@ -17,21 +17,19 @@
 typedef QWidget MenuTextItem; // it's actually a subclass, but we don't need its functionality directly, so we'll stay on the safe side
 typedef void MainWindowController;
 
-// AbstractNickelMenuController::createMenuTextItem creates a menu item in the
-// given QMenu with the specified label. The first bool parameter adds space to
-// the left of the item for a checkbox, and the second bool checks it (see the
-// search menu for an example of this being used). IDK what the last parameter
-// is for, but I suspect it might be passed to QObject::setObjectName (I haven't
-// tested it directly, and it's been empty in the menus I've tried so far).
-static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem)(void*, QMenu*, QString const&, bool, bool, QString const&);
+// AbstractNickelMenuController::createMenuTextItem creates a menu item
+// (allocated on the heap). The last parameter has been empty everywhere I've
+// seen it. The checked option does not have any effect unless checkable is true
+// (see the search menu for an example).
+static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem)(void*, QMenu* menu, QString const& text, bool checkable, bool checked, QString const& /*I think it's for QObject::setObjectName*/);
 
 // AbstractNickelMenuController::createAction finishes adding the action to the
-// menu.
-// First bool is whether to close the menu on tap (false: keep it open)
-// Second bool is whether the entry is enabled (false: grayed out)
-// Third bool is whether to add the default separator after the entry (false: no separator)
-//     Note that, even in the Main Menu, it'll inherit the color of a Reader Menu separator (#66),
-//     instead of the usual dim (#BB) or solid (#00) ones seen in the stock Main Menu.
+// menu. The actionWidget should be a MenuTextItem (allocated on the heap). If
+// disabled is true, the item will appear greyed out. Note that for the
+// separator, even in the main menu (removed in FW 15505), it'll inherit the
+// color of a Reader Menu separator (#666), rather than the usual dim (#BBB) or
+// solid (#000) ones seen in the stock main menu.
+//
 // The code is basically:
 //     act = new QWidgetAction(this, arg2);
 //     act->setEnabled(arg4);
@@ -40,35 +38,32 @@ static MenuTextItem* (*AbstractNickelMenuController_createMenuTextItem)(void*, Q
 //     arg1->addAction(act);
 //     if (arg5)
 //         arg1->addSeparator();
-static QAction* (*AbstractNickelMenuController_createAction)(void*, QMenu*, QWidget*, bool, bool, bool);
+static QAction* (*AbstractNickelMenuController_createAction)(void*, QMenu* menu, QWidget* actionWidget, bool closeOnTap, bool disabled, bool separatorAfter);
 
-// ConfirmationDialogFactory::showOKDialog does what it says, with the provided
-// title and body text. Note that it should be called from the GUI thread (or
-// a signal handler).
-static void (*ConfirmationDialogFactory_showOKDialog)(QString const&, QString const&);
+// ConfirmationDialogFactory::showOKDialog shows an dialog box with an OK
+// button, and should only be called from the main thread (or a signal handler).
+static void (*ConfirmationDialogFactory_showOKDialog)(QString const& title, QString const& body);
 
 MainWindowController *(*MainWindowController_sharedInstance)();
 
-// MainWindowController::toast shows a message (primary and secondary text) as
-// an overlay for a number of milliseconds. It should also be called from the
-// GUI thread.
-void (*MainWindowController_toast)(MainWindowController*, QString const&, QString const&, int);
+// MainWindowController::toast shows a message as an overlay, and should only be
+// called from the main thread (or a signal handler).
+void (*MainWindowController_toast)(MainWindowController*, QString const& primary, QString const& secondary, int milliseconds);
 
-// *MenuSeparator::*MenuSeparator initializes a light main menu separator which
-// can be added to the menu with QWidget::addAction. It should be passed at
-// least 8 bytes (as of 14622, but should give more to be safe) malloc'd, and
-// the menu as the parent. It initializes a QAction.
-static void (*LightMenuSeparator_LightMenuSeparator)(void*, QWidget*);
-static void (*BoldMenuSeparator_BoldMenuSeparator)(void*, QWidget*);
+// *MenuSeparator::*MenuSeparator initializes a main menu separator which can be
+// added to the menu with QWidget::addAction. The menu should be its parent. It
+// initializes a QAction.
+static void (*LightMenuSeparator_LightMenuSeparator)(void*, QWidget* parent);
+static void (*BoldMenuSeparator_BoldMenuSeparator)(void*, QWidget* parent);
 
 // New bottom tab bar which replaced the main menu on 15505+.
 typedef QWidget MainNavButton;
 typedef QWidget MainNavView;
-void (*MainNavView_MainNavView)(MainNavView*, QWidget*);
-void (*MainNavButton_MainNavButton)(MainNavButton*, QWidget*);
-void (*MainNavButton_setPixmap)(MainNavButton*, QString const&);
-void (*MainNavButton_setActivePixmap)(MainNavButton*, QString const&);
-void (*MainNavButton_setText)(MainNavButton*, QString const&);
+void (*MainNavView_MainNavView)(MainNavView*, QWidget* parent);
+void (*MainNavButton_MainNavButton)(MainNavButton*, QWidget* parent);
+void (*MainNavButton_setPixmap)(MainNavButton*, QString const& pixmapName);
+void (*MainNavButton_setActivePixmap)(MainNavButton*, QString const& pixmapName);
+void (*MainNavButton_setText)(MainNavButton*, QString const& text);
 void (*MainNavButton_tapped)(MainNavButton*); // signal
 
 // Creating menus from scratch (for the menu above on 15505+).
@@ -77,7 +72,7 @@ typedef TouchMenu NickelTouchMenu;
 typedef int DecorationPosition;
 void (*NickelTouchMenu_NickelTouchMenu)(NickelTouchMenu*, QWidget* parent, DecorationPosition position);
 void (*MenuTextItem_MenuTextItem)(MenuTextItem*, QWidget* parent, bool checkable, bool italic);
-void (*MenuTextItem_setText)(MenuTextItem*, QString const&);
+void (*MenuTextItem_setText)(MenuTextItem*, QString const& text);
 void (*MenuTextItem_registerForTapGestures)(MenuTextItem*);
 
 static struct nh_info NickelMenu = (struct nh_info){
