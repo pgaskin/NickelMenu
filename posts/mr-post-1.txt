@@ -4,13 +4,13 @@ ___
 
 [URL="https://github.com/pgaskin/NickelMenu/releases/latest"][IMG]https://img.shields.io/github/v/release/pgaskin/NickelMenu?label=Download&style=flat-square&color=gray[/IMG][/URL] [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"][IMG]https://img.shields.io/badge/Documentation-gray?style=flat-square[/IMG][/URL] [URL="https://github.com/pgaskin/NickelMenu"][IMG]https://img.shields.io/badge/Source%20Code-github.com%2Fpgaskin%2FNickelMenu-gray?style=flat-square[/IMG][/URL]
 
-[SIZE=4]NickelMenu adds custom actions the main and/or reader menus. It works on firmware 4.6+, and persists between firmware upgrades.[/SIZE]
+[SIZE=4]NickelMenu adds custom actions the main, reader, browser, and library menus. It works on firmware 4.6+, and persists between firmware upgrades.[/SIZE]
 
 [B]Installation:[/B][LIST=1]
 [*] Connect your Kobo eReader to your computer over USB.
 [*] Download [B][URL="https://github.com/pgaskin/NickelMenu/releases/latest/download/KoboRoot.tgz"]KoboRoot.tgz[/URL][/B] ([URL="https://github.com/pgaskin/NickelMenu/releases"]release notes[/URL]) into [B]KOBOeReader/.kobo[/B]. You may need to show hidden files to see the folder.
 [*] Safely eject your eReader and wait for it to reboot.
-[*] Ensure there is a new menu item in the top-left main menu entitled [B]NickelMenu[/B]
+[*] Ensure there is a new menu item in the top-left main menu entitled [B]NickelMenu[/B] (it will appear in the bottom-right on firmware 4.23.15505+).
 [*] Connect you Kobo eReader to your computer again and create a new file (of any type) named [B]KOBOeReader/.adds/nm/config[/B], and follow the instructions in [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"]KOBOeReader/.adds/nm/doc[/URL] to configure NickelMenu.
 [/LIST]
 
@@ -23,7 +23,7 @@ ___
 [*]   Nickel settings (nickel_setting:{toggle,enable,disable}:{invert,lockscreen,screenshots,force_wifi,auto_usb_gadget}).
 [*]   Nickel browser with support for showing as a pop-up (e.g. for a reference site while reading) and adding custom CSS (nickel_browser:{modal:,}<url>{ <css>,})
 [*]   Nickel extras (nickel_extras:{unblock_it,sketch_pad,solitaire,sudoku,word_scramble}).
-[*]   Nickel views (nickel_open:{discover:storefront,discover:wishlist,library:library,library:library2,library:all,library:authors,library:series,library:shelves,library:pocket,library:dropbox,reading_life:reading_life,reading_life:stats,reading_life:awards,reading_life:words,store:overdrive,store:search}).
+[*]   Nickel views (nickel_open:{discover:storefront,discover:wishlist,library:library,library:all,library:authors,library:series,library:shelves,library:pocket,library:dropbox,reading_life:reading_life,reading_life:stats,reading_life:awards,reading_life:words,store:overdrive,store:search}).
 [*]   Nickel WiFi (nickel_wifi:{autoconnect,autoconnect_silent,enable,disable,toggle}).
 [*]   Nickel orientation, even on devices without a sensor (nickel_orientation:{portrait,landscape,inverted_portrait,inverted_landscape,invert,swap}).
 [*]   Other Nickel stuff (nickel_misc:{home,force_usb_connection,rescan_books,rescan_books_full}).

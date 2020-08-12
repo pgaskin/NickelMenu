@@ -1,0 +1,12 @@
+[B][SIZE=5]NickelMenu v0.3.2[/SIZE][/B]
+
+This release consists of fixes, updates, and improvements for 4.23.15505. In addition, there are some minor documentation improvements and a fix for using generators in the reader/browser menus. No changes are required to your configuration files, and all firmware versions 4.6+ are still fully supported.
+[LIST]
+[*] [B]On 4.23.15505+, the `main` menu location will now show as a button in the bottom nav bar which opens a standalone menu.[/B]
+[*] Updated `nickel_open:library:*` and `nickel_misc:home` actions for compatibility with 4.23.15505.
+[*] Updated documentation for the `main` location, and the `nickel_orientation` and `nickel_browser` actions for 4.23.15505.
+[*] Tested all actions with 4.23.15505.
+[*] Fixed parsing browser and library locations in generators.
+[*] `nickel_open:library:library` and `nickel_open:library:library2` are now identical.
+[/LIST]
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.3.2"]release[/URL] on GitHub for more details.
