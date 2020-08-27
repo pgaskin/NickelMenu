@@ -93,10 +93,7 @@ NM_ACTION_(nickel_open) {
         sym_c = "_ZN15LibraryNavMixinC1Ev"; //libnickel 4.6 * _ZN15LibraryNavMixinC1Ev
         sym_d = "_ZN15LibraryNavMixinD1Ev"; //libnickel 4.6 * _ZN15LibraryNavMixinD1Ev
 
-        // TODO: remove library2 in v0.4.0 (see https://github.com/pgaskin/NickelMenu/issues/81)
-
         if      (!strcmp(arg2, "library"))  sym_f = "_ZN15LibraryNavMixin18showLastLibraryTabEv";      //libnickel 4.6 * _ZN15LibraryNavMixin18showLastLibraryTabEv
-        else if (!strcmp(arg2, "library2")) sym_f = "_ZN15LibraryNavMixin18showLastLibraryTabEv";      //libnickel 4.6 * _ZN15LibraryNavMixin18showLastLibraryTabEv
         else if (!strcmp(arg2, "all"))      sym_f = "_ZN15LibraryNavMixin23showAllItemsWithoutSyncEv"; //libnickel 4.6 * _ZN15LibraryNavMixin23showAllItemsWithoutSyncEv
         else if (!strcmp(arg2, "authors"))  sym_f = "_ZN15LibraryNavMixin11showAuthorsEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showAuthorsEv
         else if (!strcmp(arg2, "series"))   sym_f = "_ZN15LibraryNavMixin10showSeriesEv";              //libnickel 4.20.14601 * _ZN15LibraryNavMixin10showSeriesEv
