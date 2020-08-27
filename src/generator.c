@@ -5,8 +5,8 @@
 #include <time.h>
 
 #include "action.h"
-#include "config.h"
 #include "generator.h"
+#include "nickelmenu.h"
 #include "util.h"
 
 nm_menu_item_t **nm_generator_do(nm_generator_t *gen, size_t *sz_out) {

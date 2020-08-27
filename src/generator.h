@@ -6,7 +6,7 @@ extern "C" {
 
 #include <stddef.h>
 #include <time.h>
-#include "config.h"
+#include "nickelmenu.h"
 
 // nm_generator_fn_t generates menu items. It must return a malloc'd array of
 // pointers to malloc'd nm_menu_item_t's, and write the number of items to

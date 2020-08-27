@@ -12,6 +12,7 @@
 #include "action.h"
 #include "config.h"
 #include "generator.h"
+#include "nickelmenu.h"
 #include "util.h"
 
 struct nm_config_file_t {

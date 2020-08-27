@@ -11,7 +11,9 @@
 
 #include <NickelHook.h>
 
+#include "action.h"
 #include "config.h"
+#include "nickelmenu.h"
 #include "util.h"
 
 typedef QWidget MenuTextItem; // it's actually a subclass, but we don't need its functionality directly, so we'll stay on the safe side

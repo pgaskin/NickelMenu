@@ -8,9 +8,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "config.h"
 #include "generator.h"
 #include "kfmon.h"
+#include "nickelmenu.h"
 #include "util.h"
 
 NM_GENERATOR_(_test) {
