@@ -187,16 +187,16 @@ extern "C" __attribute__((visibility("default"))) MenuTextItem* _nm_menu_hook(vo
     nm_menu_location_t loc = {};
     if (label == trmm && !checkable) {
         NM_LOG("Intercepting main menu (label=Settings, checkable=false)...");
-        loc = NM_MENU_LOCATION_MAIN_MENU;
+        loc = NM_MENU_LOCATION(main);
     } else if (label == trrm && !checkable) {
         NM_LOG("Intercepting reader menu (label=Dictionary, checkable=false)...");
-        loc = NM_MENU_LOCATION_READER_MENU;
+        loc = NM_MENU_LOCATION(reader);
     } else if (label == trbm && !checkable) {
         NM_LOG("Intercepting browser menu (label=Keyboard, checkable=false)...");
-        loc = NM_MENU_LOCATION_BROWSER_MENU;
+        loc = NM_MENU_LOCATION(browser);
     } else if (label == trlm && !checkable) {
         NM_LOG("Intercepting library menu (label=Manage downloads, checkable=false)...");  // this is actually two menus: in "My Books", and in "My Articles"
-        loc = NM_MENU_LOCATION_LIBRARY_MENU;
+        loc = NM_MENU_LOCATION(library);
     }
 
     if (loc)
@@ -274,7 +274,7 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
 
         for (size_t i = 0; i < items_n; i++) {
             nm_menu_item_t *it = items[i];
-            if (it->loc != NM_MENU_LOCATION_MAIN_MENU)
+            if (it->loc != NM_MENU_LOCATION(main))
                 continue;
 
             NM_LOG("adding item '%s'...", it->lbl);
@@ -498,7 +498,7 @@ QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_me
     if (separator) {
         // if it's the main menu, we generally want to use a custom separator
         QAction *sep;
-        if (loc == NM_MENU_LOCATION_MAIN_MENU && LightMenuSeparator_LightMenuSeparator && BoldMenuSeparator_BoldMenuSeparator) {
+        if (loc == NM_MENU_LOCATION(main) && LightMenuSeparator_LightMenuSeparator && BoldMenuSeparator_BoldMenuSeparator) {
             sep = reinterpret_cast<QAction*>(calloc(1, 32)); // it's actually 8 as of 14622, but better to be safe
             (last_in_group
                 ? BoldMenuSeparator_BoldMenuSeparator

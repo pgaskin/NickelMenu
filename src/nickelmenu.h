@@ -7,11 +7,20 @@ extern "C" {
 #include <stdbool.h>
 #include "action.h"
 
+#define NM_MENU_LOCATION(name) NM_MENU_LOCATION_##name
+
+#define NM_MENU_LOCATIONS \
+    X(main)               \
+    X(reader)             \
+    X(browser)            \
+    X(library)
+
 typedef enum {
-    NM_MENU_LOCATION_MAIN_MENU    = 1,
-    NM_MENU_LOCATION_READER_MENU  = 2,
-    NM_MENU_LOCATION_BROWSER_MENU = 3,
-    NM_MENU_LOCATION_LIBRARY_MENU = 4,
+    NM_MENU_LOCATION_NONE = 0, // to allow it to be checked with if
+    #define X(name) \
+    NM_MENU_LOCATION(name),
+    NM_MENU_LOCATIONS
+    #undef X
 } nm_menu_location_t;
 
 typedef struct nm_menu_action_t {
