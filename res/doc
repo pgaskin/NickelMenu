@@ -154,7 +154,9 @@
 #     option, only the first one takes effect.
 #
 #     <key>  the option name, one of:
+#              menu_main_15505_label - sets the label used for the NickelMenu button on 4.23.15505+
 #     <val>  the option value:
+#              menu_main_15505_label - the label to use instead of "NickelMenu"
 #
 # For example, you might have a configuration file named "mystuff" like:
 #
