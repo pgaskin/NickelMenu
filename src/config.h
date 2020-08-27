@@ -52,6 +52,11 @@ bool nm_config_generate(nm_config_t *cfg, bool force_update);
 // called.
 nm_menu_item_t **nm_config_get_menu(nm_config_t *cfg, size_t *n_out);
 
+// nm_config_experimental gets the first value of an arbitrary experimental
+// option. If it doesn't exist, NULL will be returned. The pointer will be valid
+// until nm_config_free is called.
+const char *nm_config_experimental(nm_config_t *cfg, const char *key);
+
 // nm_config_free frees all allocated memory.
 void nm_config_free(nm_config_t *cfg);
 
@@ -69,6 +74,12 @@ int nm_global_config_update();
 // item. If nm_global_config_update has never been called successfully before,
 // NULL is returned and n_out is set to 0.
 nm_menu_item_t **nm_global_config_items(size_t *n_out);
+
+// nm_global_config_experimental gets the first value of an arbitrary
+// experimental option (the pointer will remain valid until the next time
+// nm_global_config_update is called). If it doesn't exist, NULL will be
+// returned.
+const char *nm_global_config_experimental(const char *key);
 
 #ifdef __cplusplus
 }
