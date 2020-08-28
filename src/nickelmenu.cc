@@ -231,7 +231,7 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
     MainNavButton_MainNavButton(btn, parent);
     MainNavButton_setPixmap(btn, QStringLiteral(":/images/home/main_nav_more.png"));
     MainNavButton_setActivePixmap(btn, QStringLiteral(":/images/home/main_nav_more_active.png"));
-    MainNavButton_setText(btn, "NickelMenu");
+    MainNavButton_setText(btn, nm_global_config_experimental("menu_main_15505_label") ?: "NickelMenu");
     btn->setObjectName("nmButton");
 
     QPushButton *sh = new QPushButton(_this); // HACK: we use a QPushButton as an adaptor so we can connect an old-style signal with the new-style connect without needing a custom QObject
