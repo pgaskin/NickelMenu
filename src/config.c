@@ -143,16 +143,23 @@ void nm_config_files_free(nm_config_file_t *files) {
 }
 
 typedef enum {
-    NM_CONFIG_TYPE_MENU_ITEM = 1,
-    NM_CONFIG_TYPE_GENERATOR = 2,
+    NM_CONFIG_TYPE_MENU_ITEM    = 1,
+    NM_CONFIG_TYPE_GENERATOR    = 2,
+    NM_CONFIG_TYPE_EXPERIMENTAL = 3,
 } nm_config_type_t;
+
+typedef struct {
+    char *key;
+    char *val;
+} nm_config_experimental_t;
 
 struct nm_config_t {
     nm_config_type_t type;
     bool generated;
     union {
-        nm_menu_item_t *menu_item;
-        nm_generator_t *generator;
+        nm_menu_item_t           *menu_item;
+        nm_generator_t           *generator;
+        nm_config_experimental_t *experimental;
     } value;
     nm_config_t *next;
 };
@@ -171,6 +178,8 @@ typedef struct nm_config_parse__state_t {
     nm_menu_action_t *cfg_it_act_c; // menu action (current)
 
     nm_generator_t *cfg_gn_c; // generator (current)
+
+    nm_config_experimental_t *cfg_ex_c; // experimental (current)
 } nm_config_parse__state_t;
 
 typedef enum nm_config_parse__append__ret_t {
@@ -182,6 +191,7 @@ typedef enum nm_config_parse__append__ret_t {
 static nm_config_parse__append__ret_t nm_config_parse__append_item(nm_config_parse__state_t *restrict state, nm_menu_item_t *const restrict it); // note: action pointer will be ignored (add it with append_action)
 static nm_config_parse__append__ret_t nm_config_parse__append_action(nm_config_parse__state_t *restrict state, nm_menu_action_t *const restrict act); // note: next pointer will be ignored (add another one by calling this again)
 static nm_config_parse__append__ret_t nm_config_parse__append_generator(nm_config_parse__state_t *restrict state, nm_generator_t *const restrict gn);
+static nm_config_parse__append__ret_t nm_config_parse__append_experimental(nm_config_parse__state_t *restrict state, nm_config_experimental_t *const restrict ex);
 
 static const char* nm_config_parse__strerror(nm_config_parse__append__ret_t ret) {
     switch (ret) {
@@ -207,6 +217,7 @@ static bool nm_config_parse__lineend_action(int field, char **line, bool p_on_su
 static bool nm_config_parse__line_item(const char *type, char **line, nm_menu_item_t *it_out, nm_menu_action_t *action_out);
 static bool nm_config_parse__line_chain(const char *type, char **line, nm_menu_action_t *act_out);
 static bool nm_config_parse__line_generator(const char *type, char **line, nm_generator_t *gn_out);
+static bool nm_config_parse__line_experimental(const char *type, char **line, nm_config_experimental_t *ex_out);
 
 nm_config_t *nm_config_parse(nm_config_file_t *files) {
     const char *err = NULL;
@@ -220,9 +231,10 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
     nm_config_parse__append__ret_t ret;
     nm_config_parse__state_t state = {0};
 
-    nm_menu_item_t   tmp_it;
-    nm_menu_action_t tmp_act;
-    nm_generator_t   tmp_gn;
+    nm_menu_item_t           tmp_it;
+    nm_menu_action_t         tmp_act;
+    nm_generator_t           tmp_gn;
+    nm_config_experimental_t tmp_ex;
 
     #define RETERR(fmt, ...) do {       \
         NM_ERR_SET(fmt, ##__VA_ARGS__); \
@@ -277,6 +289,14 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
                 continue;
             }
 
+            if (nm_config_parse__line_experimental(s_typ, &cur, &tmp_ex)) {
+                if ((err = nm_err()))
+                    RETERR("file %s: line %d: parse experimental option: %s", cf->path, line_n, err);
+                if ((ret = nm_config_parse__append_experimental(&state, &tmp_ex)))
+                    RETERR("file %s: line %d: error appending experimental option to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                continue;
+            }
+
             RETERR("file %s: line %d: field 1: unknown type '%s'", cf->path, line_n, s_typ);
         }
 
@@ -285,6 +305,7 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
         state.cfg_it_act_s = NULL;
         state.cfg_it_act_c = NULL;
         state.cfg_gn_c     = NULL;
+        state.cfg_ex_c     = NULL;
 
         fclose(cfgfile);
         cfgfile = NULL;
@@ -327,6 +348,9 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
             break;
         case NM_CONFIG_TYPE_GENERATOR:
             NM_LOG("cfg(NM_CONFIG_TYPE_GENERATOR) : %d:%s(%p):%s", cur->value.generator->loc, cur->value.generator->desc, cur->value.generator->generate, cur->value.generator->arg);
+            break;
+        case NM_CONFIG_TYPE_EXPERIMENTAL:
+            NM_LOG("cfg(NM_CONFIG_TYPE_EXPERIMENTAL) : %s:%s", cur->value.experimental->key, cur->value.experimental->val);
             break;
         }
     }
@@ -420,6 +444,26 @@ static bool nm_config_parse__line_generator(const char *type, char **line, nm_ge
     return true;
 }
 
+static bool nm_config_parse__line_experimental(const char *type, char **line, nm_config_experimental_t *ex_out) {
+    if (strcmp(type, "experimental")) {
+        nm_err_set(NULL);
+        return false;
+    }
+
+    *ex_out = (nm_config_experimental_t){0};
+
+    ex_out->key = strtrim(strsep(line, ":"));
+    if (!ex_out->key)
+        NM_ERR_RET(NULL, "field 2: expected key, got end of line");
+
+    ex_out->val = strtrim(strsep(line, ":"));
+    if (!ex_out->val)
+        NM_ERR_RET(NULL, "field 2: expected val, got end of line");
+
+    nm_err_set(NULL);
+    return true;
+}
+
 static bool nm_config_parse__lineend_action(int field, char **line, bool p_on_success, bool p_on_failure, nm_menu_action_t *act_out) {
     *act_out = (nm_menu_action_t){0};
 
@@ -483,6 +527,7 @@ static nm_config_parse__append__ret_t nm_config_parse__append_item(nm_config_par
     state->cfg_it_act_s = NULL;
     state->cfg_it_act_c = NULL;
     state->cfg_gn_c     = NULL;
+    state->cfg_ex_c     = NULL;
 
     return NM_CONFIG_PARSE__APPEND__RET_OK;
 }
@@ -565,6 +610,53 @@ static nm_config_parse__append__ret_t nm_config_parse__append_generator(nm_confi
     state->cfg_it_c     = NULL;
     state->cfg_it_act_s = NULL;
     state->cfg_it_act_c = NULL;
+    state->cfg_ex_c     = NULL;
+
+    return NM_CONFIG_PARSE__APPEND__RET_OK;
+}
+
+static nm_config_parse__append__ret_t nm_config_parse__append_experimental(nm_config_parse__state_t *restrict state, nm_config_experimental_t *const restrict ex) {
+    nm_config_t              *cfg_n    = calloc(1, sizeof(nm_config_t));
+    nm_config_experimental_t *cfg_ex_n = calloc(1, sizeof(nm_config_experimental_t));
+
+    if (!cfg_n || !cfg_ex_n) {
+        free(cfg_n);
+        free(cfg_ex_n);
+        return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
+    }
+
+    *cfg_n = (nm_config_t){
+        .type      = NM_CONFIG_TYPE_EXPERIMENTAL,
+        .generated = false,
+        .value     = { .experimental = cfg_ex_n },
+        .next      = NULL,
+    };
+
+    *cfg_ex_n = (nm_config_experimental_t){
+        .key = strdup(ex->key ? ex->key : ""),
+        .val = strdup(ex->val ? ex->val : ""),
+    };
+
+    if (!cfg_ex_n->key || !cfg_ex_n->val) {
+        free(cfg_ex_n->key);
+        free(cfg_ex_n->val);
+        free(cfg_n);
+        free(cfg_ex_n);
+        return NM_CONFIG_PARSE__APPEND__RET_ALLOC_ERROR;
+    }
+
+    if (state->cfg_c)
+        state->cfg_c->next = cfg_n;
+    else
+        state->cfg_s = cfg_n;
+
+    state->cfg_c    = cfg_n;
+    state->cfg_ex_c = cfg_ex_n;
+
+    state->cfg_it_c     = NULL;
+    state->cfg_it_act_s = NULL;
+    state->cfg_it_act_c = NULL;
+    state->cfg_gn_c     = NULL;
 
     return NM_CONFIG_PARSE__APPEND__RET_OK;
 }
@@ -626,6 +718,9 @@ bool nm_config_generate(nm_config_t *cfg, bool force_update) {
             case NM_CONFIG_TYPE_GENERATOR:
                 NM_LOG("cfg(NM_CONFIG_TYPE_GENERATOR) : %d:%s(%p):%s", cur->value.generator->loc, cur->value.generator->desc, cur->value.generator->generate, cur->value.generator->arg);
                 break;
+            case NM_CONFIG_TYPE_EXPERIMENTAL:
+                NM_LOG("cfg(NM_CONFIG_TYPE_EXPERIMENTAL) : %s:%s", cur->value.experimental->key, cur->value.experimental->val);
+                break;
             }
         }
     }
@@ -649,6 +744,15 @@ nm_menu_item_t **nm_config_get_menu(nm_config_t *cfg, size_t *n_out) {
            *(tmp++) = cur->value.menu_item;
 
     return it;
+}
+
+const char *nm_config_experimental(nm_config_t *cfg, const char *key) {
+    if (key)
+        for (nm_config_t *cur = cfg; cur; cur = cur->next)
+            if (cur->type == NM_CONFIG_TYPE_EXPERIMENTAL)
+                if (!strcmp(cur->value.experimental->key, key))
+                    return cur->value.experimental->val;
+    return NULL;
 }
 
 void nm_config_free(nm_config_t *cfg) {
@@ -675,6 +779,11 @@ void nm_config_free(nm_config_t *cfg) {
             free(cfg->value.generator->desc);
             free(cfg->value.generator);
             break;
+        case NM_CONFIG_TYPE_EXPERIMENTAL:
+            free(cfg->value.experimental->key);
+            free(cfg->value.experimental->val);
+            free(cfg->value.experimental);
+            break;
         }
         free(cfg);
 
@@ -693,6 +802,10 @@ nm_menu_item_t **nm_global_config_items(size_t *n_out) {
     if (n_out)
         *n_out = nm_global_menu_config_n;
     return nm_global_menu_config_items;
+}
+
+const char *nm_global_config_experimental(const char *key) {
+    return nm_config_experimental(nm_global_menu_config, key);
 }
 
 static void nm_global_config_replace(nm_config_t *cfg, const char *err) {

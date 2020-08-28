@@ -146,6 +146,16 @@
 #                              gui - only enumerate non-hidden active KFMon watches (this is the default)
 #                              all - enumerate all active KFMon watches
 #
+#   experimental:<key>:<val>
+#     Sets an experimental option. These are not guaranteed to be stable or be
+#     compatible across NickelMenu or firmware versions, and may stop working at
+#     any time. In addition, these options may not take effect without a reboot.
+#     Unknown options are ignored. If there are multiple declarations of an
+#     option, only the first one takes effect.
+#
+#     <key>  the option name, one of:
+#     <val>  the option value:
+#
 # For example, you might have a configuration file named "mystuff" like:
 #
 #   menu_item :main    :Show an Error      :dbg_error          :This is an error message!
