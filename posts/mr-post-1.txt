@@ -2,7 +2,7 @@
 [SIZE=4]The easiest way to launch custom scripts, change hidden settings, and run actions on Kobo eReaders.[/SIZE]
 ___
 
-[URL="https://github.com/pgaskin/NickelMenu/releases/latest"][IMG]https://img.shields.io/github/v/release/pgaskin/NickelMenu?label=Download&style=flat-square&color=gray[/IMG][/URL] [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"][IMG]https://img.shields.io/badge/Documentation-gray?style=flat-square[/IMG][/URL] [URL="https://github.com/pgaskin/NickelMenu"][IMG]https://img.shields.io/badge/Source%20Code-github.com%2Fpgaskin%2FNickelMenu-gray?style=flat-square[/IMG][/URL]
+[URL="https://github.com/pgaskin/NickelMenu/releases/latest"][IMG]https://img.shields.io/github/v/release/pgaskin/NickelMenu?label=Download&style=flat-square&color=gray[/IMG][/URL] [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"][IMG]https://img.shields.io/badge/Documentation-gray?style=flat-square[/IMG][/URL] [URL="https://github.com/pgaskin/NickelMenu"][IMG]https://img.shields.io/badge/Source%20Code-github.com%2Fpgaskin%2FNickelMenu-gray?style=flat-square[/IMG][/URL] [URL="https://pgaskin.net/NickelMenu"][IMG]https://img.shields.io/badge/Website-pgaskin.net%2FNickelMenu-gray?style=flat-square[/IMG][/URL]
 
 [SIZE=4]NickelMenu adds custom actions the main, reader, browser, and library menus. It works on firmware 4.6+, and persists between firmware upgrades.[/SIZE]
 
@@ -83,4 +83,7 @@ ___
 [*] Bastien Dejean ([URL="https://github.com/pgaskin/NickelMenu/commits?author=baskerville"]@baskerville[/URL])
 [/LIST]
 
-[SIZE=4][URL="https://github.com/pgaskin/NickelMenu/releases/latest/download/KoboRoot.tgz"]Download[/URL] | [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"]Documentation[/URL] | [URL="https://github.com/pgaskin/NickelMenu"]Source Code[/URL] | [URL="https://github.com/pgaskin/NickelMenu/releases"]Release Notes[/URL][/SIZE]
+[B]Screenshots:[/B]
+See [URL="https://pgaskin.net/NickelMenu"]here[/URL].
+
+[SIZE=4][URL="https://github.com/pgaskin/NickelMenu/releases/latest/download/KoboRoot.tgz"]Download[/URL] | [URL="https://pgaskin.net/NickelMenu"]Website[/URL] | [URL="https://github.com/pgaskin/NickelMenu/blob/master/res/doc"]Documentation[/URL] | [URL="https://github.com/pgaskin/NickelMenu"]Source Code[/URL] | [URL="https://github.com/pgaskin/NickelMenu/releases"]Release Notes[/URL][/SIZE]
