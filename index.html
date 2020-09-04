@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>NickelMenu</title>
+    <meta name="author" content="Patrick Gaskin"/>
+    <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet"/>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            padding: 0;
+            margin: 0;
+            background: rgb(235, 227, 212);
+            overflow-x: hidden;
+        }
+        html {
+            font-size: 16px;
+        }
+        body {
+            font-size: 100%;
+            font-family: 'PT Sans';
+            padding: 1em;
+            line-height: 1.35;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            padding: 0;
+            margin: 0 0 .25em 0;
+            font-weight: bold;
+        }
+        h1 {
+            font-size: 1.5em;
+        }
+        h2 {
+            font-size: 1.5em;
+        }
+        h3 {
+            font-size: 1.17em;
+        }
+        p {
+            padding: 0;
+            margin: 0 0 .5em 0;
+        }
+        a:link,
+        a:visited {
+            color: rgb(0, 3, 189);
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        ol, ul {
+            padding-left: 1.75em;
+            margin: .25em 0;
+        }
+        li {
+            margin-bottom: .25em;
+            word-wrap: break-word;
+        }
+        dl {
+            margin: .25em 0;
+            padding-left: .5em;
+        }
+        dt {
+            font-weight: 700;
+            margin-top: .25em;
+        }
+        dd {
+            font-style: italic;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            margin: 0 auto;
+            max-width: 960px;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(0, 0, 0, 0.4);
+        }
+        .content > aside {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            flex: 0 0 14em;
+            border-right: 1px solid #ccc;
+            padding: 1em;
+        }
+        .content > main {
+            flex: 3;
+            padding: 1em;
+            min-width: 1em;
+        }
+        footer {
+            opacity: 0.8;
+            padding: 1em;
+            text-align: center;
+        }
+        footer > a:link,
+        footer > a:visited {
+            color: inherit;
+            text-decoration: underline;
+        }
+
+        @media screen and (max-width: 648px) {
+            .content {
+                display: block;
+            }
+            .content > aside {
+                border-right: none;
+                border-bottom: 1px solid #ccc;
+            }
+        }
+
+        .content > aside > h1 {
+            margin: 0 0 .25em 0;
+            padding: 0;
+            text-align: center;
+        }
+        .content > aside > section.download {
+            margin: .25em 0;
+        }
+        .content > aside > nav {
+            margin: .25em 0;
+            padding: .25em 0;
+            border-top: 1px dashed #ccc;
+        }
+        .content > aside > nav > a,
+        .content > aside > nav > a:link,
+        .content > aside > nav > a:visited {
+            display: block;
+            padding: .15em 0;
+        }
+        .content > aside > a.download,
+        .content > aside > a.download:link,
+        .content > aside > a.download:visited {
+            display: block;
+            text-decoration: none;
+            outline: 0;
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid #ccc;
+            padding: .5em;
+            font-weight: 700;
+            color: #000;
+            text-align: center;
+            margin: .5em 0 .75em;
+        }
+        .content > aside > a.download:hover {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid #aaa;
+        }
+        .content > aside > a.download:focus,
+        .content > aside > a.download:active {
+            border: 1px solid #666;
+        }
+        .content > aside > a.download:active {
+            background: rgba(0, 0, 0, 0.15);
+        }
+        .content > aside > a.download > span {
+            display: block;
+            font-size: .85em;
+            text-align: center;
+            border-top: none;
+            color: inherit;
+            font-weight: normal;
+        }
+        .content > aside > .spacer {
+            flex: 1;
+        }
+
+        .content > main > section {
+            margin-bottom: 1em;
+        }
+
+        .screenshots {
+            display: flex;
+            overflow: hidden;
+            /*
+            overflow-x: auto;
+            */
+            /**/
+            flex-wrap: wrap;
+            /**/
+            margin: -.5em;
+        }
+        .screenshots > a {
+            display: block;
+            flex: 0 0 auto;
+            border: 1px solid #ccc;
+            height: 13.5em;
+            margin-right: .5em;
+            margin: .5em;
+            text-decoration: none;
+        }
+        .screenshots > a > img {
+            height: 100%;
+        }
+        .screenshots > a.full {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: 0;
+            height: auto;
+            background: rgba(0, 0, 0, 0.4);
+            border: none;
+            z-index: 1000;
+        }
+        .screenshots > a.full > img {
+            flex: 0 0 auto;
+            height: auto;
+            max-height: 75%;
+            max-width: 75%;
+            border: 1px solid #000;
+            cursor: default;
+        }
+        .screenshots > a.full[data-alt]:after {
+            flex: 0 0 auto;
+            display: block;
+            color: #fff;
+            background: rgba(0, 0, 0, 1);
+            content: attr(data-alt);
+            padding: .25em 1em;
+            margin-top: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <aside>
+            <h1>NickelMenu</h1>
+            <nav>
+                <a href="#about">About</a>
+                <a href="#screenshots">Screenshots</a>
+                <a href="#install">Installation</a>
+                <a href="#features">Features</a>
+                <a href="#faq">Troubleshooting/FAQ</a>
+                <a href="#report">Reporting Issues</a>
+                <a href="#other-stuff">Other Stuff</a>
+            </nav>
+            <!---->
+            <nav>
+                <a href="https://www.mobileread.com/forums/showthread.php?t=329525">MobileRead</a>
+                <a href="https://github.com/pgaskin/NickelMenu">GitHub</a>
+            </nav>
+            <!---->
+            <nav>
+                <a href="https://github.com/pgaskin/NickelMenu/blob/master/res/doc">Documentation</a>
+                <a href="https://github.com/pgaskin/NickelMenu/releases">Release Notes</a>
+            </nav>
+            <a href="https://github.com/pgaskin/NickelMenu/releases/latest/download/KoboRoot.tgz" class="download">Download KoboRoot.tgz<span><!--v0.0.0 (2020-01-01)--></span></a>
+            <!--
+            <div class="spacer"></div>
+            <nav>
+                <a href="https://go.pgaskin.net/kobo/nm">MobileRead</a>
+                <a href="https://github.com/pgaskin/NickelMenu">GitHub</a>
+            </nav>
+            -->
+        </aside>
+        <main>
+            <section id="about">
+                <h2>About</h2>
+                <p>
+                    NickelMenu adds custom menu items to various menus in Kobo's
+                    eReader software. It works on all recent firmware versions,
+                    and persists between firmware upgrades. There are many
+                    built-in actions for controlling Nickel and for running
+                    external software.
+                </p>
+                <p>
+                    NickelMenu requires firmware 4.6+ to work, and has been
+                    fully tested on 4.20.14622 - 4.23.15548. It is safe to
+                    install it on any firmware version, as it has a lot of error
+                    checking and a failsafe mechanism which will automatically
+                    uninstall it as a last resort.
+                </p>
+                <p>
+                    If you are using the main menu on firmware 4.23.15505+, you
+                    will need NickelMenu v0.3.2 or newer.
+                </p>
+            </section>
+            <section id="screenshots">
+                <h2>Screenshots</h2>
+                <div class="screenshots">
+                    <a href="screenshots/v0.3.2/fw15505/screen_007.png"><img src="screenshots/v0.3.2/fw15505/screen_007.png" alt="Sample menu items in the main NickelMenu menu on firmware 4.23.15505+."/></a>
+                    <a href="screenshots/v0.3.2/fw15268/screen_003.png"><img src="screenshots/v0.3.2/fw15268/screen_003.png" alt="Sample menu items in the main NickelMenu menu on firmware 4.6+."/></a>
+                    <a href="screenshots/v0.3.2/fw15505/screen_002.png"><img src="screenshots/v0.3.2/fw15505/screen_002.png" alt="The library menu configured with custom FTP and Import Books menu items."/></a>
+                    <a href="screenshots/v0.3.2/fw15505/screen_004.png"><img src="screenshots/v0.3.2/fw15505/screen_004.png" alt="The reader menu configured with many useful items."/></a>
+                    <a href="screenshots/v0.3.2/fw15505/screen_005.png"><img src="screenshots/v0.3.2/fw15505/screen_005.png" alt="The full-screen browser on firmware 4.23.15505+ with custom Quit and Open Pop-Up menu items."/></a>
+                    <a href="screenshots/v0.3.2/fw15505/screen_008.png"><img src="screenshots/v0.3.2/fw15505/screen_008.png" alt="Using NickelMenu with the KFMon generator to launch external applications on firmware 4.23.15505."/></a>
+                    <a href="screenshots/v0.3.2/fw15268/screen_002.png"><img src="screenshots/v0.3.2/fw15268/screen_002.png" alt="The default main menu on 4.6+ with NickelMenu installed."/></a>
+                    <a href="screenshots/v0.3.2/fw15505/screen_003.png"><img src="screenshots/v0.3.2/fw15505/screen_003.png" alt="The main menu on a different view on firmware 4.23.15505+."/></a>
+                </div>
+            </section>
+            <!-- START CONTENT SHARED WITH MOBILEREAD POST -->
+            <section id="install">
+                <h2>Installation</h2>
+                <ol>
+                    <li>Connect your Kobo eReader to your computer over USB.</li>
+                    <li>Download <b><a href="https://github.com/pgaskin/NickelMenu/releases/latest/download/KoboRoot.tgz">KoboRoot.tgz</a></b> (<a href="https://github.com/pgaskin/NickelMenu/releases">release notes</a>) into <b>KOBOeReader/.kobo</b>. You may need to show hidden files to see the folder.</li>
+                    <li>Safely eject your eReader and wait for it to reboot.</li>
+                    <li>Ensure there is a new menu item in the top-left main menu entitled <b>NickelMenu</b> (it will appear in the bottom-right on firmware 4.23.15505+).</li>
+                    <li>Connect you Kobo eReader to your computer again and create a new file (of any type) named <b>KOBOeReader/.adds/nm/config</b>, and follow the instructions in <a href="https://github.com/pgaskin/NickelMenu/blob/master/res/doc">KOBOeReader/.adds/nm/doc</a> to configure NickelMenu.</li>
+                </ol>
+            </section>
+            <section id="features">
+                <h2>Features</h2>
+                <ul>
+                    <li>A built-in failsafe will automatically remove NickelMenu if any fatal error occurs, and will never result in an unbootable Kobo. Non-fatal errors will appear as a menu item with more details.</li>
+                    <li>Multi-version compatibility (even for future versions).</li>
+                    <li>Can add items to the main menu, reader menu, browser menu, and the library menu.</li>
+                    <li>Many built-in actions:<ul>
+                        <li>Debug messages (dbg_syslog, dbg_error, dbg_msg, dbg_toast).</li>
+                        <li>Nickel settings (nickel_setting:{toggle,enable,disable}:{invert,lockscreen,screenshots,force_wifi,auto_usb_gadget}).</li>
+                        <li>Nickel browser with support for showing as a pop-up (e.g. for a reference site while reading) and adding custom CSS (nickel_browser:{modal:,}<url>{ <css>,})</li>
+                        <li>Nickel extras (nickel_extras:{unblock_it,sketch_pad,solitaire,sudoku,word_scramble}).</li>
+                        <li>Nickel views (nickel_open:{discover:storefront,discover:wishlist,library:library,library:all,library:authors,library:series,library:shelves,library:pocket,library:dropbox,reading_life:reading_life,reading_life:stats,reading_life:awards,reading_life:words,store:overdrive,store:search}).</li>
+                        <li>Nickel WiFi (nickel_wifi:{autoconnect,autoconnect_silent,enable,disable,toggle}).</li>
+                        <li>Nickel orientation, even on devices without a sensor (nickel_orientation:{portrait,landscape,inverted_portrait,inverted_landscape,invert,swap}).</li>
+                        <li>Other Nickel stuff (nickel_misc:{home,force_usb_connection,rescan_books,rescan_books_full}).</li>
+                        <li>Gracefully exit Nickel (power:{shutdown,reboot,sleep})</li>
+                        <li>Launch system commands and optionally display the output (cmd_spawn{,:quiet},cmd_output:timeout{,:quiet}).</li>
+                        <li>KFMon (kfmon, kfmon_id).</ul></li>
+                    <li>The web_browser action has additional features such as opening a pop-up window, opening a custom URL instead of the homepage, or adding custom CSS styles to the webpages.</li>
+                    <li>Action chaining (chain_{success,failure,always}).</li>
+                    <li>Dynamically generated menu items (generator:kfmon).</li>
+                    <li>Simple configuration format with support for multiple configuration files.</li>
+                    <li>Configuration files and item generators will be updated instantly without a reboot.</li>
+                    <li>Comprehensive logging to syslog (view over telnet or SSH with logread, or enable developer options and see the syslog files in KOBOeReader/.kobo).</li>
+                    <li>No system files are ever touched directly, and no patching is required.</li>
+                </ul>
+            </section>
+            <section id="faq">
+                <h2>Troubleshooting/FAQ</h2>
+                <dl>
+                    <dt>I don't see any menu items in the main menu</dt>
+                    <dd>
+                        Try re-installing NickelMenu. If it still doesn't
+                        appear, please reboot and post the contents of the
+                        syslog.
+                    </dd>
+                    <dt>I rebooted, and NickelMenu suddenly disappeared</dt>
+                    <dd>
+                        You probably triggered the failsafe (if you rebooted
+                        within 20 seconds after first turning it on).
+                    </dd>
+                    <dt>I want to uninstall NickelMenu</dt>
+                    <dd>
+                        Create a new file named
+                        <b>KOBOeReader/.adds/nm/uninstall</b>, then reboot your
+                        Kobo.
+                    </dd>
+                    <dt>I want to update NickelMenu</dt>
+                    <dd>
+                        Follow the installation process again. Your
+                        configuration files will be preserved.
+                    </dd>
+                    <dt>When I press one of the actions, I get an error message about dlsym</dt>
+                    <dd>
+                        Something has probably changed in your firmware version.
+                        Try updating NickelMenu, and if it still doesn't work,
+                        please post your current version and the action you are
+                        trying to use.
+                    </dd>
+                    <dt>When I try to open a file in KOBOeReader/.adds/nm, I get asked what I want to open it with</dt>
+                    <dd>
+                        Open it with a text editor, for example, Notepad,
+                        Notepad++, or Visual Studio Code.
+                    </dd>
+                    <dt>When I open a configuration file, everything is jumbled in one long line</dt>
+                    <dd>
+                        Open it with a different text editor which supports unix
+                        line breaks. If you are trying to view the
+                        documentation, it is also
+                        <a href="https://github.com/pgaskin/NickelMenu/blob/master/res/doc">available online</a>.
+                    </dd>
+                    <dt>I need help writing a configuration file</dt>
+                    <dd>
+                        There is an example configuration file in the
+                        <a href="https://github.com/pgaskin/NickelMenu/blob/master/res/doc">documentation</a>.
+                        If you still need help, feel free to post in this
+                        thread.
+                    </dd>
+                    <dt>I found a bug in NickelMenu</dt>
+                    <dd>
+                        Try re-installing NickelMenu. If that still doesn't
+                        work, please post your syslog, your configuration file,
+                        and a description of the issue in this thread or on
+                        <a href="https://github.com/pgaskin/NickelMenu/issues/new">GitHub</a>.
+                    </dd>
+                    <dt>I found a bug in Nickel (i.e. Kobo's reader itself)</dt>
+                    <dd>
+                        Before you report it, first reboot and confirm the issue
+                        is still reproducible without using any menu items.
+                    </dd>
+                    <dt>I would like to request a new feature</dt>
+                    <dd>
+                        Please post it in this thread or open an
+                        <a href="https://github.com/pgaskin/NickelMenu/issues/new">issue
+                        on GitHub</a>.
+                    </dd>
+                    <dt>I receive an error message when trying to launch a KFMon action</dt>
+                    <dd>
+                        Make sure the launcher name you specified is correct. It
+                        should look like <b>action.png</b> or something similar.
+                        Also, make sure you have installed the latest version of
+                        KFMon and try re-installing NickelMenu.
+                    </dd>
+                    <dt>How do I configure NickelMenu</dt>
+                    <dd>
+                        Read the instructions above again, and see the
+                        <a href="https://github.com/pgaskin/NickelMenu/blob/master/res/doc">documentation</a>.
+                    </dd>
+                </dl>
+            </section>
+            <!-- END CONTENT SHARED WITH MOBILEREAD POST -->
+            <section id="report">
+                <h2>Reporting Issues</h2>
+                <p>
+                    If you still have a question or have found a bug in
+                    NickelMenu, you can <a href="https://github.com/pgaskin/NickelMenu/issues/new">open an issue</a>
+                    on GitHub or <a href="https://www.mobileread.com/forums/showthread.php?t=329525">post it</a>
+                    to the thread on MobileRead. Please try upgrading to the
+                    latest version first. If you aren't sure whether you are on
+                    the latest version, re-install NickelMenu (your
+                    configuration files will be preserved).
+            </section>
+            <section id="other-stuff">
+                <h2>Other Stuff</h2>
+                <p>
+                    If you like NickelMenu, you may also be interested some of my other mods/tools:
+                </p>
+                <ul>
+                    <li><b><a href="https://pgaskin.net/KoboStuff/kobofirmware.html">kobofirmware</a>:</b> Direct links and notifications for firmware updates.</li>
+                    <li><b><a href="https://pgaskin.net/kepubify">kepubify</a>:</b> A fast EPUB to KEPUB conversion tool.</li>
+                    <li><b><a href="https://pgaskin.net/dictutil">dictutil</a>:</b> Custom dictionaries and tools to work with them.</li>
+                    <li><b><a href="https://www.mobileread.com/forums/showthread.php?p=4013888">NickelSeries</a>:</b> Adds support for series and subtitle metadata when sideloading books.</li>
+                </ul>
+                <br/>
+                <p>
+                    NickelMenu can also be used to launch alternative software for Kobo eReaders, including:
+                </p>
+                <ul>
+                    <li><b><a href="https://wiki.vlasovsoft.net/doku.php?id=en:installation">Vlasovsoft</a>:</b> A collection of apps including PBChess, a calculator, a file manager, and more.</li>
+                    <li><b><a href="https://koreader.rocks/">KOReader</a>:</b> An alternative reader for e-ink devices.</li>
+                    <li><b><a href="https://github.com/baskerville/plato">Plato</a>:</b> Another alternative reader for e-ink devices.</li>
+                    <li><b><a href="https://github.com/NiLuJe/kfmon">KFMon</a>:</b> Anything compatible with KFMon can be launched directly through NickelMenu.</li>
+                </ul>
+                <br/>
+                <p>If you're interested in creating mods similar to NickelMenu and NickelSeries, you may be interested in:</p>
+                <ul>
+                    <li><b><a href="https://github.com/pgaskin/NickelHook">NickelHook</a>:</b> The library which powers NickelMenu, NickelSeries, NickelDBus, and other mods which directly interact with Nickel.</li>
+                    <li><b><a href="https://github.com/shermp/NickelDBus">NickelDBus</a>:</b> A mod by <a href="https://github.com/shermp">@shermp</a> which exports the functionality of NickelMenu and more over DBus.</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+    <footer>
+        Copyright 2020 <a href="https://pgaskin.net">Patrick Gaskin</a>.
+    </footer>
+    <script>
+        console.log("adding lightbox click handlers")
+
+        Array.from(document.querySelectorAll(".screenshots > a")).forEach(el => {
+            console.log("... addEventListener click\n    ", el)
+            el.addEventListener("click", ev => {
+                el.classList.toggle("full")
+                ev.preventDefault()
+            })
+
+            const el2 = el.querySelector("img")
+            if (el2 && el2.alt) {
+                console.log("... a[data-alt] = img[alt]\n    ", el2.alt)
+                el.dataset.alt = el2.alt;
+            }
+        })
+
+        console.log("")
+    </script>
+    <script>
+        function update(version, date) {
+            console.log("... got version info", {version, date})
+
+            for (const el of document.querySelectorAll(".content > aside > a.download")) {
+                const v = el.appendChild(document.createElement("span"))
+                v.innerText = version + " (" + date + ")"
+                console.debug("... added version info to download button\n    ", v)
+            }
+
+            for (const prop of [["a", "href"], ["img", "src"]]) {
+                for (const el of document.getElementsByTagName(prop[0])) {
+                    if (el[prop[1]]) {
+                        const v = el[prop[1]]
+                            .replace(/(\/\/raw\.githubusercontent\.com\/pgaskin\/NickelMenu\/)(master)(\/)/, "$1" + version + "$3")
+                            .replace(/(\/\/github\.com\/pgaskin\/NickelMenu\/(?:blob|tree)\/)(master)(\/)/, "$1" + version + "$3")
+                            .replace(/(\/\/github\.com\/pgaskin\/NickelMenu\/(?:releases)\/)(latest)(\/)(download\/)/, "$1$4" + version + "$3")
+                            .replace(/(\/\/github\.com\/pgaskin\/NickelMenu\/(?:releases)\/)(latest)(\/?)/, "$1" + version + "$3")
+                        if (el[prop[1]] != v) {
+                            console.debug("... replaced " + el[prop[1]] + " => " + v + "\n    ", el);
+                            el[prop[1]] = v
+                        }
+                    }
+                }
+            }
+
+            console.log("")
+        }
+
+        console.log("using fixed version info")
+        update("v0.3.2", "2020-08-12")
+
+        /*
+        console.log("getting version info")
+        fetch("https://api.github.com/repos/pgaskin/NickelMenu/releases/latest", {cache: "default"})
+            .then(resp => resp.json())
+            .then(obj => update(obj["tag_name"], obj["published_at"].split("T")[0]))
+            .catch(err => console.error("... error getting version info", err))
+        */
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-66226417-1"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'UA-66226417-1');
+    </script>
+</body>
+</html>
