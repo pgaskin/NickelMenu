@@ -231,6 +231,93 @@
             padding: .25em 1em;
             margin-top: 1em;
         }
+        aside.modal {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+        }
+        aside.modal.visible {
+            display: flex;
+        }
+        aside.modal > div {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-start;
+            flex: 0 0 auto;
+            height: auto;
+            max-height: 75%;
+            max-width: 75%;
+            border: 1px solid #000;
+            cursor: default;
+            background: rgb(255, 252, 246);
+            color: #000;
+        }
+        aside.modal > div > header {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: flex-end;
+            background: rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid #000;
+        }
+        aside.modal > div > header > h1 {
+            flex: 1;
+            margin: 0;
+            padding: 0 .25em;
+        }
+        aside.modal > div > header > button.modal__close {
+            flex: 0 0 1.5em;
+            display: block;
+            cursor: pointer;
+            background: transparent;
+            font-family: inherit;
+            font-weight: inherit;
+            font-size: 2em;
+            line-height: 1;
+            color: inherit;
+            border: 0;
+            border-left: 1px solid #000;
+            text-align: center;
+        }
+        aside.modal > div > header > button.modal__close:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        aside.modal > div > header > button.modal__close:active {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        aside.modal > div > main {
+            overflow: auto;
+        }
+        pre.code {
+            counter-reset: line;
+            font-size: 12px;
+            margin: 0;
+            padding: 0;
+            line-height: 1.3;
+        }
+        pre.code > div {
+            counter-increment: line;
+            padding-right: .5em;
+        }
+        pre.code > div:before {
+            display: inline-block;
+            content: counter(line);
+            min-width: 2em;
+            text-align: right;
+            margin-right: .5em;
+            padding: 0 .5em;
+            background: rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -466,6 +553,17 @@
     <footer>
         Copyright 2020 <a href="https://pgaskin.net">Patrick Gaskin</a>.
     </footer>
+    <aside class="modal" id="docs">
+        <div>
+            <header>
+                <h1>Documentation</h1>
+                <button class="modal__close">×</button>
+            </header>
+            <main>
+                <pre class="code"></pre>
+            </main>
+        </div>
+    </aside>
     <script>
         console.log("adding lightbox click handlers")
 
@@ -479,7 +577,7 @@
             const el2 = el.querySelector("img")
             if (el2 && el2.alt) {
                 console.log("... a[data-alt] = img[alt]\n    ", el2.alt)
-                el.dataset.alt = el2.alt;
+                el.dataset.alt = el2.alt
             }
         })
 
@@ -511,6 +609,29 @@
                 }
             }
 
+            const dm = document.getElementById("docs")
+            if (dm) {
+                const dc = dm.getElementsByTagName("pre")[0]
+                if (dc) {
+                    fetch("https://raw.githubusercontent.com/pgaskin/NickelMenu/master/res/doc")
+                        .then(resp => resp.text())
+                        .then(txt => {
+                            const f = document.createDocumentFragment()
+                            for (const l of txt.trim().split(/\r?\n/)) {
+                                f.appendChild(document.createElement("div")).innerText = l.replace(/^# ?/, "") + "\n"
+                            }
+                            for (const el of dc.childNodes) {
+                                dc.removeChild(el)
+                            }
+                            dc.appendChild(f)
+
+                            dm.dataset.ready = "true"
+                            console.debug("... loaded documentation\n    ", dm)
+                        })
+                        .catch(err => console.error("... error getting documentation", err))
+                }
+            }
+
             console.log("")
         }
 
@@ -524,6 +645,41 @@
             .then(obj => update(obj["tag_name"], obj["published_at"].split("T")[0]))
             .catch(err => console.error("... error getting version info", err))
         */
+    </script>
+    <script>
+        console.log("adding modal click handlers")
+
+        for (const el of document.getElementsByClassName("modal")) {
+            console.log("... addEventListener click\n    ", el)
+            el.addEventListener("click", ev => {
+                if (ev.target == el) {
+                    el.classList.remove("visible")
+                }
+            })
+
+            for (const x of el.getElementsByClassName("modal__close")) {
+                console.log("... addEventListener click\n    ", x)
+                x.addEventListener("click", ev => {
+                    el.classList.remove("visible")
+                })
+            }
+        }
+    </script>
+    <script>
+        console.log("adding documentation click handlers")
+
+        for (const el of document.getElementsByTagName("a")) {
+            if (el["href"].endsWith("/res/doc")) {
+                console.log("... addEventListener click\n    ", el)
+                el.addEventListener("click", ev => {
+                    const m = document.getElementById("docs")
+                    if (m && m.dataset.ready == "true") {
+                        m.classList.add("visible")
+                        ev.preventDefault()
+                    }
+                })
+            }
+        }
     </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-66226417-1"></script>
     <script>
