@@ -1,0 +1,7 @@
+[B][SIZE=5]NickelMenu v0.4.0[/SIZE][/B]
+
+This release adds an experimental configuration option to change the main menu label and has some more internal refactoring and cleanup. There should not be any noticeable change for users.
+[LIST]
+[*] There is now support for an experimental `experimental:menu_main_15505_label` configuration option to set the main menu label on the new 4.23.15505+ bottom nav. This option is experimental and may be removed or changed at any time.
+[/LIST]
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.4.0"]release[/URL] on GitHub for more details.
