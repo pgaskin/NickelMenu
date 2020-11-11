@@ -4,7 +4,7 @@
 # This tool injects menu items into Nickel.
 #
 # It should work on firmware 4.6+, but it has only been tested on 4.20.14622 -
-# 4.24.15676. It is perfectly safe to try out on any newer firmware version, as
+# 4.24.15875. It is perfectly safe to try out on any newer firmware version, as
 # it has a lot of error checking, and a failsafe mechanism which automatically
 # uninstalls it as a last resort.
 #
