@@ -213,7 +213,7 @@
 #
 # And here are some examples of selection menu substitutions:
 #
-#   menu_item :selection :Search DuckDuckGo :nickel_browser :modal:https://duckduckgo.com/search?q={a|C|%}
+#   menu_item :selection :Search DuckDuckGo :nickel_browser :modal:https://duckduckgo.com/?q={a|C|%}
 #   menu_item :selection :Run command       :cmd_output     :500:echo '{a||$}'
 #   menu_item :selection :Complex example   :cmd_output     :500:echo '{a|aC|"$}'
 #
