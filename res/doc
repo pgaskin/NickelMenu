@@ -24,7 +24,7 @@
 #                   selection - the selection menu (4.20.14622+)
 #                               all arguments will support substitutions in the form {A|B|C} as follows (see the end of this file for examples):
 #                                   A is string to substitute
-#                                       a - current selection
+#                                       1 - current selection
 #                                   B is zero or more transformations applied from left to right:
 #                                       a - all to lowercase
 #                                       A - all to uppercase
@@ -213,9 +213,9 @@
 #
 # And here are some examples of selection menu substitutions:
 #
-#   menu_item :selection :Search DuckDuckGo :nickel_browser :modal:https://duckduckgo.com/?q={a|C|%}
-#   menu_item :selection :Run command       :cmd_output     :500:echo '{a||$}'
-#   menu_item :selection :Complex example   :cmd_output     :500:echo '{a|aC|"$}'
+#   menu_item :selection :Search DuckDuckGo :nickel_browser :modal:https://duckduckgo.com/?q={1|C|%}
+#   menu_item :selection :Run command       :cmd_output     :500:echo '{1||$}'
+#   menu_item :selection :Complex example   :cmd_output     :500:echo '{1|aC|"$}'
 #
 # If there is an error in the configuration, an item which displays it will be
 # added to the main menu. If an internal error occurs, it is written to syslog,

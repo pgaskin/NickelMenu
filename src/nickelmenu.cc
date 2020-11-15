@@ -455,7 +455,7 @@ char *_nm_selmenu_argtransform(void *data, const char *arg) {
     nm_selmenu_argtransform_data_t *d = (nm_selmenu_argtransform_data_t*)(data);
 
     QString src = QString::fromUtf8(arg), res;
-    QRegularExpression re = QRegularExpression("\\{([a])\\|([aAbcCd]*)\\|([\"$%]*)\\}");
+    QRegularExpression re = QRegularExpression("\\{([1])\\|([aAbcCd]*)\\|([\"$%]*)\\}");
 
     for (QStringRef x = src.midRef(0); x.length() > 0;) {
         QRegularExpressionMatch m = re.match(x.toString());
@@ -470,7 +470,7 @@ char *_nm_selmenu_argtransform(void *data, const char *arg) {
 
         for (int k = 0; k < m.capturedLength(1); k++) {
             switch (m.capturedRef(1).at(k).toLatin1()) {
-            case 'a': tmp = d->selection; break;
+            case '1': tmp = d->selection; break;
             }
         }
 
