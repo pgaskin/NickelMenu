@@ -505,7 +505,10 @@ char *_nm_selmenu_argtransform(void *data, const char *arg) {
         x = x.mid(m.capturedEnd());
     }
 
-    return strdup(res.toUtf8().data());
+    char *x = strdup(res.toUtf8().data());
+    if (!x)
+        nm_err_set("argtransform: could not allocate memory: %m");
+    return x;
 }
 
 extern "C" __attribute__((visibility("default"))) void _nm_menu_hook4(WebSearchMixinBase *_this, QString const& selection, QString const& locale) {
