@@ -442,14 +442,13 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
 
 typedef struct {
     QString const& selection;
-    QString const& url;
 } nm_selmenu_argtransform_data_t;
 
 char *_nm_selmenu_argtransform(void *data, const char *arg) {
     nm_selmenu_argtransform_data_t *d = (nm_selmenu_argtransform_data_t*)(data);
 
     QString src = QString::fromUtf8(arg), res;
-    QRegularExpression re = QRegularExpression("\\{([ab])\\|([aAbcCd]*)\\|([\"$%]*)\\}");
+    QRegularExpression re = QRegularExpression("\\{([a])\\|([aAbcCd]*)\\|([\"$%]*)\\}");
 
     for (QStringRef x = src.midRef(0); x.length() > 0;) {
         QRegularExpressionMatch m = re.match(x.toString());
@@ -465,7 +464,6 @@ char *_nm_selmenu_argtransform(void *data, const char *arg) {
         for (int k = 0; k < m.capturedLength(1); k++) {
             switch (m.capturedRef(1).at(k).toLatin1()) {
             case 'a': tmp = d->selection; break;
-            case 'b': tmp = d->url; break;
             }
         }
 
@@ -525,7 +523,6 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook4(WebSearchM
     NM_LOG("continuing execution of item %p (%s)", it, it->lbl);
     nm_selmenu_argtransform_data_t data = (nm_selmenu_argtransform_data_t){
         .selection = selection,
-        .url       = QString(""), // TODO
     };
     nm_menu_item_do(it, _nm_selmenu_argtransform, (void*)(&data)); // this is safe since data will not be used after this returns
     NM_LOG("done");

@@ -24,8 +24,7 @@
 #                   selection - the selection menu (4.20.14622+)
 #                               all arguments will support substitutions in the form {A|B|C} as follows (see the end of this file for examples):
 #                                   A is string to substitute
-#                                       a - current text
-#                                       b - current book url
+#                                       a - current selection
 #                                   B is zero or more transformations applied from left to right:
 #                                       a - all to lowercase
 #                                       A - all to uppercase
