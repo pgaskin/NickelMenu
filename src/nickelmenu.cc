@@ -571,7 +571,7 @@ void nm_menu_item_do(nm_menu_item_t *it, nm_argtransform_t argtransform, void *a
         case NM_ACTION_RESULT_TYPE_SILENT:
             break;
         case NM_ACTION_RESULT_TYPE_MSG:
-            ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QLatin1String(res->msg));
+            ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8(res->msg));
             break;
         case NM_ACTION_RESULT_TYPE_TOAST:
             mwc = MainWindowController_sharedInstance();
@@ -579,7 +579,7 @@ void nm_menu_item_do(nm_menu_item_t *it, nm_argtransform_t argtransform, void *a
                 NM_LOG("toast: could not get shared main window controller pointer");
                 break;
             }
-            MainWindowController_toast(mwc, QLatin1String(res->msg), QStringLiteral(""), 1500);
+            MainWindowController_toast(mwc, QString::fromUtf8(res->msg), QStringLiteral(""), 1500);
             break;
         case NM_ACTION_RESULT_TYPE_SKIP:
             skip = res->skip;
