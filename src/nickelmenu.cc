@@ -85,6 +85,7 @@ typedef void SelectionMenuController; // note: items are re-initialized every ti
 typedef QWidget SelectionMenuView;
 typedef void WebSearchMixinBase;
 void (*SelectionMenuController_lookupWikipedia)(SelectionMenuController*);
+void (*SelectionMenuController_lookupWeb)(SelectionMenuController*);
 void (*SelectionMenuController_addMenuItem)(SelectionMenuController*, SelectionMenuView* smv, MenuTextItem* mti, const char *slot); // note: the MenuTextItem is created by SelectionMenuController_createMenuTextItem, with smv as the parent (the first QWidget* argument)
 void (*SelectionMenuView_addMenuItem)(SelectionMenuView*, MenuTextItem *mti); // note: this adds the separator and the item (it doesn't connect signals or things like that)
 void (*WebSearchMixinBase_doWikipediaSearch)(WebSearchMixinBase *, QString const& selection, QString const& locale);
@@ -140,6 +141,7 @@ static struct nh_dlsym NickelMenuDlsym[] = {
     // selection menu injection (14622+)
     {.name = "_ZN17SelectionMenuView11addMenuItemEP12MenuTextItem", .out = nh_symoutptr(SelectionMenuView_addMenuItem),           .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN17SelectionMenuView11addMenuItemEP12MenuTextItem
     {.name = "_ZN23SelectionMenuController15lookupWikipediaEv",     .out = nh_symoutptr(SelectionMenuController_lookupWikipedia), .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN23SelectionMenuController15lookupWikipediaEv
+    {.name = "_ZN23SelectionMenuController9lookupWebEv",            .out = nh_symoutptr(SelectionMenuController_lookupWeb),       .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN23SelectionMenuController9lookupWebEv
 
     // null
     {0},
@@ -381,14 +383,19 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
     NM_LOG("hook3: %p %p %p %s", _this, smv, mti, slot);
     SelectionMenuController_addMenuItem(_this, smv, mti, slot);
 
-    if (!SelectionMenuView_addMenuItem || !SelectionMenuController_lookupWikipedia) {
+    if (!SelectionMenuView_addMenuItem || !SelectionMenuController_lookupWikipedia || !SelectionMenuController_lookupWeb) {
         NM_LOG("could not find required SelectionMenuView and SelectionMenuController symbols for adding selection menu items");
         ConfirmationDialogFactory_showOKDialog(QLatin1String("NickelMenu"), QLatin1String("Could not find required SelectionMenuView and SelectionMenuController symbols for adding selection menu items (this is a bug)."));
         return;
     }
 
     // this is important for another reason other than positioning: it only displays if Volume::canSearch()
-    if (strcmp(slot, "1showSearchOptions()"))
+    nm_menu_location_t loc;
+    if (!strcmp(slot, "1showSearchOptions()"))
+        loc = NM_MENU_LOCATION(selection);
+    else if (!strcmp(slot, "2lookupWeb()"))
+        loc = NM_MENU_LOCATION(selection_search);
+    else
         return;
 
     NM_LOG("Found search item, injecting menu items after it.");
@@ -410,7 +417,7 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
 
     for (size_t i = 0; i < items_n; i++) {
         nm_menu_item_t *it = items[i];
-        if (it->loc != NM_MENU_LOCATION(selection))
+        if (it->loc != loc)
             continue;
 
         NM_LOG("adding item '%s'...", it->lbl);

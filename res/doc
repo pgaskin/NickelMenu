@@ -16,36 +16,38 @@
 #     Adds a menu item.
 #
 #     <location>  the menu to add the item to, one of:
-#                   main      - the menu in the top-left corner of the home screen
-#                               (in firmware 4.23.15505+, this menu was removed, so a new item will be added to the tabs on the bottom-right)
-#                   reader    - the overflow menu in the reader
-#                   browser   - the menu in the bottom-right of the web browser
-#                   library   - the menu in the filter bar for the "My Books" and "My Articles" library views
-#                   selection - the selection menu (4.20.14622+)
-#                               all arguments will support substitutions in the form {A|B|C} as follows (see the end of this file for examples):
-#                                   A is string to substitute
-#                                       1 - current selection
-#                                   B is zero or more transformations applied from left to right:
-#                                       a - all to lowercase
-#                                       A - all to uppercase
-#                                       b - remove non-alphanumeric
-#                                       c - trim whitespace
-#                                       C - normalize whitespace (trim, then collapse multiple whitespace chars)
-#                                       d - special: return an error if the string is empty at this point
-#                                       e - remove all whitespace
-#                                       f - replace whitespace with underscores
-#                                   C is zero or more escape methods applied from left to right:
-#                                       " - escape for double-quoted strings (JSON-compatible, C-compatible):
-#                                           "               => \"
-#                                           newline         => \n
-#                                           backspace       => \b
-#                                           tab             => \t
-#                                           form-feed       => \f
-#                                           carriage-return => \r
-#                                           \               => \\
-#                                       $ - escape for single-quoted strings (bash-compatible):
-#                                           ' => '"'"'
-#                                       % - url encode all non-alphanumeric chars
+#                   main             - the menu in the top-left corner of the home screen
+#                                      (in firmware 4.23.15505+, this menu was removed, so a new item will be added to the tabs on the bottom-right)
+#                   reader           - the overflow menu in the reader
+#                   browser          - the menu in the bottom-right of the web browser
+#                   library          - the menu in the filter bar for the "My Books" and "My Articles" library views
+#                   selection        - the selection menu (4.20.14622+)
+#                                      all arguments will support substitutions in the form {A|B|C} as follows (see the end of this file for examples):
+#                                          A is string to substitute
+#                                              1 - current selection
+#                                          B is zero or more transformations applied from left to right:
+#                                              a - all to lowercase
+#                                              A - all to uppercase
+#                                              b - remove non-alphanumeric
+#                                              c - trim whitespace
+#                                              C - normalize whitespace (trim, then collapse multiple whitespace chars)
+#                                              d - special: return an error if the string is empty at this point
+#                                              e - remove all whitespace
+#                                              f - replace whitespace with underscores
+#                                          C is zero or more escape methods applied from left to right:
+#                                              " - escape for double-quoted strings (JSON-compatible, C-compatible):
+#                                                  "               => \"
+#                                                  newline         => \n
+#                                                  backspace       => \b
+#                                                  tab             => \t
+#                                                  form-feed       => \f
+#                                                  carriage-return => \r
+#                                                  \               => \\
+#                                              $ - escape for single-quoted strings (bash-compatible):
+#                                                  ' => '"'"'
+#                                              % - url encode all non-alphanumeric chars
+#                   selection_search - the search sub-menu of the selection menu (4.20.14622+)
+#                                      see above
 #     <label>     the label to show on the menu item (must not contain :)
 #     <action>    the type of action to run, one of:
 #                   cmd_spawn          - starts a command in the background
@@ -215,9 +217,9 @@
 #
 # And here are some examples of selection menu substitutions:
 #
-#   menu_item :selection :Search DuckDuckGo :nickel_browser :modal:https://duckduckgo.com/?q={1|C|%}
-#   menu_item :selection :Run command       :cmd_output     :500:echo '{1||$}'
-#   menu_item :selection :Complex example   :cmd_output     :500:echo '{1|aC|"$}'
+#   menu_item :selection        :Run command       :cmd_output     :500:echo '{1||$}'
+#   menu_item :selection        :Complex example   :cmd_output     :500:echo '{1|aC|"$}'
+#   menu_item :selection_search :Search DuckDuckGo :nickel_browser :modal:https://duckduckgo.com/?q={1|C|%}
 #
 # If there is an error in the configuration, an item which displays it will be
 # added to the main menu. If an internal error occurs, it is written to syslog,
