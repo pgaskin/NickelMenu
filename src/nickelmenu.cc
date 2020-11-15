@@ -77,7 +77,7 @@ void (*MenuTextItem_MenuTextItem)(MenuTextItem*, QWidget* parent, bool checkable
 void (*MenuTextItem_setText)(MenuTextItem*, QString const& text);
 void (*MenuTextItem_registerForTapGestures)(MenuTextItem*);
 
-// Selection menu stuff.
+// Selection menu stuff (14622+).
 typedef void SelectionMenuController; // note: items are re-initialized every time the menu is opened
 typedef QWidget SelectionMenuView;
 typedef void WebSearchMixinBase;
@@ -134,7 +134,7 @@ static struct nh_dlsym NickelMenuDlsym[] = {
     {.name = "_ZN12MenuTextItem7setTextERK7QString",                 .out = nh_symoutptr(MenuTextItem_setText),                .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN12MenuTextItem7setTextERK7QString
     {.name = "_ZN12MenuTextItem22registerForTapGesturesEv",          .out = nh_symoutptr(MenuTextItem_registerForTapGestures), .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN12MenuTextItem22registerForTapGesturesEv
 
-    // selection menu injection
+    // selection menu injection (14622+)
     {.name = "_ZN17SelectionMenuView11addMenuItemEP12MenuTextItem", .out = nh_symoutptr(SelectionMenuView_addMenuItem),           .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN17SelectionMenuView11addMenuItemEP12MenuTextItem
     {.name = "_ZN23SelectionMenuController15lookupWikipediaEv",     .out = nh_symoutptr(SelectionMenuController_lookupWikipedia), .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN23SelectionMenuController15lookupWikipediaEv
 
