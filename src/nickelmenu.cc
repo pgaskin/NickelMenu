@@ -455,7 +455,7 @@ char *_nm_selmenu_argtransform(void *data, const char *arg) {
     nm_selmenu_argtransform_data_t *d = (nm_selmenu_argtransform_data_t*)(data);
 
     QString src = QString::fromUtf8(arg), res;
-    QRegularExpression re = QRegularExpression("\\{([1])\\|([aAbcCd]*)\\|([\"$%]*)\\}");
+    QRegularExpression re = QRegularExpression("\\{([1])\\|([aAbcCdef]*)\\|([\"$%]*)\\}");
 
     for (QStringRef x = src.midRef(0); x.length() > 0;) {
         QRegularExpressionMatch m = re.match(x.toString());
@@ -482,6 +482,8 @@ char *_nm_selmenu_argtransform(void *data, const char *arg) {
             case 'c': tmp = tmp.trimmed(); break;
             case 'C': tmp = tmp.simplified(); break;
             case 'd': if (tmp.length() == 0) { nm_err_set("argtransform: empty substitution result for %s", qPrintable(m.capturedRef(0).toString())); return NULL; }; break;
+            case 'e': tmp = tmp.remove(QRegularExpression("\\s")); break;
+            case 'f': tmp = tmp.replace(QRegularExpression("\\s"), "_"); break;
             }
         }
 

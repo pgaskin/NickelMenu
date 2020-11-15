@@ -29,9 +29,11 @@
 #                                       a - all to lowercase
 #                                       A - all to uppercase
 #                                       b - remove non-alphanumeric
-#                                       c - trim spaces
-#                                       C - normalize spaces
+#                                       c - trim whitespace
+#                                       C - normalize whitespace (trim, then collapse multiple whitespace chars)
 #                                       d - special: return an error if the string is empty at this point
+#                                       e - remove all whitespace
+#                                       f - replace whitespace with underscores
 #                                   C is zero or more escape methods applied from left to right:
 #                                       " - escape for double-quoted strings (JSON-compatible, C-compatible):
 #                                           "               => \"
