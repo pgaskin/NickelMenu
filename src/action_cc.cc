@@ -3,6 +3,7 @@
 #include <QScreen>
 #include <QString>
 #include <QStringList>
+#include <QTextDocument>
 #include <QUrl>
 #include <QVariant>
 #include <QWidget>
@@ -853,5 +854,5 @@ NM_ACTION_(cmd_output) {
 
     return quiet
         ? nm_action_result_silent()
-        : nm_action_result_msg("%s", qPrintable(out));
+        : nm_action_result_msg("%s", qPrintable(Qt::convertFromPlainText(out, Qt::WhiteSpacePre)));
 }

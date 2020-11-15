@@ -44,6 +44,7 @@ static QAction* (*AbstractNickelMenuController_createAction)(void*, QMenu* menu,
 
 // ConfirmationDialogFactory::showOKDialog shows an dialog box with an OK
 // button, and should only be called from the main thread (or a signal handler).
+// Note that ConfirmationDialog uses Qt::RichText for the body.
 static void (*ConfirmationDialogFactory_showOKDialog)(QString const& title, QString const& body);
 
 MainWindowController *(*MainWindowController_sharedInstance)();
