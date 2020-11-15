@@ -23,7 +23,7 @@
 #                   library          - the menu in the filter bar for the "My Books" and "My Articles" library views
 #                   selection        - the selection menu (4.20.14622+)
 #                                      all arguments will support substitutions in the form {A|B|C} as follows (see the end of this file for examples):
-#                                          A is string to substitute
+#                                          A is the string to substitute
 #                                              1 - current selection
 #                                          B is zero or more transformations applied from left to right:
 #                                              a - all to lowercase
