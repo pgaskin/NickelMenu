@@ -5,7 +5,7 @@ jobs:
   build:
     name: NickelMenu
     runs-on: ubuntu-latest
-    container: docker.io/geek1011/nickeltc:1.0
+    container: ghcr.io/pgaskin/nickeltc:1.0
     steps:
     - name: Checkout
       uses: actions/checkout@v1
