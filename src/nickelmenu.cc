@@ -380,6 +380,12 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
     NM_LOG("hook3: %p %p %p %s", _this, smv, mti, slot);
     SelectionMenuController_addMenuItem(_this, smv, mti, slot);
 
+    if (!SelectionMenuView_addMenuItem || !SelectionMenuController_lookupWikipedia) {
+        NM_LOG("could not find required SelectionMenuView and SelectionMenuController symbols for adding selection menu items");
+        ConfirmationDialogFactory_showOKDialog(QLatin1String("NickelMenu"), QLatin1String("Could not find required SelectionMenuView and SelectionMenuController symbols for adding selection menu items (this is a bug)."));
+        return;
+    }
+
     // this is important for another reason other than positioning: it only displays if Volume::canSearch()
     if (strcmp(slot, "1showSearchOptions()"))
         return;
