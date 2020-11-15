@@ -32,6 +32,7 @@
 #                                       b - remove non-alphanumeric
 #                                       c - trim spaces
 #                                       C - normalize spaces
+#                                       d - special: return an error if the string is empty at this point
 #                                   C is zero or more escape methods applied from left to right:
 #                                       " - escape for double-quoted strings (JSON-compatible, C-compatible):
 #                                           "               => \"
