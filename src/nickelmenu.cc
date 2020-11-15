@@ -3,7 +3,9 @@
 #include <QLayout>
 #include <QMenu>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QString>
+#include <QUrl>
 #include <QWidget>
 #include <QWidgetAction>
 
@@ -438,6 +440,74 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
     }
 }
 
+typedef struct {
+    QString const& selection;
+    QString const& url;
+} nm_selmenu_argtransform_data_t;
+
+char *_nm_selmenu_argtransform(void *data, const char *arg) {
+    nm_selmenu_argtransform_data_t *d = (nm_selmenu_argtransform_data_t*)(data);
+
+    QString src = QString::fromUtf8(arg), res;
+    QRegularExpression re = QRegularExpression("\\{([ab])\\|([aAbcC]*)\\|([\"$%]*)\\}");
+
+    for (QStringRef x = src.midRef(0); x.length() > 0;) {
+        QRegularExpressionMatch m = re.match(x.toString());
+
+        if (!m.hasMatch()) {
+            res += x;
+            x = x.mid(x.length());
+            continue;
+        }
+
+        QString tmp;
+
+        for (int k = 0; k < m.capturedLength(1); k++) {
+            switch (m.capturedRef(1).at(k).toLatin1()) {
+            case 'a': tmp = d->selection; break;
+            case 'b': tmp = d->url; break;
+            }
+        }
+
+        for (int k = 0; k < m.capturedLength(2); k++) {
+            switch (m.capturedRef(2).at(k).toLatin1()) {
+            case 'a': tmp = tmp.toLower(); break;
+            case 'A': tmp = tmp.toUpper(); break;
+            case 'b': tmp = tmp.remove(QRegularExpression("[^0-9a-zA-Z]")); break;
+            case 'c': tmp = tmp.trimmed(); break;
+            case 'C': tmp = tmp.simplified(); break;
+            }
+        }
+
+        for (int k = 0; k < m.capturedLength(3); k++) {
+            switch (m.capturedRef(3).at(k).toLatin1()) {
+            case '"':
+                tmp = tmp
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\b", "\\b")
+                    .replace("\t", "\\t")
+                    .replace("\f", "\\f")
+                    .replace("\r", "\\r")
+                    .replace("\\", "\\\\");
+                break;
+            case '$':
+                tmp = tmp.replace("'", "'\"'\"'");
+                break;
+            case '%':
+                tmp = QUrl::toPercentEncoding(tmp);
+                break;
+            }
+        }
+
+        res += x.left(m.capturedStart());
+        res += tmp;
+        x = x.mid(m.capturedEnd());
+    }
+
+    return strdup(res.toUtf8().data());
+}
+
 extern "C" __attribute__((visibility("default"))) void _nm_menu_hook4(WebSearchMixinBase *_this, QString const& selection, QString const& locale) {
     NM_LOG("hook4: %p %s %s", _this, qPrintable(selection), qPrintable(locale));
 
@@ -449,9 +519,11 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook4(WebSearchM
     }
 
     NM_LOG("continuing execution of item %p (%s)", it, it->lbl);
-    // TODO: implement argument transformation
-    // TODO: nm_menu_item_do(it, _nm_selmenu_argtransform, data);
-    ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8("not implemented; selection = %1").arg(selection));
+    nm_selmenu_argtransform_data_t data = (nm_selmenu_argtransform_data_t){
+        .selection = selection,
+        .url       = QString(""), // TODO
+    };
+    nm_menu_item_do(it, _nm_selmenu_argtransform, (void*)(&data)); // this is safe since data will not be used after this returns
     NM_LOG("done");
 }
 
