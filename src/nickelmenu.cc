@@ -77,6 +77,15 @@ void (*MenuTextItem_MenuTextItem)(MenuTextItem*, QWidget* parent, bool checkable
 void (*MenuTextItem_setText)(MenuTextItem*, QString const& text);
 void (*MenuTextItem_registerForTapGestures)(MenuTextItem*);
 
+// Selection menu stuff.
+typedef void SelectionMenuController; // note: items are re-initialized every time the menu is opened
+typedef QWidget SelectionMenuView;
+typedef void WebSearchMixinBase;
+void (*SelectionMenuController_lookupWikipedia)(SelectionMenuController*);
+void (*SelectionMenuController_addMenuItem)(SelectionMenuController*, SelectionMenuView* smv, MenuTextItem* mti, const char *slot); // note: the MenuTextItem is created by SelectionMenuController_createMenuTextItem, with smv as the parent (the first QWidget* argument)
+void (*SelectionMenuView_addMenuItem)(SelectionMenuView*, MenuTextItem *mti); // note: this adds the separator and the item (it doesn't connect signals or things like that)
+void (*WebSearchMixinBase_doWikipediaSearch)(WebSearchMixinBase *, QString const& selection, QString const& locale);
+
 static struct nh_info NickelMenu = (struct nh_info){
     .name            = "NickelMenu",
     .desc            = "Integrated launcher for Nickel.",
@@ -95,6 +104,10 @@ static struct nh_hook NickelMenuHook[] = {
 
     // bottom nav main menu button injection (15505+)
     {.sym = "_ZN11MainNavViewC1EP7QWidget", .sym_new = "_nm_menu_hook2", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(MainNavView_MainNavView), .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN11MainNavViewC1EP7QWidget
+
+    // selection menu injection
+    {.sym = "_ZN23SelectionMenuController11addMenuItemEP17SelectionMenuViewP12MenuTextItemPKc", .sym_new = "_nm_menu_hook3", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(SelectionMenuController_addMenuItem),  .desc = "selection menu injection",                     .optional = true}, //libnickel 4.20.14622 * _ZN23SelectionMenuController11addMenuItemEP17SelectionMenuViewP12MenuTextItemPKc
+    {.sym = "_ZN18WebSearchMixinBase17doWikipediaSearchERK7QStringS2_",                         .sym_new = "_nm_menu_hook4", .lib = "libnickel.so.1.0.0", .out = nh_symoutptr(WebSearchMixinBase_doWikipediaSearch), .desc = "selection menu injection (wikipedia handler)", .optional = true}, //libnickel 4.20.14622 * _ZN18WebSearchMixinBase17doWikipediaSearchERK7QStringS2_
 
     // null
     {0},
@@ -121,6 +134,10 @@ static struct nh_dlsym NickelMenuDlsym[] = {
     {.name = "_ZN12MenuTextItem7setTextERK7QString",                 .out = nh_symoutptr(MenuTextItem_setText),                .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN12MenuTextItem7setTextERK7QString
     {.name = "_ZN12MenuTextItem22registerForTapGesturesEv",          .out = nh_symoutptr(MenuTextItem_registerForTapGestures), .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN12MenuTextItem22registerForTapGesturesEv
 
+    // selection menu injection
+    {.name = "_ZN17SelectionMenuView11addMenuItemEP12MenuTextItem", .out = nh_symoutptr(SelectionMenuView_addMenuItem),           .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN17SelectionMenuView11addMenuItemEP12MenuTextItem
+    {.name = "_ZN23SelectionMenuController15lookupWikipediaEv",     .out = nh_symoutptr(SelectionMenuController_lookupWikipedia), .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN23SelectionMenuController15lookupWikipediaEv
+
     // null
     {0},
 };
@@ -141,9 +158,13 @@ NickelHook(
 // and separator.
 QAction *AbstractNickelMenuController_createAction_before(QAction *before, nm_menu_location_t loc, bool last_in_group, void *_this, QMenu *menu, QWidget *widget, bool close, bool enabled, bool separator);
 
+// nm_argtranform_t transforms an action's argument and returns a new malloc'd
+// string. On error, it should return NULL and set nm_err.
+typedef char *(*nm_argtransform_t)(void *data, const char *arg);
+
 // nm_menu_item_do runs a nm_menu_item_t and must be called from the thread of a
-// signal handler.
-static void nm_menu_item_do(nm_menu_item_t *it);
+// signal handler. argtransform and argtransform_data are optional.
+static void nm_menu_item_do(nm_menu_item_t *it, nm_argtransform_t argtransform, void *argtransform_data);
 
 // _nm_menu_inject handles the QMenu::aboutToShow signal and injects menu items.
 static void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at);
@@ -321,7 +342,7 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
 
             QObject::connect(ac, &QAction::triggered, [it](bool) {
                 NM_LOG("item '%s' pressed...", it->lbl);
-                nm_menu_item_do(it);
+                nm_menu_item_do(it, NULL, NULL);
                 NM_LOG("done");
             }); // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
         }
@@ -338,6 +359,100 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
     _this->ensurePolished();
 
     NM_LOG("Added button.");
+}
+
+// _nm_menu_hook4_item gets/sets the current menu item. It must only be called
+// by one thread at a time. The item will be cleared after it has been used.
+nm_menu_item_t *_nm_menu_hook4_item(nm_menu_item_t *it) {
+    static nm_menu_item_t *its = NULL;
+    if (it)
+        return (its = it);
+    if (!its)
+        return NULL;
+    nm_menu_item_t *tmp = its;
+    its = NULL;
+    return tmp;
+}
+
+extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionMenuController *_this, SelectionMenuView* smv, MenuTextItem* mti, const char *slot) {
+    NM_LOG("hook3: %p %p %p %s", _this, smv, mti, slot);
+    SelectionMenuController_addMenuItem(_this, smv, mti, slot);
+
+    // this is important for another reason other than positioning: it only displays if Volume::canSearch()
+    if (strcmp(slot, "1showSearchOptions()"))
+        return;
+
+    NM_LOG("Found search item, injecting menu items after it.");
+
+    NM_LOG("checking for config updates");
+    int rev = nm_global_config_update();
+    NM_LOG("revision = %d", rev);
+
+    NM_LOG("adding items");
+
+    size_t items_n;
+    nm_menu_item_t **items = nm_global_config_items(&items_n);
+
+    if (!items) {
+        NM_LOG("failed to get menu items");
+        ConfirmationDialogFactory_showOKDialog(QLatin1String("NickelMenu"), QLatin1String("Failed to get menu items (this might be a bug)."));
+        return;
+    }
+
+    for (size_t i = 0; i < items_n; i++) {
+        nm_menu_item_t *it = items[i];
+        if (it->loc != NM_MENU_LOCATION(selection))
+            continue;
+
+        NM_LOG("adding item '%s'...", it->lbl);
+
+        // based on _ZN23SelectionMenuController18createMenuTextItemEP7QWidgetRK7QString
+
+        MenuTextItem *mti = reinterpret_cast<MenuTextItem*>(calloc(1, 256)); // about 3x larger than the 15505 size (92)
+        if (!it) {
+            NM_LOG("failed to allocate memory for config item");
+            return;
+        }
+
+        MenuTextItem_MenuTextItem(mti, smv, false, true);
+        MenuTextItem_setText(mti, QString::fromUtf8(it->lbl));
+        MenuTextItem_registerForTapGestures(mti);
+
+        // based on _ZN23SelectionMenuController18setupSearchOptionsEb and _ZN23SelectionMenuController11addMenuItemEP17SelectionMenuViewP12MenuTextItemPKc, plus some custom stuff for better compatibility
+
+        QPushButton *sh = new QPushButton(smv); // HACK: we use a QPushButton as an adaptor so we can connect an old-style signal with the new-style connect without needing a custom QObject
+        if (!QWidget::connect(mti, SIGNAL(tapped(bool)), sh, SIGNAL(pressed()))) {
+            NM_LOG("Failed to connect SIGNAL(tapped(bool)) on MenuTextItem to SIGNAL(pressed()) on the QPushButton shim, cannot add custom selection menu item.");
+            return;
+        }
+        sh->setVisible(false);
+
+        QObject::connect(sh, &QPushButton::pressed, [_this, it]() {
+            NM_LOG("item '%s' pressed...", it->lbl);
+            _nm_menu_hook4_item(it); // this is safe since it is a pointer captured by value
+            NM_LOG("triggering lookupWikipedia() slot");
+            SelectionMenuController_lookupWikipedia(_this);
+        });
+
+        SelectionMenuView_addMenuItem(smv, mti);
+    }
+}
+
+extern "C" __attribute__((visibility("default"))) void _nm_menu_hook4(WebSearchMixinBase *_this, QString const& selection, QString const& locale) {
+    NM_LOG("hook4: %p %s %s", _this, qPrintable(selection), qPrintable(locale));
+
+    nm_menu_item_t *it = _nm_menu_hook4_item(NULL);
+    if (!it) {
+        NM_LOG("No current menu item, continuing with default wikipedia search.");
+        WebSearchMixinBase_doWikipediaSearch(_this, locale, selection);
+        return;
+    }
+
+    NM_LOG("continuing execution of item %p (%s)", it, it->lbl);
+    // TODO: implement argument transformation
+    // TODO: nm_menu_item_do(it, _nm_selmenu_argtransform, data);
+    ConfirmationDialogFactory_showOKDialog(QString::fromUtf8(it->lbl), QString::fromUtf8("not implemented; selection = %1").arg(selection));
+    NM_LOG("done");
 }
 
 void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
@@ -397,7 +512,7 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
 
         QObject::connect(action, &QAction::triggered, [it](bool){
             NM_LOG("item '%s' pressed...", it->lbl);
-            nm_menu_item_do(it);
+            nm_menu_item_do(it, NULL, NULL);
             NM_LOG("done");
         }); // note: we're capturing by value, i.e. the pointer to the global variable, rather then the stack variable, so this is safe
     }
@@ -406,7 +521,7 @@ void _nm_menu_inject(void *nmc, QMenu *menu, nm_menu_location_t loc, int at) {
     menu->setProperty("nm_config_rev", rev_n);
 }
 
-void nm_menu_item_do(nm_menu_item_t *it) {
+void nm_menu_item_do(nm_menu_item_t *it, nm_argtransform_t argtransform, void *argtransform_data) {
     const char *err = NULL;
     bool success = true;
     int skip = 0;
@@ -425,7 +540,18 @@ void nm_menu_item_do(nm_menu_item_t *it) {
             continue;
         }
 
-        nm_action_result_t *res = cur->act(cur->arg);
+        nm_action_result_t *res = NULL;
+        if (!argtransform) {
+            res = cur->act(cur->arg);
+        } else {
+            NM_LOG("...applying argtransform");
+            char *arg = (*argtransform)(argtransform_data, cur->arg);
+            if (arg) {
+                NM_LOG("...applied argtransform: %s", arg);
+                res = cur->act(arg);
+                free(arg);
+            }
+        }
         err = nm_err();
 
         if (err == NULL && res && res->type == NM_ACTION_RESULT_TYPE_SKIP) {
