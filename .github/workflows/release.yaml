@@ -17,7 +17,7 @@ jobs:
       id: release
       uses: actions/create-release@latest
       env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        GITHUB_TOKEN: ${{secrets.GHTOKEN}}
       with:
         tag_name: ${{github.ref}}
         release_name: NickelMenu ${{github.ref}}
@@ -27,7 +27,7 @@ jobs:
     - name: Upload
       uses: actions/upload-release-asset@v1
       env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        GITHUB_TOKEN: ${{secrets.GHTOKEN}}
       with:
         upload_url: ${{steps.release.outputs.upload_url}}
         asset_path: ./KoboRoot.tgz
