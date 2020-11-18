@@ -7,12 +7,12 @@ trigger:
 
 steps:
 - name: submodules
-  image: docker.io/geek1011/nickeltc:1.0
+  image: ghcr.io/pgaskin/nickeltc:1.0
   when:
     event: [push, pull_request, tag]
   command: ["git", "submodule", "update", "--init", "--recursive"]
 - name: build
-  image: docker.io/geek1011/nickeltc:1.0
+  image: ghcr.io/pgaskin/nickeltc:1.0
   when:
     event: [push, pull_request, tag]
   commands:
@@ -21,7 +21,7 @@ steps:
   - mkdir out && mv KoboRoot.tgz src/libnm.so out/
   depends_on: [submodules]
 - name: build-NM_UNINSTALL_CONFIGDIR
-  image: docker.io/geek1011/nickeltc:1.0
+  image: ghcr.io/pgaskin/nickeltc:1.0
   when:
     event: [push, pull_request, tag]
   commands:
