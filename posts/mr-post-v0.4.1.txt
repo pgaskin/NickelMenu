@@ -1,0 +1,8 @@
+[B][SIZE=5]NickelMenu v0.4.1[/SIZE][/B]
+
+This release contains minor bugfixes.
+[LIST]
+[*] An issue where cmd_output does not display newlines has been fixed.
+[*] Result messages are now decoded as utf-8 instead of latin-1 so they are handled by Qt properly.
+[/LIST]
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.4.1"]release[/URL] on GitHub for more details.
