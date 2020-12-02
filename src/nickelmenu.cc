@@ -230,8 +230,8 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
     }
 
     MainNavButton_MainNavButton(btn, parent);
-    MainNavButton_setPixmap(btn, QStringLiteral(":/images/home/main_nav_more.png"));
-    MainNavButton_setActivePixmap(btn, QStringLiteral(":/images/home/main_nav_more_active.png"));
+    MainNavButton_setPixmap(btn, QString(nm_global_config_experimental("menu_main_15505_icon") ?: ":/images/home/main_nav_more.png"));
+    MainNavButton_setActivePixmap(btn, QString(nm_global_config_experimental("menu_main_15505_icon_active") ?: nm_global_config_experimental("menu_main_15505_icon") ?: ":/images/home/main_nav_more_active.png"));
     MainNavButton_setText(btn, nm_global_config_experimental("menu_main_15505_label") ?: "NickelMenu");
     btn->setObjectName("nmButton");
 

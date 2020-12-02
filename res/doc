@@ -155,9 +155,13 @@
 #     option, only the first one takes effect.
 #
 #     <key>  the option name, one of:
-#              menu_main_15505_label - sets the label used for the NickelMenu button on 4.23.15505+
+#              menu_main_15505_label       - sets the label used for the NickelMenu button on 4.23.15505+
+#              menu_main_15505_icon        - sets the icon used for the NickelMenu button on 4.23.15505+
+#              menu_main_15505_icon_active - sets the active icon used for the NickelMenu button on 4.23.15505+
 #     <val>  the option value:
-#              menu_main_15505_label - the label to use instead of "NickelMenu"
+#              menu_main_15505_label       - the label to use instead of "NickelMenu"
+#              menu_main_15505_icon        - the path passed to QPixmap
+#              menu_main_15505_icon_active - the path passed to QPixmap
 #
 # For example, you might have a configuration file named "mystuff" like:
 #
