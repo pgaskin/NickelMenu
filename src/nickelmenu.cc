@@ -462,7 +462,7 @@ char *_nm_selmenu_argtransform(void *data, const char *arg) {
     nm_selmenu_argtransform_data_t *d = (nm_selmenu_argtransform_data_t*)(data);
 
     QString src = QString::fromUtf8(arg), res;
-    QRegularExpression re = QRegularExpression("\\{([1])\\|([aAnsSuwx]*)\\|([\"$%]*)\\}");
+    QRegularExpression re = QRegularExpression("\\{([1])\\|([aAfnsSuwx]*)\\|([\"$%]*)\\}");
 
     for (QStringRef x = src.midRef(0); x.length() > 0;) {
         QRegularExpressionMatch m = re.match(x.toString());
@@ -485,6 +485,7 @@ char *_nm_selmenu_argtransform(void *data, const char *arg) {
             switch (m.capturedRef(2).at(k).toLatin1()) {
             case 'a': tmp = tmp.toLower(); break;
             case 'A': tmp = tmp.toUpper(); break;
+            case 'f': tmp = tmp.split(QRegularExpression("\\s")).first(); break;
             case 'n': tmp = tmp.remove(QRegularExpression("[^0-9a-zA-Z]")); break;
             case 's': tmp = tmp.trimmed(); break;
             case 'S': tmp = tmp.simplified(); break;

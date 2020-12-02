@@ -28,6 +28,7 @@
 #                                          B is zero or more transformations applied from left to right:
 #                                              a - all to lowercase
 #                                              A - all to uppercase
+#                                              f - keep everything up to the first whitespace character
 #                                              n - remove non-alphanumeric
 #                                              s - trim whitespace
 #                                              S - normalize whitespace (trim, then collapse multiple whitespace chars)
