@@ -211,7 +211,7 @@ QString nm_menu_pixmap(const char *path, const char *fallback) {
     QPixmap a;
     if (!a.load(QString(path))) {
         NM_LOG("nm_menu_pixmap: error loading '%s', falling back to '%s': %s", qPrintable(path), qPrintable(fallback), QFile::exists(path) ? "failed to load image" : "image does not exist");
-        return fallback;
+        return QString(fallback);
     }
     return QString(path);
 }
