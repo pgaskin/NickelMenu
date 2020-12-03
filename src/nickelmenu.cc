@@ -1,5 +1,6 @@
 #include <QAction>
 #include <QCoreApplication>
+#include <QFile>
 #include <QLayout>
 #include <QMenu>
 #include <QPushButton>
@@ -206,6 +207,15 @@ extern "C" __attribute__((visibility("default"))) MenuTextItem* _nm_menu_hook(vo
     return AbstractNickelMenuController_createMenuTextItem(_this, menu, label, checkable, checked, thingy);
 }
 
+QString nm_menu_pixmap(const char *path, const char *fallback) {
+    QPixmap a;
+    if (!a.load(QString(path))) {
+        NM_LOG("nm_menu_pixmap: error loading '%s', falling back to '%s': %s", qPrintable(path), qPrintable(fallback), QFile::exists(path) ? "failed to load image" : "image does not exist");
+        return fallback;
+    }
+    return QString(path);
+}
+
 extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavView *_this, QWidget *parent) {
     NM_LOG("MainNavView::MainNavView(%p, %p)", _this, parent);
     MainNavView_MainNavView(_this, parent);
@@ -230,8 +240,17 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
     }
 
     MainNavButton_MainNavButton(btn, parent);
-    MainNavButton_setPixmap(btn, QString(nm_global_config_experimental("menu_main_15505_icon") ?: ":/images/home/main_nav_more.png"));
-    MainNavButton_setActivePixmap(btn, QString(nm_global_config_experimental("menu_main_15505_icon_active") ?: nm_global_config_experimental("menu_main_15505_icon") ?: ":/images/home/main_nav_more_active.png"));
+    MainNavButton_setPixmap(btn, nm_menu_pixmap(
+        nm_global_config_experimental("menu_main_15505_icon")
+            ?: ":/images/home/main_nav_more.png",
+        ":/images/home/main_nav_more.png"
+    ));
+    MainNavButton_setActivePixmap(btn, nm_menu_pixmap(
+        nm_global_config_experimental("menu_main_15505_icon_active")
+            ?: nm_global_config_experimental("menu_main_15505_icon")
+            ?: ":/images/home/main_nav_more_active.png",
+        ":/images/home/main_nav_more_active.png"
+    ));
     MainNavButton_setText(btn, nm_global_config_experimental("menu_main_15505_label") ?: "NickelMenu");
     btn->setObjectName("nmButton");
 
