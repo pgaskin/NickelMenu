@@ -13,7 +13,9 @@ extern "C" {
     X(main)               \
     X(reader)             \
     X(browser)            \
-    X(library)
+    X(library)            \
+    X(selection)          \
+    X(selection_search)
 
 typedef enum {
     NM_MENU_LOCATION_NONE = 0, // to allow it to be checked with if
