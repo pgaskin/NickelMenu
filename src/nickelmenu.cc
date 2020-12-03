@@ -391,9 +391,9 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
 
     // this is important for another reason other than positioning: it only displays if Volume::canSearch()
     nm_menu_location_t loc;
-    if (!strcmp(slot, "1showSearchOptions()"))
+    if (!strcmp(slot, "1showSearchOptions()")) //libnickel 4.20.14622 * _ZN23SelectionMenuController17showSearchOptionsEv
         loc = NM_MENU_LOCATION(selection);
-    else if (!strcmp(slot, "2lookupWeb()"))
+    else if (!strcmp(slot, "2lookupWeb()")) //libnickel 4.20.14622 * _ZN23SelectionMenuController9lookupWebEv
         loc = NM_MENU_LOCATION(selection_search);
     else
         return;
