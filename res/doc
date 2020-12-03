@@ -221,6 +221,7 @@
 #   menu_item :selection        :Run command       :cmd_output     :500:echo '{1||$}'
 #   menu_item :selection        :Complex example   :cmd_output     :500:echo '{1|aS|"$}'
 #   menu_item :selection_search :Search DuckDuckGo :nickel_browser :modal:https://duckduckgo.com/?q={1|S|%}
+#   menu_item :selection_search :Search TLFi       :nickel_browser :modal:https://www.cnrtl.fr/definition/{1|S|%} #menubox,#header,#nav,#footer,td>.box.bottombox{display:none} #wrap{max-width:100%;width:auto;border-width:0} .tab_box a{padding:8px 6px !important;margin-right:0 !important;border:none !important;background:0 0 !important} .tab_box{padding-bottom:8px} a[href*="/proxemie/"],a[href*="/aide/"]{display:none}
 #
 # If there is an error in the configuration, an item which displays it will be
 # added to the main menu. If an internal error occurs, it is written to syslog,
