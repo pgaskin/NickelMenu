@@ -95,7 +95,7 @@ nm_config_file_t *nm_config_files() {
     }
 
     free(nl);
-
+    nm_err_set(NULL);
     return cfs;
 }
 
@@ -373,15 +373,15 @@ static bool nm_config_parse__line_item(const char *type, char **line, nm_menu_it
     *it_out = (nm_menu_item_t){0};
 
     char *s_loc = strtrim(strsep(line, ":"));
-    if (!s_loc) NM_ERR_RET(NULL, "field 2: expected location, got end of line");
+    if (!s_loc) NM_ERR_RET(true, "field 2: expected location, got end of line");
     #define X(name) \
     else if (!strcmp(s_loc, #name)) it_out->loc = NM_MENU_LOCATION(name);
     NM_MENU_LOCATIONS
     #undef X
-    else NM_ERR_RET(NULL, "field 2: unknown location '%s'", s_loc);
+    else NM_ERR_RET(true, "field 2: unknown location '%s'", s_loc);
 
     char *p_lbl = strtrim(strsep(line, ":"));
-    if (!p_lbl) NM_ERR_RET(NULL, "field 3: expected label, got end of line");
+    if (!p_lbl) NM_ERR_RET(true, "field 3: expected label, got end of line");
     it_out->lbl = p_lbl;
 
     return nm_config_parse__lineend_action(4, line, true, true, action_out);
@@ -420,20 +420,20 @@ static bool nm_config_parse__line_generator(const char *type, char **line, nm_ge
     *gn_out = (nm_generator_t){0};
 
     char *s_loc = strtrim(strsep(line, ":"));
-    if (!s_loc) NM_ERR_RET(NULL, "field 2: expected location, got end of line");
+    if (!s_loc) NM_ERR_RET(true, "field 2: expected location, got end of line");
     #define X(name) \
     else if (!strcmp(s_loc, #name)) gn_out->loc = NM_MENU_LOCATION(name);
     NM_MENU_LOCATIONS
     #undef X
-    else NM_ERR_RET(NULL, "field 2: unknown location '%s'", s_loc);
+    else NM_ERR_RET(true, "field 2: unknown location '%s'", s_loc);
 
     char *s_generate = strtrim(strsep(line, ":"));
-    if (!s_generate) NM_ERR_RET(NULL, "field 3: expected generator, got end of line");
+    if (!s_generate) NM_ERR_RET(true, "field 3: expected generator, got end of line");
     #define X(name) \
     else if (!strcmp(s_generate, #name)) gn_out->generate = NM_GENERATOR(name);
     NM_GENERATORS
     #undef X
-    else NM_ERR_RET(NULL, "field 3: unknown generator '%s'", s_generate);
+    else NM_ERR_RET(true, "field 3: unknown generator '%s'", s_generate);
 
     char *p_arg = strtrim(*line); // note: optional
     if (p_arg) gn_out->arg = p_arg;
@@ -454,11 +454,11 @@ static bool nm_config_parse__line_experimental(const char *type, char **line, nm
 
     ex_out->key = strtrim(strsep(line, ":"));
     if (!ex_out->key)
-        NM_ERR_RET(NULL, "field 2: expected key, got end of line");
+        NM_ERR_RET(true, "field 2: expected key, got end of line");
 
     ex_out->val = strtrim(strsep(line, ":"));
     if (!ex_out->val)
-        NM_ERR_RET(NULL, "field 2: expected val, got end of line");
+        NM_ERR_RET(true, "field 2: expected val, got end of line");
 
     nm_err_set(NULL);
     return true;
