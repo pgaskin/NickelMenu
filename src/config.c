@@ -95,7 +95,7 @@ nm_config_file_t *nm_config_files() {
     }
 
     free(nl);
-
+    nm_err_set(NULL);
     return cfs;
 }
 
