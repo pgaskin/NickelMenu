@@ -232,13 +232,31 @@ extern "C" __attribute__((visibility("default"))) MenuTextItem* _nm_menu_hook(vo
     return AbstractNickelMenuController_createMenuTextItem(_this, menu, label, checkable, checked, thingy);
 }
 
-QString nm_menu_pixmap(const char *path, const char *fallback) {
+QString nm_menu_pixmap(const char *custom, const char *custom_temp_out, const char *fallback) {
+    if (!custom || !custom_temp_out)
+        return QString(fallback);
+
     QPixmap a;
-    if (!a.load(QString(path))) {
-        NM_LOG("nm_menu_pixmap: error loading '%s', falling back to '%s': %s", qPrintable(path), qPrintable(fallback), QFile::exists(path) ? "failed to load image" : "image does not exist");
+    if (!a.load(QString(custom))) {
+        NM_LOG("nm_menu_pixmap: error loading '%s', falling back to '%s': %s", custom, fallback, QFile::exists(custom) ? "failed to load image" : "image does not exist");
         return QString(fallback);
     }
-    return QString(path);
+
+    QPixmap b;
+    if (!b.load(QString(fallback))) {
+        NM_LOG("nm_menu_pixmap: error loading default pixmap '%s': %s", fallback, QFile::exists(fallback) ? "failed to load image" : "image does not exist");
+        return QString(fallback);
+    }
+
+    QPixmap c = a.scaled(b.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    NM_LOG("nm_menu_pixmap: resized '%s' to match '%s' (%dx%d): %dx%d", custom, fallback, b.size().width(), b.size().height(), c.size().width(), c.size().height());
+
+    if (!c.save(QString(custom_temp_out), "PNG")) {
+        NM_LOG("nm_menu_pixmap: error saving resized pixmap to '%s'", custom_temp_out);
+        return QString(fallback);
+    }
+
+    return QString(custom_temp_out);
 }
 
 extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavView *_this, QWidget *parent) {
@@ -266,16 +284,18 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
 
     MainNavButton_MainNavButton(btn, parent);
     MainNavButton_setPixmap(btn, nm_menu_pixmap(
-        nm_global_config_experimental("menu_main_15505_icon")
-            ?: ":/images/home/main_nav_more.png",
+        nm_global_config_experimental("menu_main_15505_icon"),
+        "/tmp/nm_menu.png",
         ":/images/home/main_nav_more.png"
     ));
+    QFile::remove("/tmp/nm_menu.png");
     MainNavButton_setActivePixmap(btn, nm_menu_pixmap(
         nm_global_config_experimental("menu_main_15505_icon_active")
-            ?: nm_global_config_experimental("menu_main_15505_icon")
-            ?: ":/images/home/main_nav_more_active.png",
+            ?: nm_global_config_experimental("menu_main_15505_icon"),
+        "/tmp/nm_menu_active.png",
         ":/images/home/main_nav_more_active.png"
     ));
+    QFile::remove("/tmp/nm_menu_active.png");
     MainNavButton_setText(btn, nm_global_config_experimental("menu_main_15505_label") ?: "NickelMenu");
     btn->setObjectName("nmButton");
 
