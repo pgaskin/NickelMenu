@@ -288,14 +288,13 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
         "/tmp/nm_menu.png",
         ":/images/home/main_nav_more.png"
     ));
-    QFile::remove("/tmp/nm_menu.png");
     MainNavButton_setActivePixmap(btn, nm_menu_pixmap(
         nm_global_config_experimental("menu_main_15505_icon_active")
             ?: nm_global_config_experimental("menu_main_15505_icon"),
-        "/tmp/nm_menu_active.png",
+        "/tmp/nm_menu.png",
         ":/images/home/main_nav_more_active.png"
     ));
-    QFile::remove("/tmp/nm_menu_active.png");
+    QFile::remove("/tmp/nm_menu.png");
     MainNavButton_setText(btn, nm_global_config_experimental("menu_main_15505_label") ?: "NickelMenu");
     btn->setObjectName("nmButton");
 
