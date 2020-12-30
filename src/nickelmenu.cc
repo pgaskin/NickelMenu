@@ -236,7 +236,7 @@ QString nm_menu_pixmap(const char *custom, const char *custom_temp_out, const ch
     if (!custom || !custom_temp_out)
         return QString(fallback);
 
-    QPixmap a;
+    QImage a;
     if (!a.load(QString(custom))) {
         NM_LOG("nm_menu_pixmap: error loading '%s', falling back to '%s': %s", custom, fallback, QFile::exists(custom) ? "failed to load image" : "image does not exist");
         return QString(fallback);
@@ -248,7 +248,7 @@ QString nm_menu_pixmap(const char *custom, const char *custom_temp_out, const ch
         return QString(fallback);
     }
 
-    QPixmap c = a.scaled(b.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    QImage c = a.scaled(b.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
     NM_LOG("nm_menu_pixmap: resized '%s' to match '%s' (%dx%d): %dx%d", custom, fallback, b.size().width(), b.size().height(), c.size().width(), c.size().height());
 
     if (!c.save(QString(custom_temp_out), "PNG")) {
