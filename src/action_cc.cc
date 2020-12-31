@@ -55,6 +55,12 @@ typedef void N3PowerWorkflowManager;
 typedef void WirelessWorkflowManager;
 typedef void StatusBarView;
 
+#define NM_ACT_SYM(var, sym) reinterpret_cast<void*&>(var) = dlsym(RTLD_DEFAULT, sym)
+#define NM_ACT_XSYM(var, symb, err) do { \
+    NM_ACT_SYM(var, symb);               \
+    NM_CHECK(nullptr, var, err);         \
+} while(0)
+
 NM_ACTION_(nickel_open) {
     char *tmp1 = strdupa(arg); // strsep and strtrim will modify it
     char *arg1 = strtrim(strsep(&tmp1, ":"));
@@ -68,8 +74,7 @@ NM_ACTION_(nickel_open) {
         if (!strcmp(arg1, "library") && !strcmp(arg2, "dropbox")) {
             //libnickel 4.23.15505 * _ZN14MoreController7dropboxEv
             void (*MoreController_dropbox)(void*);
-            reinterpret_cast<void*&>(MoreController_dropbox) = dlsym(RTLD_DEFAULT, "_ZN14MoreController7dropboxEv");
-            NM_CHECK(nullptr, MoreController_dropbox, "could not dlsym MoreController::dropbox");
+            NM_ACT_XSYM(MoreController_dropbox, "_ZN14MoreController7dropboxEv", "could not dlsym MoreController::dropbox");
 
             // technically, we need a MoreController, but it isn't used as of 15505, so it doesn't matter (and if it ever does, it's not going to crash in a critical place)
             MoreController_dropbox(nullptr);
@@ -182,32 +187,28 @@ NM_ACTION_(nickel_setting) {
 
     //libnickel 4.6 * _ZN6Device16getCurrentDeviceEv
     Device *(*Device_getCurrentDevice)();
-    reinterpret_cast<void*&>(Device_getCurrentDevice) = dlsym(RTLD_DEFAULT, "_ZN6Device16getCurrentDeviceEv");
-    NM_CHECK(nullptr, Device_getCurrentDevice, "could not dlsym Device::getCurrentDevice");
+    NM_ACT_XSYM(Device_getCurrentDevice, "_ZN6Device16getCurrentDeviceEv", "could not dlsym Device::getCurrentDevice");
 
     //libnickel 4.6 * _ZN8SettingsC2ERK6Deviceb _ZN8SettingsC2ERK6Device
     void *(*Settings_Settings)(Settings*, Device*, bool);
     void *(*Settings_SettingsLegacy)(Settings*, Device*);
-    reinterpret_cast<void*&>(Settings_Settings) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Deviceb");
-    reinterpret_cast<void*&>(Settings_SettingsLegacy) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Device");
+    NM_ACT_SYM(Settings_Settings, "_ZN8SettingsC2ERK6Deviceb");
+    NM_ACT_SYM(Settings_SettingsLegacy, "_ZN8SettingsC2ERK6Device");
     NM_CHECK(nullptr, Settings_Settings || Settings_SettingsLegacy, "could not dlsym Settings constructor (new and/or old)");
 
     //libnickel 4.6 * _ZN8SettingsD2Ev
     void *(*Settings_SettingsD)(Settings*);
-    reinterpret_cast<void*&>(Settings_SettingsD) = dlsym(RTLD_DEFAULT, "_ZN8SettingsD2Ev");
-    NM_CHECK(nullptr, Settings_SettingsD, "could not dlsym Settings destructor");
+    NM_ACT_XSYM(Settings_SettingsD, "_ZN8SettingsD2Ev", "could not dlsym Settings destructor");
 
     // some settings don't have symbols in a usable form, and some are inlined, so we may need to set them directly
     //libnickel 4.6 * _ZN8Settings10getSettingERK7QStringRK8QVariant
     QVariant (*Settings_getSetting)(Settings*, QString const&, QVariant const&); // the last param is the default, also note that this requires a subclass of Settings
-    reinterpret_cast<void*&>(Settings_getSetting) = dlsym(RTLD_DEFAULT, "_ZN8Settings10getSettingERK7QStringRK8QVariant");
-    NM_CHECK(nullptr, Settings_getSetting, "could not dlsym Settings::getSetting");
+    NM_ACT_XSYM(Settings_getSetting, "_ZN8Settings10getSettingERK7QStringRK8QVariant", "could not dlsym Settings::getSetting");
 
     // ditto
     //libnickel 4.6 * _ZN8Settings11saveSettingERK7QStringRK8QVariantb
     void *(*Settings_saveSetting)(Settings*, QString const&, QVariant const&, bool); // the last param is whether to do a full disk sync immediately (rather than waiting for the kernel to do it)
-    reinterpret_cast<void*&>(Settings_saveSetting) = dlsym(RTLD_DEFAULT, "_ZN8Settings11saveSettingERK7QStringRK8QVariantb");
-    NM_CHECK(nullptr, Settings_saveSetting, "could not dlsym Settings::saveSetting");
+    NM_ACT_XSYM(Settings_saveSetting, "_ZN8Settings11saveSettingERK7QStringRK8QVariantb", "could not dlsym Settings::saveSetting");
 
     Device *dev = Device_getCurrentDevice();
     NM_CHECK(nullptr, dev, "could not get shared nickel device pointer");
@@ -253,13 +254,11 @@ NM_ACTION_(nickel_setting) {
         if (!strcmp(arg2, "invert")) {
             //libnickel 4.6 * _ZN15FeatureSettings12invertScreenEv
             bool (*FeatureSettings_invertScreen)(Settings*);
-            reinterpret_cast<void*&>(FeatureSettings_invertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings12invertScreenEv");
-            NM_CHECK(nullptr, FeatureSettings_invertScreen, "could not dlsym FeatureSettings::invertScreen");
+            NM_ACT_XSYM(FeatureSettings_invertScreen, "_ZN15FeatureSettings12invertScreenEv", "could not dlsym FeatureSettings::invertScreen");
 
             //libnickel 4.6 * _ZN15FeatureSettings15setInvertScreenEb
             bool (*FeatureSettings_setInvertScreen)(Settings*, bool);
-            reinterpret_cast<void*&>(FeatureSettings_setInvertScreen) = dlsym(RTLD_DEFAULT, "_ZN15FeatureSettings15setInvertScreenEb");
-            NM_CHECK(nullptr, FeatureSettings_setInvertScreen, "could not dlsym FeatureSettings::setInvertScreen");
+            NM_ACT_XSYM(FeatureSettings_setInvertScreen, "_ZN15FeatureSettings15setInvertScreenEb", "could not dlsym FeatureSettings::setInvertScreen");
 
             if (mode == mode_toggle) {
                 v = FeatureSettings_invertScreen(settings);
@@ -296,13 +295,11 @@ NM_ACTION_(nickel_setting) {
 
         //libnickel 4.12.12111 * _ZN13PowerSettings16getUnlockEnabledEv
         bool (*PowerSettings__getUnlockEnabled)(Settings*);
-        reinterpret_cast<void*&>(PowerSettings__getUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16getUnlockEnabledEv");
-        NM_CHECK(nullptr, PowerSettings__getUnlockEnabled, "could not dlsym PowerSettings::getUnlockEnabled");
+        NM_ACT_XSYM(PowerSettings__getUnlockEnabled, "_ZN13PowerSettings16getUnlockEnabledEv", "could not dlsym PowerSettings::getUnlockEnabled");
 
         //libnickel 4.12.12111 * _ZN13PowerSettings16setUnlockEnabledEb
         bool (*PowerSettings__setUnlockEnabled)(Settings*, bool);
-        reinterpret_cast<void*&>(PowerSettings__setUnlockEnabled) = dlsym(RTLD_DEFAULT, "_ZN13PowerSettings16setUnlockEnabledEb");
-        NM_CHECK(nullptr, PowerSettings__setUnlockEnabled, "could not dlsym PowerSettings::setUnlockEnabled");
+        NM_ACT_XSYM(PowerSettings__setUnlockEnabled, "_ZN13PowerSettings16setUnlockEnabledEb", "could not dlsym PowerSettings::setUnlockEnabled");
 
         if (mode == mode_toggle) {
             v = PowerSettings__getUnlockEnabled(settings);
@@ -363,8 +360,7 @@ NM_ACTION_(nickel_extras) {
 
     //libnickel 4.6 * _ZN18ExtrasPluginLoader10loadPluginEPKc
     void (*ExtrasPluginLoader_loadPlugin)(const char*);
-    reinterpret_cast<void*&>(ExtrasPluginLoader_loadPlugin) = dlsym(RTLD_DEFAULT, "_ZN18ExtrasPluginLoader10loadPluginEPKc");
-    NM_CHECK(nullptr, ExtrasPluginLoader_loadPlugin, "could not dlsym ExtrasPluginLoader::loadPlugin");
+    NM_ACT_XSYM(ExtrasPluginLoader_loadPlugin, "_ZN18ExtrasPluginLoader10loadPluginEPKc", "could not dlsym ExtrasPluginLoader::loadPlugin");
     ExtrasPluginLoader_loadPlugin(mimetype);
 
     return nm_action_result_silent();
@@ -410,14 +406,13 @@ NM_ACTION_(nickel_browser) {
     //libnickel 4.6 * _ZN22BrowserWorkflowManager14sharedInstanceEv _ZN22BrowserWorkflowManagerC1EP7QObject
     BrowserWorkflowManager *(*BrowserWorkflowManager_sharedInstance)();
     void (*BrowserWorkflowManager_BrowserWorkflowManager)(BrowserWorkflowManager*, QObject*); // 4.11.11911+
-    reinterpret_cast<void*&>(BrowserWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManager14sharedInstanceEv");
-    reinterpret_cast<void*&>(BrowserWorkflowManager_BrowserWorkflowManager) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManagerC1EP7QObject");
+    NM_ACT_SYM(BrowserWorkflowManager_sharedInstance, "_ZN22BrowserWorkflowManager14sharedInstanceEv");
+    NM_ACT_SYM(BrowserWorkflowManager_BrowserWorkflowManager, "_ZN22BrowserWorkflowManagerC1EP7QObject");
     NM_CHECK(nullptr, BrowserWorkflowManager_sharedInstance || BrowserWorkflowManager_BrowserWorkflowManager, "could not dlsym BrowserWorkflowManager constructor (4.11.11911+) or sharedInstance");
 
     //libnickel 4.6 * _ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString
     void (*BrowserWorkflowManager_openBrowser)(BrowserWorkflowManager*, bool, QUrl*, QString*); // the bool is whether to open it as a modal, the QUrl is the URL to load(if !QUrl::isValid(), it loads the homepage), the string is CSS to inject
-    reinterpret_cast<void*&>(BrowserWorkflowManager_openBrowser) = dlsym(RTLD_DEFAULT, "_ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString");
-    NM_CHECK(nullptr, BrowserWorkflowManager_openBrowser, "could not dlsym BrowserWorkflowManager::openBrowser");
+    NM_ACT_XSYM(BrowserWorkflowManager_openBrowser, "_ZN22BrowserWorkflowManager11openBrowserEbRK4QUrlRK7QString", "could not dlsym BrowserWorkflowManager::openBrowser");
 
     // note: everything must be on the heap since if it isn't connected, it
     //       passes it as-is to the connected signal, which will be used
@@ -445,8 +440,8 @@ NM_ACTION_(nickel_misc) {
         void (*StatusBarController_home)(void*);
         void (*MainNavController_home)(void*);
 
-        reinterpret_cast<void*&>(StatusBarController_home) = dlsym(RTLD_DEFAULT, "_ZN19StatusBarController4homeEv");
-        reinterpret_cast<void*&>(MainNavController_home) = dlsym(RTLD_DEFAULT, "_ZN17MainNavController4homeEv");
+        NM_ACT_SYM(StatusBarController_home, "_ZN19StatusBarController4homeEv");
+        NM_ACT_SYM(MainNavController_home, "_ZN17MainNavController4homeEv");
         NM_CHECK(nullptr, StatusBarController_home || MainNavController_home, "could not dlsym StatusBarController::home (pre-4.23.15505) or MainNavController::home (4.23.15505+)");
 
         // technically, we need an instance, but it isn't used so it doesn't matter (and if it does crash, we can fix it later as it's not critical) as of 15505
@@ -454,13 +449,11 @@ NM_ACTION_(nickel_misc) {
     } else if (!strcmp(arg, "rescan_books")) {
         //libnickel 4.13.12638 * _ZN19PlugWorkflowManager14sharedInstanceEv
         PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
-        reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");
-        NM_CHECK(nullptr, PlugWorkflowManager_sharedInstance, "could not dlsym PlugWorkflowManager::sharedInstance");
+        NM_ACT_XSYM(PlugWorkflowManager_sharedInstance, "_ZN19PlugWorkflowManager14sharedInstanceEv", "could not dlsym PlugWorkflowManager::sharedInstance");
 
         //libnickel 4.13.12638 * _ZN19PlugWorkflowManager4syncEv
         void (*PlugWorkflowManager_sync)(PlugWorkflowManager*);
-        reinterpret_cast<void*&>(PlugWorkflowManager_sync) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager4syncEv");
-        NM_CHECK(nullptr, PlugWorkflowManager_sync, "could not dlsym PlugWorkflowManager::sync");
+        NM_ACT_XSYM(PlugWorkflowManager_sync, "_ZN19PlugWorkflowManager4syncEv", "could not dlsym PlugWorkflowManager::sync");
 
         PlugWorkflowManager *wf = PlugWorkflowManager_sharedInstance();
         NM_CHECK(nullptr, wf, "could not get shared PlugWorkflowManager pointer");
@@ -469,19 +462,16 @@ NM_ACTION_(nickel_misc) {
     } else if (!strcmp(arg, "rescan_books_full")) {
         //libnickel 4.13.12638 * _ZN19PlugWorkflowManager14sharedInstanceEv
         PlugWorkflowManager *(*PlugWorkflowManager_sharedInstance)();
-        reinterpret_cast<void*&>(PlugWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager14sharedInstanceEv");
-        NM_CHECK(nullptr, PlugWorkflowManager_sharedInstance, "could not dlsym PlugWorkflowManager::sharedInstance");
+        NM_ACT_XSYM(PlugWorkflowManager_sharedInstance, "_ZN19PlugWorkflowManager14sharedInstanceEv", "could not dlsym PlugWorkflowManager::sharedInstance");
 
         // this is what is called by PlugWorkflowManager::plugged after confirmation
         //libnickel 4.13.12638 * _ZN19PlugWorkflowManager18onCancelAndConnectEv
         void (*PlugWorkflowManager_onCancelAndConnect)(PlugWorkflowManager*);
-        reinterpret_cast<void*&>(PlugWorkflowManager_onCancelAndConnect) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager18onCancelAndConnectEv");
-        NM_CHECK(nullptr, PlugWorkflowManager_onCancelAndConnect, "could not dlsym PlugWorkflowManager::onCancelAndConnect");
+        NM_ACT_XSYM(PlugWorkflowManager_onCancelAndConnect, "_ZN19PlugWorkflowManager18onCancelAndConnectEv", "could not dlsym PlugWorkflowManager::onCancelAndConnect");
 
         //libnickel 4.13.12638 * _ZN19PlugWorkflowManager9unpluggedEv
         void (*PlugWorkflowManager_unplugged)(PlugWorkflowManager*);
-        reinterpret_cast<void*&>(PlugWorkflowManager_unplugged) = dlsym(RTLD_DEFAULT, "_ZN19PlugWorkflowManager9unpluggedEv");
-        NM_CHECK(nullptr, PlugWorkflowManager_unplugged, "could not dlsym PlugWorkflowManager::unplugged");
+        NM_ACT_XSYM(PlugWorkflowManager_unplugged, "_ZN19PlugWorkflowManager9unpluggedEv", "could not dlsym PlugWorkflowManager::unplugged");
 
         PlugWorkflowManager *wf = PlugWorkflowManager_sharedInstance();
         NM_CHECK(nullptr, wf, "could not get shared PlugWorkflowManager pointer");
@@ -508,8 +498,8 @@ NM_ACTION_(power) {
     if (!strcmp(arg, "shutdown") || !strcmp(arg, "reboot") || !strcmp(arg, "sleep")) {
         //libnickel 4.13.12638 * _ZN22N3PowerWorkflowManager14sharedInstanceEv
         N3PowerWorkflowManager *(*N3PowerWorkflowManager_sharedInstance)();
-        reinterpret_cast<void*&>(N3PowerWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager14sharedInstanceEv");
-        NM_CHECK(nullptr, N3PowerWorkflowManager_sharedInstance, "could not dlsym N3PowerWorkflowManager::sharedInstance, so cannot perform action cleanly (if you must, report a bug and use cmd_spawn instead)");
+        NM_ACT_XSYM(N3PowerWorkflowManager_sharedInstance, "_ZN22N3PowerWorkflowManager14sharedInstanceEv",
+            "could not dlsym N3PowerWorkflowManager::sharedInstance, so cannot perform action cleanly (if you must, report a bug and use cmd_spawn instead)");
 
         N3PowerWorkflowManager *pwm = N3PowerWorkflowManager_sharedInstance();
         NM_CHECK(nullptr, pwm, "could not get shared power manager pointer");
@@ -517,24 +507,21 @@ NM_ACTION_(power) {
         if (!strcmp(arg, "shutdown")) {
             //libnickel 4.13.12638 * _ZN22N3PowerWorkflowManager8powerOffEb
             void (*N3PowerWorkflowManager_powerOff)(N3PowerWorkflowManager*, bool); // bool is for if it's due to low battery
-            reinterpret_cast<void*&>(N3PowerWorkflowManager_powerOff) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager8powerOffEb");
-            NM_CHECK(nullptr, N3PowerWorkflowManager_powerOff, "could not dlsym N3PowerWorkflowManager::powerOff");
+            NM_ACT_XSYM(N3PowerWorkflowManager_powerOff, "_ZN22N3PowerWorkflowManager8powerOffEb", "could not dlsym N3PowerWorkflowManager::powerOff");
 
             N3PowerWorkflowManager_powerOff(pwm, false);
             return nm_action_result_toast("Shutting down...");
         } else if (!strcmp(arg, "reboot")) {
             //libnickel 4.13.12638 * _ZN22N3PowerWorkflowManager6rebootEv
             void (*N3PowerWorkflowManager_reboot)(N3PowerWorkflowManager*);
-            reinterpret_cast<void*&>(N3PowerWorkflowManager_reboot) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager6rebootEv");
-            NM_CHECK(nullptr, N3PowerWorkflowManager_reboot, "could not dlsym N3PowerWorkflowManager::reboot");
+            NM_ACT_XSYM(N3PowerWorkflowManager_reboot, "_ZN22N3PowerWorkflowManager6rebootEv", "could not dlsym N3PowerWorkflowManager::reboot");
 
             N3PowerWorkflowManager_reboot(pwm);
             return nm_action_result_toast("Rebooting...");
         } else if (!strcmp(arg, "sleep")) {
             //libnickel 4.13.12638 * _ZN22N3PowerWorkflowManager12requestSleepEv
             void (*N3PowerWorkflowManager_requestSleep)(N3PowerWorkflowManager*);
-            reinterpret_cast<void*&>(N3PowerWorkflowManager_requestSleep) = dlsym(RTLD_DEFAULT, "_ZN22N3PowerWorkflowManager12requestSleepEv");
-            NM_CHECK(nullptr, N3PowerWorkflowManager_requestSleep, "could not dlsym N3PowerWorkflowManager::requestSleep");
+            NM_ACT_XSYM(N3PowerWorkflowManager_requestSleep, "_ZN22N3PowerWorkflowManager12requestSleepEv", "could not dlsym N3PowerWorkflowManager::requestSleep");
 
             N3PowerWorkflowManager_requestSleep(pwm);
             return nm_action_result_silent();
@@ -548,8 +535,7 @@ NM_ACTION_(power) {
 NM_ACTION_(nickel_wifi) {
     //libnickel 4.6 * _ZN23WirelessWorkflowManager14sharedInstanceEv
     WirelessWorkflowManager *(*WirelessWorkflowManager_sharedInstance)();
-    reinterpret_cast<void*&>(WirelessWorkflowManager_sharedInstance) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager14sharedInstanceEv");
-    NM_CHECK(nullptr, WirelessWorkflowManager_sharedInstance, "could not dlsym WirelessWorkflowManager::sharedInstance");
+    NM_ACT_XSYM(WirelessWorkflowManager_sharedInstance, "_ZN23WirelessWorkflowManager14sharedInstanceEv", "could not dlsym WirelessWorkflowManager::sharedInstance");
 
     WirelessWorkflowManager *wfm = WirelessWorkflowManager_sharedInstance();
     NM_CHECK(nullptr, wfm, "could not get shared wireless manager pointer");
@@ -557,30 +543,26 @@ NM_ACTION_(nickel_wifi) {
     if (!strcmp(arg, "autoconnect")) {
         //libnickel 4.6 * _ZN23WirelessWorkflowManager15connectWirelessEbb
         void (*WirelessWorkflowManager_connectWireless)(WirelessWorkflowManager*, bool, bool); // I haven't looked into what the params are for, so I'm just using what the browser uses when opening it
-        reinterpret_cast<void*&>(WirelessWorkflowManager_connectWireless) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager15connectWirelessEbb");
-        NM_CHECK(nullptr, WirelessWorkflowManager_connectWireless, "could not dlsym WirelessWorkflowManager::connectWireless");
+        NM_ACT_XSYM(WirelessWorkflowManager_connectWireless, "_ZN23WirelessWorkflowManager15connectWirelessEbb", "could not dlsym WirelessWorkflowManager::connectWireless");
 
         WirelessWorkflowManager_connectWireless(wfm, true, false);
     } else if (!strcmp(arg, "autoconnect_silent")) {
         //libnickel 4.6 * _ZN23WirelessWorkflowManager23connectWirelessSilentlyEv
         void (*WirelessWorkflowManager_connectWirelessSilently)(WirelessWorkflowManager*);
-        reinterpret_cast<void*&>(WirelessWorkflowManager_connectWirelessSilently) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager23connectWirelessSilentlyEv");
-        NM_CHECK(nullptr, WirelessWorkflowManager_connectWirelessSilently, "could not dlsym WirelessWorkflowManager::connectWirelessSilently");
+        NM_ACT_XSYM(WirelessWorkflowManager_connectWirelessSilently, "_ZN23WirelessWorkflowManager23connectWirelessSilentlyEv", "could not dlsym WirelessWorkflowManager::connectWirelessSilently");
 
         WirelessWorkflowManager_connectWirelessSilently(wfm);
     } else if (!strcmp(arg, "enable") || !strcmp(arg, "disable") || !strcmp(arg, "toggle")) {
         //libnickel 4.6 * _ZN23WirelessWorkflowManager14isAirplaneModeEv
         bool (*WirelessWorkflowManager_isAirplaneMode)(WirelessWorkflowManager*);
-        reinterpret_cast<void*&>(WirelessWorkflowManager_isAirplaneMode) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager14isAirplaneModeEv");
-        NM_CHECK(nullptr, WirelessWorkflowManager_isAirplaneMode, "could not dlsym WirelessWorkflowManager::isAirplaneMode");
+        NM_ACT_XSYM(WirelessWorkflowManager_isAirplaneMode, "_ZN23WirelessWorkflowManager14isAirplaneModeEv", "could not dlsym WirelessWorkflowManager::isAirplaneMode");
 
         bool e = WirelessWorkflowManager_isAirplaneMode(wfm);
         NM_LOG("wifi disabled: %d", e);
 
         //libnickel 4.6 * _ZN23WirelessWorkflowManager15setAirplaneModeEb
         void (*WirelessWorkflowManager_setAirplaneMode)(WirelessWorkflowManager*, bool);
-        reinterpret_cast<void*&>(WirelessWorkflowManager_setAirplaneMode) = dlsym(RTLD_DEFAULT, "_ZN23WirelessWorkflowManager15setAirplaneModeEb");
-        NM_CHECK(nullptr, WirelessWorkflowManager_setAirplaneMode, "could not dlsym WirelessWorkflowManager::setAirplaneMode");
+        NM_ACT_XSYM(WirelessWorkflowManager_setAirplaneMode, "_ZN23WirelessWorkflowManager15setAirplaneModeEb", "could not dlsym WirelessWorkflowManager::setAirplaneMode");
 
         if (!strcmp(arg, "enable")) {
             if (e)
@@ -620,43 +602,37 @@ NM_ACTION_(nickel_orientation) {
 
     //libnickel 4.6 * _ZN22QWindowSystemInterface29handleScreenOrientationChangeEP7QScreenN2Qt17ScreenOrientationE
     void (*QWindowSystemInterface_handleScreenOrientationChange)(QScreen*, Qt::ScreenOrientation);
-    reinterpret_cast<void*&>(QWindowSystemInterface_handleScreenOrientationChange) = dlsym(RTLD_DEFAULT, "_ZN22QWindowSystemInterface29handleScreenOrientationChangeEP7QScreenN2Qt17ScreenOrientationE");
-    NM_CHECK(nullptr, QWindowSystemInterface_handleScreenOrientationChange, "could not dlsym QWindowSystemInterface::handleScreenOrientationChange (did the way Nickel handles the screen orientation sensor change?)");
+    NM_ACT_XSYM(QWindowSystemInterface_handleScreenOrientationChange, "_ZN22QWindowSystemInterface29handleScreenOrientationChangeEP7QScreenN2Qt17ScreenOrientationE", "could not dlsym QWindowSystemInterface::handleScreenOrientationChange (did the way Nickel handles the screen orientation sensor change?)");
 
     //libnickel 4.6 * _ZN6Device16getCurrentDeviceEv
     Device *(*Device_getCurrentDevice)();
-    reinterpret_cast<void*&>(Device_getCurrentDevice) = dlsym(RTLD_DEFAULT, "_ZN6Device16getCurrentDeviceEv");
-    NM_CHECK(nullptr, Device_getCurrentDevice, "could not dlsym Device::getCurrentDevice");
+    NM_ACT_XSYM(Device_getCurrentDevice, "_ZN6Device16getCurrentDeviceEv", "could not dlsym Device::getCurrentDevice");
 
     //libnickel 4.11.11911 * _ZNK6Device20hasOrientationSensorEv
     bool (*Device_hasOrientationSensor)(Device*);
-    reinterpret_cast<void*&>(Device_hasOrientationSensor) = dlsym(RTLD_DEFAULT, "_ZNK6Device20hasOrientationSensorEv");
-    NM_CHECK(nullptr, Device_getCurrentDevice, "could not dlsym Device::hasOrientationSensor");
+    NM_ACT_XSYM(Device_hasOrientationSensor, "_ZNK6Device20hasOrientationSensorEv", "could not dlsym Device::hasOrientationSensor");
 
     //libnickel 4.6 * _ZN8SettingsC2ERK6Deviceb _ZN8SettingsC2ERK6Device
     void *(*Settings_Settings)(Settings*, Device*, bool);
     void *(*Settings_SettingsLegacy)(Settings*, Device*);
-    reinterpret_cast<void*&>(Settings_Settings) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Deviceb");
-    reinterpret_cast<void*&>(Settings_SettingsLegacy) = dlsym(RTLD_DEFAULT, "_ZN8SettingsC2ERK6Device");
+    NM_ACT_SYM(Settings_Settings, "_ZN8SettingsC2ERK6Deviceb");
+    NM_ACT_SYM(Settings_SettingsLegacy, "_ZN8SettingsC2ERK6Device");
     NM_CHECK(nullptr, Settings_Settings || Settings_SettingsLegacy, "could not dlsym Settings constructor (new and/or old)");
 
     //libnickel 4.6 * _ZN8SettingsD2Ev
     void *(*Settings_SettingsD)(Settings*);
-    reinterpret_cast<void*&>(Settings_SettingsD) = dlsym(RTLD_DEFAULT, "_ZN8SettingsD2Ev");
-    NM_CHECK(nullptr, Settings_SettingsD, "could not dlsym Settings destructor");
+    NM_ACT_XSYM(Settings_SettingsD, "_ZN8SettingsD2Ev", "could not dlsym Settings destructor");
 
     void *ApplicationSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV19ApplicationSettings");
     NM_CHECK(nullptr, ApplicationSettings_vtable, "could not dlsym the vtable for ApplicationSettings");
 
     //libnickel 4.13.12638 * _ZN19ApplicationSettings20setLockedOrientationE6QFlagsIN2Qt17ScreenOrientationEE
     bool (*ApplicationSettings_setLockedOrientation)(Settings*, Qt::ScreenOrientation);
-    reinterpret_cast<void*&>(ApplicationSettings_setLockedOrientation) = dlsym(RTLD_DEFAULT, "_ZN19ApplicationSettings20setLockedOrientationE6QFlagsIN2Qt17ScreenOrientationEE");
-    NM_CHECK(nullptr, ApplicationSettings_setLockedOrientation, "could not dlsym ApplicationSettings::setLockedOrientation");
+    NM_ACT_XSYM(ApplicationSettings_setLockedOrientation, "_ZN19ApplicationSettings20setLockedOrientationE6QFlagsIN2Qt17ScreenOrientationEE", "could not dlsym ApplicationSettings::setLockedOrientation");
 
     //libnickel 4.13.12638 * _ZN19ApplicationSettings17lockedOrientationEv
     int (*ApplicationSettings_lockedOrientation)(Settings*);
-    reinterpret_cast<void*&>(ApplicationSettings_lockedOrientation) = dlsym(RTLD_DEFAULT, "_ZN19ApplicationSettings17lockedOrientationEv");
-    NM_CHECK(nullptr, ApplicationSettings_lockedOrientation, "could not dlsym ApplicationSettings::lockedOrientation");
+    NM_ACT_XSYM(ApplicationSettings_lockedOrientation, "_ZN19ApplicationSettings17lockedOrientationEv", "could not dlsym ApplicationSettings::lockedOrientation");
 
     Device *dev = Device_getCurrentDevice();
     NM_CHECK(nullptr, dev, "could not get shared nickel device pointer");
