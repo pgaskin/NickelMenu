@@ -265,35 +265,62 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
 
             if (nm_config_parse__line_item(s_typ, &cur, &tmp_it, &tmp_act)) {
                 if ((err = nm_err()))
-                    RETERR("file %s: line %d: parse menu_item: %s", cf->path, line_n, err);
+                    RETERR("file %s: line %d: parse menu_item: %s",
+                        cf->path,
+                        line_n,
+                        err);
                 if ((ret = nm_config_parse__append_item(&state, &tmp_it)))
-                    RETERR("file %s: line %d: error appending item to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    RETERR("file %s: line %d: error appending item to config: %s",
+                        cf->path,
+                        line_n,
+                        nm_config_parse__strerror(ret));
                 if ((ret = nm_config_parse__append_action(&state, &tmp_act)))
-                    RETERR("file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    RETERR("file %s: line %d: error appending action to config: %s",
+                        cf->path,
+                        line_n,
+                        nm_config_parse__strerror(ret));
                 continue;
             }
 
             if (nm_config_parse__line_chain(s_typ, &cur, &tmp_act)) {
                 if ((err = nm_err()))
-                    RETERR("file %s: line %d: parse chain: %s", cf->path, line_n, err);
+                    RETERR("file %s: line %d: parse chain: %s",
+                        cf->path,
+                        line_n,
+                        err);
                 if ((ret = nm_config_parse__append_action(&state, &tmp_act)))
-                    RETERR("file %s: line %d: error appending action to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    RETERR("file %s: line %d: error appending action to config: %s",
+                        cf->path,
+                        line_n,
+                        nm_config_parse__strerror(ret));
                 continue;
             }
 
             if (nm_config_parse__line_generator(s_typ, &cur, &tmp_gn)) {
                 if ((err = nm_err()))
-                    RETERR("file %s: line %d: parse generator: %s", cf->path, line_n, err);
+                    RETERR("file %s: line %d: parse generator: %s",
+                        cf->path,
+                        line_n,
+                        err);
                 if ((ret = nm_config_parse__append_generator(&state, &tmp_gn)))
-                    RETERR("file %s: line %d: error appending generator to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    RETERR("file %s: line %d: error appending generator to config: %s",
+                        cf->path,
+                        line_n,
+                        nm_config_parse__strerror(ret));
                 continue;
             }
 
             if (nm_config_parse__line_experimental(s_typ, &cur, &tmp_ex)) {
                 if ((err = nm_err()))
-                    RETERR("file %s: line %d: parse experimental option: %s", cf->path, line_n, err);
+                    RETERR("file %s: line %d: parse experimental option: %s",
+                        cf->path,
+                        line_n,
+                        err);
                 if ((ret = nm_config_parse__append_experimental(&state, &tmp_ex)))
-                    RETERR("file %s: line %d: error appending experimental option to config: %s", cf->path, line_n, nm_config_parse__strerror(ret));
+                    RETERR("file %s: line %d: error appending experimental option to config: %s",
+                        cf->path,
+                        line_n,
+                        nm_config_parse__strerror(ret));
                 continue;
             }
 
@@ -335,9 +362,22 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
     for (nm_config_t *cur = state.cfg_s; cur; cur = cur->next) {
         switch (cur->type) {
         case NM_CONFIG_TYPE_MENU_ITEM:
-            NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl);
+            NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s",
+                cur->value.menu_item->loc,
+                cur->value.menu_item->lbl);
             for (nm_menu_action_t *cur_act = cur->value.menu_item->action; cur_act; cur_act = cur_act->next)
-                NM_LOG("...cfg(NM_CONFIG_TYPE_MENU_ITEM) (%s%s%s) : %p:%s", cur_act->on_success ? "on_success" : "", (cur_act->on_success && cur_act->on_failure) ? ", " : "", cur_act->on_failure ? "on_failure" : "", cur_act->act, cur_act->arg);
+                NM_LOG("...cfg(NM_CONFIG_TYPE_MENU_ITEM) (%s%s%s) : %p:%s",
+                    cur_act->on_success
+                        ? "on_success"
+                        : "",
+                    (cur_act->on_success && cur_act->on_failure)
+                        ? ", "
+                        : "",
+                    cur_act->on_failure
+                        ? "on_failure"
+                        : "",
+                    cur_act->act,
+                    cur_act->arg);
             switch (cur->value.menu_item->loc) {
             case NM_MENU_LOCATION_NONE: break;
             #define X(name) \
@@ -347,10 +387,16 @@ nm_config_t *nm_config_parse(nm_config_file_t *files) {
             }
             break;
         case NM_CONFIG_TYPE_GENERATOR:
-            NM_LOG("cfg(NM_CONFIG_TYPE_GENERATOR) : %d:%s(%p):%s", cur->value.generator->loc, cur->value.generator->desc, cur->value.generator->generate, cur->value.generator->arg);
+            NM_LOG("cfg(NM_CONFIG_TYPE_GENERATOR) : %d:%s(%p):%s",
+                cur->value.generator->loc,
+                cur->value.generator->desc,
+                cur->value.generator->generate,
+                cur->value.generator->arg);
             break;
         case NM_CONFIG_TYPE_EXPERIMENTAL:
-            NM_LOG("cfg(NM_CONFIG_TYPE_EXPERIMENTAL) : %s:%s", cur->value.experimental->key, cur->value.experimental->val);
+            NM_LOG("cfg(NM_CONFIG_TYPE_EXPERIMENTAL) : %s:%s",
+                cur->value.experimental->key,
+                cur->value.experimental->val);
             break;
         }
     }
@@ -711,15 +757,28 @@ bool nm_config_generate(nm_config_t *cfg, bool force_update) {
         if (cur->generated) {
             switch (cur->type) {
             case NM_CONFIG_TYPE_MENU_ITEM:
-                NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s", cur->value.menu_item->loc, cur->value.menu_item->lbl);
+                NM_LOG("cfg(NM_CONFIG_TYPE_MENU_ITEM) : %d:%s",
+                    cur->value.menu_item->loc,
+                    cur->value.menu_item->lbl);
                 for (nm_menu_action_t *cur_act = cur->value.menu_item->action; cur_act; cur_act = cur_act->next)
-                    NM_LOG("...cfg(NM_CONFIG_TYPE_MENU_ITEM) (%s%s%s) : %p:%s", cur_act->on_success ? "on_success" : "", (cur_act->on_success && cur_act->on_failure) ? ", " : "", cur_act->on_failure ? "on_failure" : "", cur_act->act, cur_act->arg);
+                    NM_LOG("...cfg(NM_CONFIG_TYPE_MENU_ITEM) (%s%s%s) : %p:%s",
+                        cur_act->on_success ? "on_success" : "",
+                        (cur_act->on_success && cur_act->on_failure) ? ", " : "",
+                        cur_act->on_failure ? "on_failure" : "",
+                        cur_act->act,
+                        cur_act->arg);
                 break;
             case NM_CONFIG_TYPE_GENERATOR:
-                NM_LOG("cfg(NM_CONFIG_TYPE_GENERATOR) : %d:%s(%p):%s", cur->value.generator->loc, cur->value.generator->desc, cur->value.generator->generate, cur->value.generator->arg);
+                NM_LOG("cfg(NM_CONFIG_TYPE_GENERATOR) : %d:%s(%p):%s",
+                    cur->value.generator->loc,
+                    cur->value.generator->desc,
+                    cur->value.generator->generate,
+                    cur->value.generator->arg);
                 break;
             case NM_CONFIG_TYPE_EXPERIMENTAL:
-                NM_LOG("cfg(NM_CONFIG_TYPE_EXPERIMENTAL) : %s:%s", cur->value.experimental->key, cur->value.experimental->val);
+                NM_LOG("cfg(NM_CONFIG_TYPE_EXPERIMENTAL) : %s:%s",
+                    cur->value.experimental->key,
+                    cur->value.experimental->val);
                 break;
             }
         }
