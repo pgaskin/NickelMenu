@@ -13,7 +13,7 @@ extern "C" {
 
 // strtrim trims ASCII whitespace in-place (i.e. don't give it a string literal)
 // from the left/right of the string.
-inline char *strtrim(char *s) {
+__attribute__((unused)) static inline char *strtrim(char *s) {
     if (!s) return NULL;
     char *a = s, *b = s + strlen(s);
     for (; a < b && isspace((unsigned char)(*a)); a++);
