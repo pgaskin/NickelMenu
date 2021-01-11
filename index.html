@@ -318,6 +318,84 @@
             padding: 0 .5em;
             background: rgba(0, 0, 0, 0.1);
         }
+
+        @media screen and (prefers-color-scheme: dark) {
+            html, body {
+                background: rgb(28, 23, 16);
+                color: #e1d4ca;
+            }
+            a:link,
+            a:visited {
+                color: rgb(96, 156, 247);
+            }
+            .content {
+                background: rgba(255, 255, 255, 0.05);
+                border-color: rgba(117, 117, 117, 0.4);
+            }
+            .content > aside {
+                border-color: rgba(128, 128, 128, 0.4) !important;
+            }
+            .content > aside > nav {
+                border-top-color: rgba(128, 128, 128, 0.4);
+            }
+            .content > aside > a.download,
+            .content > aside > a.download:link,
+            .content > aside > a.download:visited {
+                background: rgba(255, 255, 255, 0.05);
+                border-color: #3c3c3c;
+                color: #eee;
+            }
+            .content > aside > a.download:hover {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: #4d4d4d;
+            }
+            .content > aside > a.download:focus,
+            .content > aside > a.download:active {
+                border-color: #666;
+            }
+            .content > aside > a.download:active {
+                background: rgba(255, 255, 255, 0.15);
+            }
+            .screenshots > a {
+                border-color: #424242;
+            }
+            .screenshots > a > img {
+                filter: invert(1) brightness(0.8);
+            }
+            .screenshots > a.full {
+                background: rgba(0, 0, 0, 0.7);
+            }
+            .screenshots > a.full > img {
+                border-color: #636363;
+            }
+            .screenshots > a.full[data-alt]:after {
+                background: rgba(0, 0, 0, 1);
+            }
+            aside.modal {
+                background: rgba(0, 0, 0, 0.4);
+            }
+            aside.modal > div {
+                border-color: #717171;
+                background: rgb(55, 55, 55);
+                color: #f2f2f2;
+            }
+            aside.modal > div > header {
+                background: rgba(255, 255, 255, 0.1);
+                border-bottom-color: #717171;
+            }
+            aside.modal > div > header > button.modal__close {
+                border-color: #717171;
+            }
+            aside.modal > div > header > button.modal__close:hover {
+                background: rgba(255, 255, 255, 0.05);
+            }
+            aside.modal > div > header > button.modal__close:active {
+                background: rgba(255, 255, 255, 0.1);
+            }
+            pre.code > div:before {
+                background: rgba(0, 0, 0, 0.1);
+            }
+        }
     </style>
 </head>
 <body>
