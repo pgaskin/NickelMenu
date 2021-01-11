@@ -17,7 +17,8 @@ ___
 [B]Features:[/B][LIST]
 [*] A built-in failsafe will automatically remove NickelMenu if any fatal error occurs, and will never result in an unbootable Kobo. Non-fatal errors will appear as a menu item with more details.
 [*] Multi-version compatibility (even for future versions).
-[*] Can add items to the main menu, reader menu, browser menu, and the library menu.
+[*] Can add items to the main, reader, browser, library, and selection menus.
+[*] Can use the currently selected text in selection menu actions, with optional transformations and escaping.
 [*] Many built-in actions: [LIST]
 [*]   Debug messages (dbg_syslog, dbg_error, dbg_msg, dbg_toast).
 [*]   Nickel settings (nickel_setting:{toggle,enable,disable}:{invert,lockscreen,screenshots,force_wifi,auto_usb_gadget}).

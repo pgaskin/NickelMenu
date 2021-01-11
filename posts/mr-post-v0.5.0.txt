@@ -1,0 +1,8 @@
+[B][SIZE=5]NickelMenu v0.5.0[/SIZE][/B]
+
+This release adds support for adding items to the selection menu. There is also an [I]experimental[/I] configuration option to change the main menu icon.
+[LIST]
+[*] Menu items can now be added to the selection menu. The current selection can be used in the action arguments along with optional transformations. See the documentation for more information and examples.
+[*] There is now support for an experimental `experimental:menu_main_15505_icon` and `experimental:menu_main_15505_icon_active` configuration option to set the main menu label on the new 4.23.15505+ bottom nav. The image should be the same size as the existing icons to avoid blurriness from resizing. SVG images are not currently supported. This option is experimental and may be removed or changed at any time.
+[/LIST]
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.5.0"]release[/URL] on GitHub for more details.
