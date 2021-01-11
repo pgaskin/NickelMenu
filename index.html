@@ -387,7 +387,7 @@
                     <a href="screenshots/v0.3.2/fw15505/screen_003.png"><img src="screenshots/v0.3.2/fw15505/screen_003.png" alt="The main menu on a different view on firmware 4.23.15505+."/></a>
                 </div>
             </section>
-            <!-- START CONTENT SHARED WITH MOBILEREAD POST -->
+            <!-- START CONTENT SHARED WITH MOBILEREAD POST (with "thread" replaced with links) -->
             <section id="install">
                 <h2>Installation</h2>
                 <ol>
@@ -403,7 +403,8 @@
                 <ul>
                     <li>A built-in failsafe will automatically remove NickelMenu if any fatal error occurs, and will never result in an unbootable Kobo. Non-fatal errors will appear as a menu item with more details.</li>
                     <li>Multi-version compatibility (even for future versions).</li>
-                    <li>Can add items to the main menu, reader menu, browser menu, and the library menu.</li>
+                    <li>Can add items to the main, reader, browser, library, and selection menus.</li>
+                    <li>Can use the currently selected text in selection menu actions, with optional transformations and escaping.</li>
                     <li>Many built-in actions:<ul>
                         <li>Debug messages (dbg_syslog, dbg_error, dbg_msg, dbg_toast).</li>
                         <li>Nickel settings (nickel_setting:{toggle,enable,disable}:{invert,lockscreen,screenshots,force_wifi,auto_usb_gadget}).</li>
@@ -474,13 +475,13 @@
                         There is an example configuration file in the
                         <a href="https://github.com/pgaskin/NickelMenu/blob/master/res/doc">documentation</a>.
                         If you still need help, feel free to post in this
-                        thread.
+                        <a href="https://www.mobileread.com/forums/showthread.php?t=329525">thread</a>.
                     </dd>
                     <dt>I found a bug in NickelMenu</dt>
                     <dd>
                         Try re-installing NickelMenu. If that still doesn't
                         work, please post your syslog, your configuration file,
-                        and a description of the issue in this thread or on
+                        and a description of the issue in this <a href="https://www.mobileread.com/forums/showthread.php?t=329525">thread</a> or on
                         <a href="https://github.com/pgaskin/NickelMenu/issues/new">GitHub</a>.
                     </dd>
                     <dt>I found a bug in Nickel (i.e. Kobo's reader itself)</dt>
@@ -490,7 +491,7 @@
                     </dd>
                     <dt>I would like to request a new feature</dt>
                     <dd>
-                        Please post it in this thread or open an
+                        Please post it in this <a href="https://www.mobileread.com/forums/showthread.php?t=329525">thread</a> or open an
                         <a href="https://github.com/pgaskin/NickelMenu/issues/new">issue
                         on GitHub</a>.
                     </dd>
@@ -515,7 +516,7 @@
                     If you still have a question or have found a bug in
                     NickelMenu, you can <a href="https://github.com/pgaskin/NickelMenu/issues/new">open an issue</a>
                     on GitHub or <a href="https://www.mobileread.com/forums/showthread.php?t=329525">post it</a>
-                    to the thread on MobileRead. Please try upgrading to the
+                    to the <a href="https://www.mobileread.com/forums/showthread.php?t=329525">thread</a> on MobileRead. Please try upgrading to the
                     latest version first. If you aren't sure whether you are on
                     the latest version, re-install NickelMenu (your
                     configuration files will be preserved).
@@ -551,7 +552,7 @@
         </main>
     </div>
     <footer>
-        Copyright 2020 <a href="https://pgaskin.net">Patrick Gaskin</a>.
+        Copyright 2021 <a href="https://pgaskin.net">Patrick Gaskin</a>.
     </footer>
     <aside class="modal" id="docs">
         <div>
@@ -636,7 +637,7 @@
         }
 
         console.log("using fixed version info")
-        update("v0.4.1", "2020-11-17")
+        update("v0.5.0", "2021-01-01")
 
         /*
         console.log("getting version info")
