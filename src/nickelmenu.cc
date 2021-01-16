@@ -571,7 +571,7 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook4(WebSearchM
     nm_menu_item_t *it = _nm_menu_hook4_item(NULL);
     if (!it) {
         NM_LOG("No current menu item, continuing with default wikipedia search.");
-        WebSearchMixinBase_doWikipediaSearch(_this, locale, selection);
+        WebSearchMixinBase_doWikipediaSearch(_this, selection, locale);
         return;
     }
 
