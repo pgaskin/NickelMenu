@@ -25,6 +25,10 @@
 #                                      all arguments will support substitutions in the form {A|B|C} as follows (see the end of this file for examples):
 #                                          A is the string to substitute
 #                                              1 - current selection
+#                                              2 - chapter title
+#                                              3 - book title
+#                                              4 - book author
+#                                              5 - book id
 #                                          B is zero or more transformations applied from left to right:
 #                                              a - all to lowercase
 #                                              A - all to uppercase

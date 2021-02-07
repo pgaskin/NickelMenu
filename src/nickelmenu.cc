@@ -91,6 +91,17 @@ void (*SelectionMenuController_addMenuItem)(SelectionMenuController*, SelectionM
 void (*SelectionMenuView_addMenuItem)(SelectionMenuView*, MenuTextItem *mti); // note: this adds the separator and the item (it doesn't connect signals or things like that)
 void (*WebSearchMixinBase_doWikipediaSearch)(WebSearchMixinBase *, QString const& selection, QString const& locale);
 
+// Extra selection menu arguments (14622+)
+typedef QWidget ReadingView;
+typedef void Content;
+typedef Content Volume;
+QWidget *(*MainWindowController_viewWithObjectName)(MainWindowController*, QString const& name);
+Volume *(*ReadingView_getVolume)(ReadingView*);
+QString (*Content_getTitle)(Content*);
+QString (*Content_getAttribution)(Content*);
+QString (*Content_getId)(Content*);
+QString (*ReadingView_getChapterTitle)(ReadingView*);
+
 static struct nh_info NickelMenu = (struct nh_info){
     .name            = "NickelMenu",
     .desc            = "Integrated launcher for Nickel.",
@@ -143,6 +154,14 @@ static struct nh_dlsym NickelMenuDlsym[] = {
     {.name = "_ZN17SelectionMenuView11addMenuItemEP12MenuTextItem", .out = nh_symoutptr(SelectionMenuView_addMenuItem),           .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN17SelectionMenuView11addMenuItemEP12MenuTextItem
     {.name = "_ZN23SelectionMenuController15lookupWikipediaEv",     .out = nh_symoutptr(SelectionMenuController_lookupWikipedia), .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN23SelectionMenuController15lookupWikipediaEv
     {.name = "_ZN23SelectionMenuController9lookupWebEv",            .out = nh_symoutptr(SelectionMenuController_lookupWeb),       .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN23SelectionMenuController9lookupWebEv
+
+    // extra selection menu arguments (14622+)
+    {.name = "_ZNK20MainWindowController18viewWithObjectNameERK7QString", .out = nh_symoutptr(MainWindowController_viewWithObjectName), .desc = "selection menu - extra arguments (14622+)",                  .optional = true}, //libnickel 4.20.14622 * _ZNK20MainWindowController18viewWithObjectNameERK7QString
+    {.name = "_ZNK11ReadingView9getVolumeEv",                             .out = nh_symoutptr(ReadingView_getVolume),                   .desc = "selection menu - extra arguments - book (14622+)",           .optional = true}, //libnickel 4.20.14622 * _ZNK11ReadingView9getVolumeEv
+    {.name = "_ZNK7Content8getTitleEv",                                   .out = nh_symoutptr(Content_getTitle),                        .desc = "selection menu - extra arguments - book - title (14622+)",   .optional = true}, //libnickel 4.20.14622 * _ZNK7Content8getTitleEv
+    {.name = "_ZNK7Content14getAttributionEv",                            .out = nh_symoutptr(Content_getAttribution),                  .desc = "selection menu - extra arguments - book - author (14622+)",  .optional = true}, //libnickel 4.20.14622 * _ZNK7Content14getAttributionEv
+    {.name = "_ZNK7Content5getIdEv",                                      .out = nh_symoutptr(Content_getId),                           .desc = "selection menu - extra arguments - book - id (14622+)",      .optional = true}, //libnickel 4.20.14622 * _ZNK7Content5getIdEv
+    {.name = "_ZN11ReadingView15getChapterTitleEv",                       .out = nh_symoutptr(ReadingView_getChapterTitle),             .desc = "selection menu - extra arguments - chapter title (14622+)",  .optional = true}, //libnickel 4.20.14622 * _ZN11ReadingView15getChapterTitleEv
 
     // null
     {0},
@@ -493,14 +512,96 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
 }
 
 typedef struct {
-    QString const& selection;
+    QString err;
+    QString selection;
+    QString chapter_title;
+    QString book_title;
+    QString book_author;
+    QString book_id;
 } nm_selmenu_argtransform_data_t;
 
-char *_nm_selmenu_argtransform(void *data, const char *arg) {
+static nm_selmenu_argtransform_data_t _nm_selmenu_argtransform_data_extract(QString const& selection, nm_menu_action_t *act) {
+    nm_selmenu_argtransform_data_t d = {0};
+    ReadingView *rv = nullptr;
+    Volume *v = nullptr;
+    QRegularExpression re = QRegularExpression("\\{(.)\\|[^|]*\\|[^|]*\\}");
+    for (nm_menu_action_t *a = act; a; a = a->next) {
+        QRegularExpressionMatchIterator m = re.globalMatch(QString::fromUtf8(a->arg));
+        while (m.hasNext()) {
+            char c = m.next().capturedRef(1).at(0).toLatin1();
+            if (c == '1') {
+                d.selection = selection;
+            } else if (c == '2' || c == '3' || c == '4' || c == '5') {
+                if (!rv) {
+                    NM_LOG("getting the current ReadingView for argument for argtransform data");
+                    if (!MainWindowController_viewWithObjectName) {
+                        d.err = "failed to get the current ReadingView: symbol not found";
+                        return d;
+                    }
+                    MainWindowController *mwc = MainWindowController_sharedInstance();
+                    if (!mwc) {
+                        d.err = "failed to get shared main window controller pointer";
+                        return d;
+                    }
+                    if (!(rv = MainWindowController_viewWithObjectName(mwc, "ReadingView"))) {
+                        d.err = "failed to get the current ReadingView";
+                        return d;
+                    }
+                }
+                if (c == '2') {
+                    if (!ReadingView_getChapterTitle) {
+                        d.err = "failed to get the current chapter title: symbol not found";
+                        return d;
+                    }
+                    d.chapter_title = ReadingView_getChapterTitle(rv);
+                } else {
+                    if (!v) {
+                        NM_LOG("getting the current Volume for argument for argtransform data");
+                        if (!ReadingView_getVolume) {
+                            d.err = "failed to get the current Volume: symbol not found";
+                            return d;
+                        }
+                        if (!(v = ReadingView_getVolume(rv))) {
+                            d.err = "failed to get a Volume from the current ReadingView";
+                            return d;
+                        }
+                    }
+                    if (c == '3') {
+                        if (!Content_getTitle) {
+                            d.err = "failed to get the current book title: symbol not found";
+                            return d;
+                        }
+                        d.book_title = Content_getTitle(v);
+                    } else if (c == '4') {
+                        if (!Content_getAttribution) {
+                            d.err = "failed to get the current book author: symbol not found";
+                            return d;
+                        }
+                        d.book_author = Content_getAttribution(v);
+                    } else if (c == '5') {
+                        if (!Content_getId) {
+                            d.err = "failed to get the current book id: symbol not found";
+                            return d;
+                        }
+                        d.book_id = Content_getId(v);
+                    }
+                }
+            }
+        }
+    }
+    return d;
+}
+
+static char *_nm_selmenu_argtransform(void *data, const char *arg) {
     nm_selmenu_argtransform_data_t *d = (nm_selmenu_argtransform_data_t*)(data);
 
+    if (!d->err.isEmpty()) {
+        nm_err_set("argtransform: %s", qPrintable(d->err));
+        return NULL;
+    }
+
     QString src = QString::fromUtf8(arg), res;
-    QRegularExpression re = QRegularExpression("\\{([1])\\|([aAfnsSuwx]*)\\|([\"$%]*)\\}");
+    QRegularExpression re = QRegularExpression("\\{([12345])\\|([aAfnsSuwx]*)\\|([\"$%]*)\\}");
 
     for (QStringRef x = src.midRef(0); x.length() > 0;) {
         QRegularExpressionMatch m = re.match(x.toString());
@@ -516,6 +617,10 @@ char *_nm_selmenu_argtransform(void *data, const char *arg) {
         for (int k = 0; k < m.capturedLength(1); k++) {
             switch (m.capturedRef(1).at(k).toLatin1()) {
             case '1': tmp = d->selection; break;
+            case '2': tmp = d->chapter_title; break;
+            case '3': tmp = d->book_title; break;
+            case '4': tmp = d->book_author; break;
+            case '5': tmp = d->book_id; break;
             }
         }
 
@@ -575,10 +680,10 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook4(WebSearchM
         return;
     }
 
+    NM_LOG("extracting necessary argtransform data for item %p (%s)", it, it->lbl);
+    nm_selmenu_argtransform_data_t data = _nm_selmenu_argtransform_data_extract(selection, it->action);
+
     NM_LOG("continuing execution of item %p (%s)", it, it->lbl);
-    nm_selmenu_argtransform_data_t data = (nm_selmenu_argtransform_data_t){
-        .selection = selection,
-    };
     nm_menu_item_do(it, _nm_selmenu_argtransform, (void*)(&data)); // this is safe since data will not be used after this returns
     NM_LOG("done");
 }
