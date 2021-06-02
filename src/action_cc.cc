@@ -76,17 +76,26 @@ NM_ACTION_(nickel_open) {
             //libnickel 4.23.15505 * _ZN14MoreControllerC1Ev
             MoreController *(*MoreController__MoreController)(MoreController* _this);
             NM_ACT_XSYM(MoreController__MoreController, "_ZN14MoreControllerC1Ev", "could not dlsym MoreController::MoreController");
+
             //libnickel 4.23.15505 * _ZN14MoreController7dropboxEv
             void (*MoreController_dropbox)(MoreController* _this);
             NM_ACT_XSYM(MoreController_dropbox, "_ZN14MoreController7dropboxEv", "could not dlsym MoreController::dropbox");
 
+            //libnickel 4.23.15505 * _ZN14MoreControllerD0Ev
+            MoreController *(*MoreController__deMoreController)(MoreController* _this);
+            NM_ACT_XSYM(MoreController__deMoreController, "_ZN14MoreControllerD0Ev", "could not dlsym MoreController::~MoreController");
+
             // As of at least 16704, maybe earlier, a MoreController is required.
-            MoreController *mc = calloc(1, 128); // It seems 44 bytes is required, over allocate to be on the safe side
+            // It seems 44 bytes is required, over allocate to be on the safe side
+            MoreController *mc = reinterpret_cast<MoreController*>(::operator new(128)); 
             NM_CHECK(nullptr, mc, "could not allocate memory for MoreController");
             mc = MoreController__MoreController(mc);
             NM_CHECK(nullptr, mc, "MoreController::MoreController returned null pointer");
 
             MoreController_dropbox(mc);
+
+            // Clean up after ourselves
+            MoreController__deMoreController(mc);
 
             return nm_action_result_silent();
         }
