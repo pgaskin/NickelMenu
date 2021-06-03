@@ -54,6 +54,7 @@ typedef void N3SettingsExtrasController;
 typedef void N3PowerWorkflowManager;
 typedef void WirelessWorkflowManager;
 typedef void StatusBarView;
+typedef void MoreController;
 
 #define NM_ACT_SYM(var, sym) reinterpret_cast<void*&>(var) = dlsym(RTLD_DEFAULT, sym)
 #define NM_ACT_XSYM(var, symb, err) do { \
@@ -72,12 +73,29 @@ NM_ACTION_(nickel_open) {
         NM_LOG("nickel_open: detected firmware >15505 (new nav tab bar), checking special cases");
 
         if (!strcmp(arg1, "library") && !strcmp(arg2, "dropbox")) {
+            //libnickel 4.23.15505 * _ZN14MoreControllerC1Ev
+            MoreController *(*MoreController__MoreController)(MoreController* _this);
+            NM_ACT_XSYM(MoreController__MoreController, "_ZN14MoreControllerC1Ev", "could not dlsym MoreController::MoreController");
+
             //libnickel 4.23.15505 * _ZN14MoreController7dropboxEv
-            void (*MoreController_dropbox)(void*);
+            void (*MoreController_dropbox)(MoreController* _this);
             NM_ACT_XSYM(MoreController_dropbox, "_ZN14MoreController7dropboxEv", "could not dlsym MoreController::dropbox");
 
-            // technically, we need a MoreController, but it isn't used as of 15505, so it doesn't matter (and if it ever does, it's not going to crash in a critical place)
-            MoreController_dropbox(nullptr);
+            //libnickel 4.23.15505 * _ZN14MoreControllerD0Ev
+            MoreController *(*MoreController__deMoreController)(MoreController* _this);
+            NM_ACT_XSYM(MoreController__deMoreController, "_ZN14MoreControllerD0Ev", "could not dlsym MoreController::~MoreController");
+
+            // As of at least 16704, maybe earlier, a MoreController is required.
+            // It seems 44 bytes is required, over allocate to be on the safe side
+            MoreController *mc = reinterpret_cast<MoreController*>(::operator new(128)); 
+            NM_CHECK(nullptr, mc, "could not allocate memory for MoreController");
+            mc = MoreController__MoreController(mc);
+            NM_CHECK(nullptr, mc, "MoreController::MoreController returned null pointer");
+
+            MoreController_dropbox(mc);
+
+            // Clean up after ourselves
+            MoreController__deMoreController(mc);
 
             return nm_action_result_silent();
         }
