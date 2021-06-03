@@ -1,0 +1,5 @@
+[B][SIZE=5]NickelMenu v0.5.2[/SIZE][/B]
+
+This release fixes the nickel_open:library:dropbox action on 4.26.16704+.
+
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.5.2"]release[/URL] on GitHub for more details.
