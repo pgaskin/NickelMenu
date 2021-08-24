@@ -87,7 +87,7 @@ NM_ACTION_(nickel_open) {
 
             // As of at least 16704, maybe earlier, a MoreController is required.
             // It seems 44 bytes is required, over allocate to be on the safe side
-            MoreController *mc = reinterpret_cast<MoreController*>(::operator new(128)); 
+            MoreController *mc = reinterpret_cast<MoreController*>(::operator new(128));
             NM_CHECK(nullptr, mc, "could not allocate memory for MoreController");
             mc = MoreController__MoreController(mc);
             NM_CHECK(nullptr, mc, "MoreController::MoreController returned null pointer");
@@ -353,7 +353,7 @@ NM_ACTION_(nickel_setting) {
     } else {
         // TODO: more settings?
         Settings_SettingsD(settings);
-        NM_ERR_RET(nullptr, "unknown setting name '%s' (arg: '%s')", arg1, arg);
+        NM_ERR_RET(nullptr, "unknown setting name '%s' (arg: '%s')", arg2, arg);
     }
 
     #undef vtable_ptr
