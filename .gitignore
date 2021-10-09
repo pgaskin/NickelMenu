@@ -18,3 +18,8 @@ compile_commands.json
 /src/util.o
 /src/action_cc.o
 /src/nickelmenu.o
+/src/plugins/NMDialog.o
+/src/plugins/NMDialog.moc
+/src/plugins/MNGuiInterface.moc
+/src/plugins/NMDialog.moc.o
+/src/plugins/MNGuiInterface.moc.o
