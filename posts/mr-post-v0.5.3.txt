@@ -1,0 +1,5 @@
+[B][SIZE=5]NickelMenu v0.5.3[/SIZE][/B]
+
+This release fixes the selection_search location on 4.31.19086+.
+
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.5.3"]release[/URL] on GitHub for more details.
