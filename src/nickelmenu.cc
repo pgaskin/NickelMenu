@@ -86,7 +86,9 @@ typedef void SelectionMenuController; // note: items are re-initialized every ti
 typedef QWidget SelectionMenuView;
 typedef void WebSearchMixinBase;
 void (*SelectionMenuController_lookupWikipedia)(SelectionMenuController*);
-void (*SelectionMenuController_lookupWeb)(SelectionMenuController*);
+void (*SelectionMenuController_lookupWeb)(SelectionMenuController*); // 14622-18838
+void (*SelectionMenuController_lookupGoogle)(SelectionMenuController*); // 19086+ (replaces lookupWeb, alternative 1)
+void (*SelectionMenuController_lookupBaidu)(SelectionMenuController*); // 19086+ (replaces lookupWeb, alternative 2)
 void (*SelectionMenuController_addMenuItem)(SelectionMenuController*, SelectionMenuView* smv, MenuTextItem* mti, const char *slot); // note: the MenuTextItem is created by SelectionMenuController_createMenuTextItem, with smv as the parent (the first QWidget* argument)
 void (*SelectionMenuView_addMenuItem)(SelectionMenuView*, MenuTextItem *mti); // note: this adds the separator and the item (it doesn't connect signals or things like that)
 void (*WebSearchMixinBase_doWikipediaSearch)(WebSearchMixinBase *, QString const& selection, QString const& locale);
@@ -140,9 +142,11 @@ static struct nh_dlsym NickelMenuDlsym[] = {
     {.name = "_ZN12MenuTextItem22registerForTapGesturesEv",          .out = nh_symoutptr(MenuTextItem_registerForTapGestures), .desc = "bottom nav main menu button injection (15505+)", .optional = true}, //libnickel 4.23.15505 * _ZN12MenuTextItem22registerForTapGesturesEv
 
     // selection menu injection (14622+)
-    {.name = "_ZN17SelectionMenuView11addMenuItemEP12MenuTextItem", .out = nh_symoutptr(SelectionMenuView_addMenuItem),           .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN17SelectionMenuView11addMenuItemEP12MenuTextItem
-    {.name = "_ZN23SelectionMenuController15lookupWikipediaEv",     .out = nh_symoutptr(SelectionMenuController_lookupWikipedia), .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN23SelectionMenuController15lookupWikipediaEv
-    {.name = "_ZN23SelectionMenuController9lookupWebEv",            .out = nh_symoutptr(SelectionMenuController_lookupWeb),       .desc = "selection menu injection (14622+)", .optional = true}, //libnickel 4.20.14622 * _ZN23SelectionMenuController9lookupWebEv
+    {.name = "_ZN17SelectionMenuView11addMenuItemEP12MenuTextItem", .out = nh_symoutptr(SelectionMenuView_addMenuItem),           .desc = "selection menu injection (14622+)",        .optional = true}, //libnickel 4.20.14622 * _ZN17SelectionMenuView11addMenuItemEP12MenuTextItem
+    {.name = "_ZN23SelectionMenuController15lookupWikipediaEv",     .out = nh_symoutptr(SelectionMenuController_lookupWikipedia), .desc = "selection menu injection (14622+)",        .optional = true}, //libnickel 4.20.14622 * _ZN23SelectionMenuController15lookupWikipediaEv
+    {.name = "_ZN23SelectionMenuController9lookupWebEv",            .out = nh_symoutptr(SelectionMenuController_lookupWeb),       .desc = "selection menu injection (14622-18838)",   .optional = true}, //libnickel 4.20.14622 4.30.18838 _ZN23SelectionMenuController9lookupWebEv
+    {.name = "_ZN23SelectionMenuController12lookupGoogleEv",        .out = nh_symoutptr(SelectionMenuController_lookupGoogle),    .desc = "selection menu injection (19086+, alt 1)", .optional = true}, //libnickel 4.31.19086 * _ZN23SelectionMenuController12lookupGoogleEv
+    {.name = "_ZN23SelectionMenuController11lookupBaiduEv",         .out = nh_symoutptr(SelectionMenuController_lookupBaidu),     .desc = "selection menu injection (19086+, alt 2)", .optional = true}, //libnickel 4.31.19086 * _ZN23SelectionMenuController11lookupBaiduEv
 
     // null
     {0},
@@ -421,7 +425,7 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
     NM_LOG("hook3: %p %p %p %s", _this, smv, mti, slot);
     SelectionMenuController_addMenuItem(_this, smv, mti, slot);
 
-    if (!SelectionMenuView_addMenuItem || !SelectionMenuController_lookupWikipedia || !SelectionMenuController_lookupWeb) {
+    if (!SelectionMenuView_addMenuItem || !SelectionMenuController_lookupWikipedia || !(SelectionMenuController_lookupWeb || (SelectionMenuController_lookupGoogle && SelectionMenuController_lookupBaidu))) {
         NM_LOG("could not find required SelectionMenuView and SelectionMenuController symbols for adding selection menu items");
         ConfirmationDialogFactory_showOKDialog(QLatin1String("NickelMenu"), QLatin1String("Could not find required SelectionMenuView and SelectionMenuController symbols for adding selection menu items (this is a bug)."));
         return;
@@ -431,7 +435,11 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
     nm_menu_location_t loc;
     if (!strcmp(slot, "1showSearchOptions()")) //libnickel 4.20.14622 * _ZN23SelectionMenuController17showSearchOptionsEv
         loc = NM_MENU_LOCATION(selection);
-    else if (!strcmp(slot, "2lookupWeb()")) //libnickel 4.20.14622 * _ZN23SelectionMenuController9lookupWebEv
+    else if (!strcmp(slot, "2lookupWeb()")) //libnickel 4.20.14622 4.30.18838 _ZN23SelectionMenuController9lookupWebEv
+        loc = NM_MENU_LOCATION(selection_search);
+    else if (!strcmp(slot, "2lookupGoogle()")) //libnickel 4.31.19086 * _ZN23SelectionMenuController12lookupGoogleEv
+        loc = NM_MENU_LOCATION(selection_search);
+    else if (!strcmp(slot, "2lookupBaidu()")) //libnickel 4.31.19086 * _ZN23SelectionMenuController11lookupBaiduEv
         loc = NM_MENU_LOCATION(selection_search);
     else
         return;
