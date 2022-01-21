@@ -4,7 +4,7 @@
 # This tool injects menu items into Nickel.
 #
 # It should work on firmware 4.6+, but it has only been tested on 4.20.14622 -
-# 4.26.16704. It is perfectly safe to try out on any newer firmware version, as
+# 4.31.19086. It is perfectly safe to try out on any newer firmware version, as
 # it has a lot of error checking, and a failsafe mechanism which automatically
 # uninstalls it as a last resort.
 #
@@ -89,7 +89,7 @@
 #                                          enable  - sets to true
 #                                          disable - sets to false
 #                                        setting is one of:
-#                                          invert          - FeatureSettings.InvertScreen
+#                                          invert          - FeatureSettings.InvertScreen (this requires a reboot to apply on 4.28.18220+, and may not work on newer devices)
 #                                          lockscreen      - PowerSettings.UnlockEnabled (4.12.12111+)
 #                                          screenshots     - FeatureSettings.Screenshots
 #                                          force_wifi      - DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
