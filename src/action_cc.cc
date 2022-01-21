@@ -306,6 +306,29 @@ NM_ACTION_(nickel_setting) {
             QVariant v2 = Settings_getSetting(settings, QStringLiteral("Screenshots"), QVariant(false));
             vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
         }
+    } else if (!strcmp(arg2, "dark_mode")) {
+        void *ReadingSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV15ReadingSettings");
+        NM_CHECK(nullptr, ReadingSettings_vtable, "could not dlsym the vtable for ReadingSettings");
+        vtable_ptr(settings) = vtable_target(ReadingSettings_vtable);
+
+        //libnickel 4.28.17623 * _ZN15ReadingSettings11getDarkModeEv
+        bool (*ReadingSettings__getDarkMode)(Settings*);
+        NM_ACT_XSYM(ReadingSettings__getDarkMode, "_ZN15ReadingSettings11getDarkModeEv", "could not dlsym PowerSettings::getDarkMode");
+
+        //libnickel 4.28.17623 * _ZN15ReadingSettings11setDarkModeEb
+        bool (*ReadingSettings__setDarkMode)(Settings*, bool);
+        NM_ACT_XSYM(ReadingSettings__setDarkMode, "_ZN15ReadingSettings11setDarkModeEb", "could not dlsym ReadingSettings::setDarkMode");
+
+        if (mode == mode_toggle) {
+            v = ReadingSettings__getDarkMode(settings);
+            vtable_ptr(settings) = vtable_target(ReadingSettings_vtable);
+        }
+
+        ReadingSettings__setDarkMode(settings, !v);
+        vtable_ptr(settings) = vtable_target(ReadingSettings_vtable);
+
+        NM_CHECK(nullptr, ReadingSettings__getDarkMode(settings) == !v, "failed to set setting");
+        vtable_ptr(settings) = vtable_target(ReadingSettings_vtable);
     } else if (!strcmp(arg2, "lockscreen")) {
         void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV13PowerSettings");
         NM_CHECK(nullptr, PowerSettings_vtable, "could not dlsym the vtable for PowerSettings");

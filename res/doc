@@ -90,6 +90,7 @@
 #                                          disable - sets to false
 #                                        setting is one of:
 #                                          invert          - FeatureSettings.InvertScreen (this requires a reboot to apply on 4.28.18220+, and may not work on newer devices)
+#                                          dark_mode       - ReadingSettings.DarkMode
 #                                          lockscreen      - PowerSettings.UnlockEnabled (4.12.12111+)
 #                                          screenshots     - FeatureSettings.Screenshots
 #                                          force_wifi      - DeveloperSettings.ForceWifiOn (note: the setting doesn't apply until you toggle WiFi)
