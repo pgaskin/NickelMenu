@@ -21,7 +21,7 @@ ___
 [*] Can use the currently selected text in selection menu actions, with optional transformations and escaping.
 [*] Many built-in actions: [LIST]
 [*]   Debug messages (dbg_syslog, dbg_error, dbg_msg, dbg_toast).
-[*]   Nickel settings (nickel_setting:{toggle,enable,disable}:{invert,lockscreen,screenshots,force_wifi,auto_usb_gadget}).
+[*]   Nickel settings (nickel_setting:{toggle,enable,disable}:{invert,dark_mode,lockscreen,screenshots,force_wifi,auto_usb_gadget}).
 [*]   Nickel browser with support for showing as a pop-up (e.g. for a reference site while reading) and adding custom CSS (nickel_browser:{modal:,}<url>{ <css>,})
 [*]   Nickel extras (nickel_extras:{unblock_it,sketch_pad,solitaire,sudoku,word_scramble}).
 [*]   Nickel views (nickel_open:{discover:storefront,discover:wishlist,library:library,library:all,library:authors,library:series,library:shelves,library:pocket,library:dropbox,reading_life:reading_life,reading_life:stats,reading_life:awards,reading_life:words,store:overdrive,store:search}).

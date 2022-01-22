@@ -1,0 +1,5 @@
+[B][SIZE=5]NickelMenu v0.5.4[/SIZE][/B]
+
+This release adds support for changing the reader's dark mode on 4.28.17623+.
+
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.5.4"]release[/URL] on GitHub for more details.
