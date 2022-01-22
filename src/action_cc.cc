@@ -407,7 +407,7 @@ NM_ACTION_(nickel_setting) {
 
     Settings_SettingsD(settings);
 
-    return strcmp(arg2, "invert") // invert is obvious
+    return (strcmp(arg2, "invert") && strcmp(arg2, "dark_mode")) // invert and dark mode are obvious
         ? nm_action_result_toast("%s %s", v ? "disabled" : "enabled", arg2)
         : nm_action_result_silent();
 }
