@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QProcess>
 #include <QScreen>
+#include <QShowEvent>
 #include <QString>
 #include <QStringList>
 #include <QTextDocument>
@@ -55,6 +56,7 @@ typedef void N3PowerWorkflowManager;
 typedef void WirelessWorkflowManager;
 typedef void StatusBarView;
 typedef void MoreController;
+typedef void MainWindowController;
 
 #define NM_ACT_SYM(var, sym) reinterpret_cast<void*&>(var) = dlsym(RTLD_DEFAULT, sym)
 #define NM_ACT_XSYM(var, symb, err) do { \
@@ -329,6 +331,27 @@ NM_ACTION_(nickel_setting) {
 
         NM_CHECK(nullptr, ReadingSettings__getDarkMode(settings) == !v, "failed to set setting");
         vtable_ptr(settings) = vtable_target(ReadingSettings_vtable);
+
+        // if we're currently in the Reading view, we need to refresh the ReadingView
+
+        //libnickel 4.6 * _ZN20MainWindowController14sharedInstanceEv
+        MainWindowController *(*MainWindowController__sharedInstance)();
+        NM_ACT_XSYM(MainWindowController__sharedInstance, "_ZN20MainWindowController14sharedInstanceEv", "could not dlsym MainWindowController::sharedInstance");
+
+        //libnickel 4.21.15015 * _ZNK20MainWindowController11currentViewEv
+        QWidget *(*MainWindowController__currentView)(MainWindowController *_this);
+        NM_ACT_XSYM(MainWindowController__currentView, "_ZNK20MainWindowController11currentViewEv", "could not dlsym MainWindowController::currentView");
+
+        MainWindowController *mwc = MainWindowController__sharedInstance();
+        NM_CHECK(nullptr, mwc, "could not get MainWindowController shared instance");
+
+        QWidget *cv = MainWindowController__currentView(mwc);
+        NM_CHECK(nullptr, cv, "could not get current view from MainWindowController");
+
+        if (cv->objectName() == "ReadingView") {
+            QShowEvent ev;
+            QApplication::sendEvent(cv, &ev);
+        }
     } else if (!strcmp(arg2, "lockscreen")) {
         void *PowerSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV13PowerSettings");
         NM_CHECK(nullptr, PowerSettings_vtable, "could not dlsym the vtable for PowerSettings");
