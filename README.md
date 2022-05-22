@@ -2,7 +2,7 @@
 
 The easiest way to launch custom scripts, change hidden settings, and run actions on Kobo eReaders.
 
-See the [website](https://pgaskin.net/NickelMenu) and [thread on MobileRead](https://go.pgaskin.net/kobo/nm) for screenshots and more details.
+See the [website](https://pgaskin.net/NickelMenu) and [thread on MobileRead](https://mobileread.com/forums/showthread.php?t=329525) for screenshots and more details.
 
 ## Installation
 You can download pre-built packages of the latest stable release from the [releases](https://github.com/pgaskin/NickelMenu/releases) page, or you can find bleeding-edge builds of each commit from [here](https://github.com/pgaskin/NickelMenu/actions).
