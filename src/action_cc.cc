@@ -126,7 +126,11 @@ NM_ACTION_(nickel_open) {
         else if (!strcmp(arg2, "shelves"))  sym_f = "_ZN15LibraryNavMixin11showShelvesEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showShelvesEv
         else if (!strcmp(arg2, "pocket"))   sym_f = "_ZN15LibraryNavMixin17showPocketLibraryEv";       //libnickel 4.6 * _ZN15LibraryNavMixin17showPocketLibraryEv
         else if (!strcmp(arg2, "dropbox"))  sym_f = "_ZN15LibraryNavMixin11showDropboxEv";             //libnickel 4.18.13737 4.22.15268 _ZN15LibraryNavMixin11showDropboxEv
-        else if (!strcmp(arg2, "notebook"))  sym_f = "_ZN15LibraryNavMixin13showNotebooksE14MainNavSection"; //Not sure what minimum nickel version is
+        
+        else if (!strcmp(arg2, "notebooks")) sym_f = dlsym(RTLD_DEFAULT, "_ZN14MoreController9notebooksEv")
+            ? "_ZN14MoreController9notebooksEv"        //libnickel 4.32.19501 * _ZN14MoreController9notebooksEv
+            : "_ZN15LibraryNavMixin13showNotebooksEv"; //libnickel 4.28.17623 4.31.19086 _ZN15LibraryNavMixin13showNotebooksEv
+        
     } else if (!strcmp(arg1, "reading_life")) {
         sym_c = "_ZN19ReadingLifeNavMixinC1Ev"; //libnickel 4.6 * _ZN19ReadingLifeNavMixinC1Ev
         sym_d = "_ZN19ReadingLifeNavMixinD1Ev"; //libnickel 4.6 * _ZN19ReadingLifeNavMixinD1Ev
