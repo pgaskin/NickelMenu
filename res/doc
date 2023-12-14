@@ -149,9 +149,11 @@
 #                                          sleep    (4.13.12638+)
 #                   skip               - the number of actions to skip, or -1 to skip all remaining ones (i.e. end the chain)
 #                   nickel_bluetooth   - one of:
-#                                          enable
-#                                          disable
-#                                          toggle
+#                                          enable   (4.34.20097+)
+#                                          disable  (4.34.20097+)
+#                                          toggle   (4.34.20097+)
+#                                          check    (4.34.20097+)
+#                                          scan     (4.34.20097+)
 #
 #   chain_success:<action>:<arg>
 #   chain_failure:<action>:<arg>
