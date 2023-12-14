@@ -57,6 +57,7 @@ typedef void WirelessWorkflowManager;
 typedef void StatusBarView;
 typedef void MoreController;
 typedef void MainWindowController;
+typedef void BluetoothManager;
 
 #define NM_ACT_SYM(var, sym) reinterpret_cast<void*&>(var) = dlsym(RTLD_DEFAULT, sym)
 #define NM_ACT_XSYM(var, symb, err) do { \
@@ -895,4 +896,43 @@ NM_ACTION_(cmd_output) {
     return quiet
         ? nm_action_result_silent()
         : nm_action_result_msg("%s", qPrintable(Qt::convertFromPlainText(out, Qt::WhiteSpacePre)));
+}
+
+
+NM_ACTION_(nickel_bluetooth) {
+    bool enable=true, toggle=false;
+    if      (!strcmp(arg, "enable"))      enable = true;
+    else if (!strcmp(arg, "disable"))     enable = false;
+    else if (!strcmp(arg, "toggle"))      toggle = true;
+    else
+        NM_ERR_RET(nullptr, "unknown nickel_bluetooth action '%s'", arg);
+
+    //_ZN16BluetoothManager14sharedInstanceEv
+    BluetoothManager *(*BluetoothManager_sharedInstance)();
+    NM_ACT_XSYM(BluetoothManager_sharedInstance, "_ZN16BluetoothManager14sharedInstanceEv", "could not dlsym BluetoothManager::sharedInstance");
+
+
+    BluetoothManager *btm = BluetoothManager_sharedInstance();
+    NM_CHECK(nullptr, btm, "could not get shared bluetooth manager pointer");
+
+    if (toggle){
+        //_ZNK16BluetoothManager2upEv - returns 1 if bluetooth is turned on.
+        uint (*BluetoothManager_up)(BluetoothManager *);
+        NM_ACT_XSYM(BluetoothManager_up, "_ZNK16BluetoothManager2upEv", "could not dlsym BluetoothManager::up");
+
+        uint isUp = BluetoothManager_up(btm);
+        enable = isUp ? false : true;
+    }
+
+    if (enable){
+        void (*BluetoothManager_on)(BluetoothManager *);
+        NM_ACT_XSYM(BluetoothManager_on, "_ZN16BluetoothManager2onEv", "could not dlsym BluetoothManager::on");
+        BluetoothManager_on(btm);
+    }else{
+        void (*BluetoothManager_off)(BluetoothManager *);
+        NM_ACT_XSYM(BluetoothManager_off, "_ZN16BluetoothManager3offEv", "could not dlsym BluetoothManager::off");
+        BluetoothManager_off(btm);
+    }
+
+    return nm_action_result_toast("Bluetooth turned %s.", enable ? "on" : "off");
 }
