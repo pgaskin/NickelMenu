@@ -50,6 +50,7 @@ void nm_action_result_free(nm_action_result_t *res);
     X(nickel_misc)        \
     X(nickel_open)        \
     X(nickel_wifi)        \
+    X(nickel_bluetooth)   \
     X(nickel_orientation) \
     X(power)              \
     X(skip)
