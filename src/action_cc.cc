@@ -932,7 +932,7 @@ NM_ACTION_(nickel_bluetooth) {
     void (*BluetoothManager_scan)(BluetoothManager *);
     NM_ACT_XSYM(BluetoothManager_scan, "_ZN16BluetoothManager4scanEv", "could not dlsym BluetoothManager::BluetoothManager::scanEv");
 
-    //libnickel 4.34.20097 *_ZN16BluetoothManager8stopScanEv
+    //libnickel 4.34.20097 * _ZN16BluetoothManager8stopScanEv
     void (*BluetoothManager_stopScan)(BluetoothManager *);
     NM_ACT_XSYM(BluetoothManager_stopScan, "_ZN16BluetoothManager8stopScanEv", "could not dlsym BluetoothManager::stopScan");
 
