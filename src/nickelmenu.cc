@@ -86,6 +86,7 @@ typedef void SelectionMenuController; // note: items are re-initialized every ti
 typedef QWidget SelectionMenuView;
 typedef void WebSearchMixinBase;
 void (*SelectionMenuController_lookupWikipedia)(SelectionMenuController*);
+void (*SelectionMenuController_onSearchInBook) (SelectionMenuController*);
 void (*SelectionMenuController_lookupWeb)(SelectionMenuController*); // 14622-18838
 void (*SelectionMenuController_lookupGoogle)(SelectionMenuController*); // 19086+ (replaces lookupWeb, alternative 1)
 void (*SelectionMenuController_lookupBaidu)(SelectionMenuController*); // 19086+ (replaces lookupWeb, alternative 2)
@@ -147,6 +148,9 @@ static struct nh_dlsym NickelMenuDlsym[] = {
     {.name = "_ZN23SelectionMenuController9lookupWebEv",            .out = nh_symoutptr(SelectionMenuController_lookupWeb),       .desc = "selection menu injection (14622-18838)",   .optional = true}, //libnickel 4.20.14622 4.30.18838 _ZN23SelectionMenuController9lookupWebEv
     {.name = "_ZN23SelectionMenuController12lookupGoogleEv",        .out = nh_symoutptr(SelectionMenuController_lookupGoogle),    .desc = "selection menu injection (19086+, alt 1)", .optional = true}, //libnickel 4.31.19086 * _ZN23SelectionMenuController12lookupGoogleEv
     {.name = "_ZN23SelectionMenuController11lookupBaiduEv",         .out = nh_symoutptr(SelectionMenuController_lookupBaidu),     .desc = "selection menu injection (19086+, alt 2)", .optional = true}, //libnickel 4.31.19086 * _ZN23SelectionMenuController11lookupBaiduEv
+
+    // selection menu injection parental mode
+    {.name = "_ZN23SelectionMenuController14onSearchInBookEv",     .out = nh_symoutptr(SelectionMenuController_onSearchInBook), .desc = "selection menu injection parental mode", .optional = true}, //libnickel 4.20.14601 * _ZN23SelectionMenuController14onSearchInBookEv
 
     // null
     {0},
@@ -425,7 +429,7 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
     NM_LOG("hook3: %p %p %p %s", _this, smv, mti, slot);
     SelectionMenuController_addMenuItem(_this, smv, mti, slot);
 
-    if (!SelectionMenuView_addMenuItem || !SelectionMenuController_lookupWikipedia || !(SelectionMenuController_lookupWeb || (SelectionMenuController_lookupGoogle && SelectionMenuController_lookupBaidu))) {
+    if (!SelectionMenuView_addMenuItem || !SelectionMenuController_onSearchInBook || !SelectionMenuController_lookupWikipedia || !(SelectionMenuController_lookupWeb || (SelectionMenuController_lookupGoogle && SelectionMenuController_lookupBaidu))) {
         NM_LOG("could not find required SelectionMenuView and SelectionMenuController symbols for adding selection menu items");
         ConfirmationDialogFactory_showOKDialog(QLatin1String("NickelMenu"), QLatin1String("Could not find required SelectionMenuView and SelectionMenuController symbols for adding selection menu items (this is a bug)."));
         return;
@@ -434,6 +438,8 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook3(SelectionM
     // this is important for another reason other than positioning: it only displays if Volume::canSearch()
     nm_menu_location_t loc;
     if (!strcmp(slot, "1showSearchOptions()")) //libnickel 4.20.14622 * _ZN23SelectionMenuController17showSearchOptionsEv
+        loc = NM_MENU_LOCATION(selection);
+    else if (!strcmp(slot, "1onSearchInBook()")) //libnickel 4.20.14601 * _ZN23SelectionMenuController14onSearchInBookEv
         loc = NM_MENU_LOCATION(selection);
     else if (!strcmp(slot, "2lookupWeb()")) //libnickel 4.20.14622 4.30.18838 _ZN23SelectionMenuController9lookupWebEv
         loc = NM_MENU_LOCATION(selection_search);
