@@ -847,7 +847,7 @@ NM_ACTION_(cmd_output) {
     char *tmp1 = strtrim(strsep(&cmd, ":")), *tmp2;
     long timeout = strtol(tmp1, &tmp2, 10);
     cmd = strtrim(cmd);
-    NM_CHECK(nullptr, *tmp1 && !*tmp2 && timeout > 0 && timeout < 10000, "invalid timeout '%s'", tmp1);
+    NM_CHECK(nullptr, *tmp1 && !*tmp2 && timeout > 0 && timeout <= 60000, "invalid timeout '%s'", tmp1);
 
     // parse the quiet option and update cmd if it's specified
     char *tmp3 = strdup(cmd);
