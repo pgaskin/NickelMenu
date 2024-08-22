@@ -75,14 +75,20 @@ NM_ACTION_(nickel_open) {
     if (dlsym(RTLD_DEFAULT, "_ZN11MainNavViewC1EP7QWidget")) {
         NM_LOG("nickel_open: detected firmware >15505 (new nav tab bar), checking special cases");
 
-        if (!strcmp(arg1, "library") && !strcmp(arg2, "dropbox")) {
+        if (!strcmp(arg1, "library") && (!strcmp(arg2, "dropbox") || !strcmp(arg2, "gdrive"))) {
             //libnickel 4.23.15505 * _ZN14MoreControllerC1Ev
             MoreController *(*MoreController__MoreController)(MoreController* _this);
             NM_ACT_XSYM(MoreController__MoreController, "_ZN14MoreControllerC1Ev", "could not dlsym MoreController::MoreController");
 
-            //libnickel 4.23.15505 * _ZN14MoreController7dropboxEv
-            void (*MoreController_dropbox)(MoreController* _this);
-            NM_ACT_XSYM(MoreController_dropbox, "_ZN14MoreController7dropboxEv", "could not dlsym MoreController::dropbox");
+            void (*MoreController_cloud)(MoreController* _this);
+
+            if (!strcmp(arg2, "dropbox")) {
+                //libnickel 4.23.15505 * _ZN14MoreController7dropboxEv
+                NM_ACT_XSYM(MoreController_cloud, "_ZN14MoreController7dropboxEv", "could not dlsym MoreController::dropbox");
+            } else {
+                //libnickel 4.36.21095 * _ZN14MoreController11googleDriveEv
+                NM_ACT_XSYM(MoreController_cloud, "_ZN14MoreController11googleDriveEv", "could not dlsym MoreController::gdrive");
+            }
 
             //libnickel 4.23.15505 * _ZN14MoreControllerD0Ev
             MoreController *(*MoreController__deMoreController)(MoreController* _this);
@@ -95,7 +101,7 @@ NM_ACTION_(nickel_open) {
             mc = MoreController__MoreController(mc);
             NM_CHECK(nullptr, mc, "MoreController::MoreController returned null pointer");
 
-            MoreController_dropbox(mc);
+            MoreController_cloud(mc);
 
             // Clean up after ourselves
             MoreController__deMoreController(mc);
