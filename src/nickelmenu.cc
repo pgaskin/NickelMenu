@@ -267,6 +267,12 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
     NM_LOG("MainNavView::MainNavView(%p, %p)", _this, parent);
     MainNavView_MainNavView(_this, parent);
 
+    const char *enabled = nm_global_config_experimental("menu_main_15505_enabled");
+    if (enabled && strcmp("0", enabled) == 0) {
+        NM_LOG("Main menu disabled");
+        return;
+    }
+
     NM_LOG("Adding main menu button in tab bar for firmware 4.23.15505+.");
 
     if (!MainNavButton_MainNavButton || !MainNavButton_setPixmap || !MainNavButton_setActivePixmap || !MainNavButton_setText || !MainNavButton_setText) {
