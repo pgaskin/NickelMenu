@@ -8,13 +8,13 @@ jobs:
     container: ghcr.io/pgaskin/nickeltc:1.0
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v3
       with:
         submodules: true
     - name: Build
       run: make all koboroot
     - name: Upload
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v4
       with:
         name: NickelMenu
         path: KoboRoot.tgz
