@@ -1,3 +1,7 @@
+# Qt Creator
+CMakeLists.txt.user
+build/
+
 # make gitignore
 .kdev4/
 *.kdev4

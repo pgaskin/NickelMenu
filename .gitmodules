@@ -1,4 +1,3 @@
 [submodule "NickelHook"]
 	path = NickelHook
-	url = https://github.com/pgaskin/NickelHook.git
-	branch = master
+	url = git@github.com:pgaskin/NickelHook.git
