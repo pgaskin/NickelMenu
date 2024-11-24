@@ -25,7 +25,7 @@
 #include "action.h"
 #include "util.h"
 
-#include "NPGuiInterface.hpp"
+#include "plugins/MNGuiInterface.h"
 
 // A note about Nickel dlsyms:
 //
@@ -994,10 +994,10 @@ NM_ACTION_(nm_gui_plugin) {
         loader.unload();
         NM_ERR_RET(nullptr, "Plugin Loader: unable to get plugin instance");
     }
-    NPGuiInterface *gi = qobject_cast<NPGuiInterface*>(inst);
+    MNGuiInterface *gi = qobject_cast<MNGuiInterface*>(inst);
     if (!gi) {
         NM_ERR_RET(nullptr, "Plugin does not implement 'NGuiInterface'");
     }
-    gi->showUI();
+    gi->runPlugin();
     return nm_action_result_silent();
 }
