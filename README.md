@@ -19,4 +19,9 @@ Most errors, if any, will be displayed as a menu item in the main menu. If no ne
 
 NickelMenu is designed to be compiled with [NickelTC](https://github.com/pgaskin/NickelTC). To compile it with Docker/Podman, use `docker run --volume="$PWD:$PWD" --user="$(id --user):$(id --group)" --workdir="$PWD" --env=HOME --entrypoint=make --rm -it ghcr.io/pgaskin/nickeltc:1.0 all koboroot`. To compile it on the host, use `make CROSS_COMPILE=/path/to/nickeltc/bin/arm-nickel-linux-gnueabihf-`.
 
-<!-- TODO: a lot more stuff -->
+
+### Building plugins with Docker
+
+```bash
+docker run -u $(id -u):$(id -g) --volume="$PWD:$PWD" --entrypoint=make --workdir="$PWD" --env=HOME --rm -it ghcr.io/pgaskin/nickeltc:1 clean plugin all koboroot
+```

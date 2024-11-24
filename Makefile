@@ -6,7 +6,7 @@ override SOURCES  += src/action.c src/action_c.c src/action_cc.cc src/config.c s
 override MOCS     += src/plugins/MNGuiInterface.h
 override CFLAGS   += -Wall -Wextra -Werror -fvisibility=hidden
 override CXXFLAGS += -Wall -Wextra -Werror -Wno-missing-field-initializers -isystemlib -fvisibility=hidden -fvisibility-inlines-hidden
-override KOBOROOT += res/doc:$(NM_CONFIG_DIR)/doc
+override KOBOROOT += src/plugins/example/libnmexampleplugin.so:/usr/local/Kobo/plugins/example/libnmexampleplugin.so res/example_plugin_config:$(NM_CONFIG_DIR)/example_plugin_config
 
 override SKIPCONFIGURE += strip
 strip:

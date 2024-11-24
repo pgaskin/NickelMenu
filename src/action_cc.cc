@@ -971,6 +971,7 @@ NM_ACTION_(nickel_bluetooth) {
             NM_ERR_RET(nullptr, "unknown nickel_bluetooth action '%s'", arg);
             break;
     }
+}
 
 NM_ACTION_(nm_gui_plugin) {
     NM_LOG("Attempting to load plugin: %s", arg);
