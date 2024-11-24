@@ -1,0 +1,35 @@
+# NickelMenu (libnm.so)
+# flibbertigibbet's fork of https://pgaskin.net/NickelMenu
+# Run an example plugin
+
+menu_item : main : USB Connect : nickel_misc : force_usb_connection
+
+menu_item : main : Free Memory : cmd_output : 500 : free -m
+menu_item : main : IP Address : cmd_output : 500 : /sbin/ifconfig | /usr/bin/awk '/inet addr/{print substr($2,6)}'
+menu_item : main : Current Directory : cmd_output : 500 : pwd
+
+menu_item : main : Dump Syslog : cmd_spawn : logread > /mnt/onboard/.adds/syslog.log
+menu_item : main : Telnet : cmd_spawn : quiet: /bin/mount -t devpts | /bin/grep -q /dev/pts || { /bin/mkdir -p /dev/pts && /bin/mount -t devpts devpts /dev/pts; }
+     chain_success : cmd_spawn : quiet: /usr/bin/pkill -f "^/usr/bin/tcpsvd -E 0.0.0.0 1023" || true && exec /usr/bin/tcpsvd -E 0.0.0.0 1023 /usr/sbin/telnetd -i -l /bin/login
+     chain_success : dbg_toast : Started Telnet server on port 1023.
+
+menu_item : main : Reboot : power : reboot
+menu_item : main : Sleep : power : sleep
+menu_item : main : Shutdown : power : shutdown
+
+menu_item : reader : Browser (popup) : nickel_browser : modal
+menu_item : reader : Browser (full window) : nickel_browser :
+menu_item : reader : Goodreads : nickel_browser : https://www.goodreads.com/book
+menu_item : reader : Google (popup) : nickel_browser : modal:https://www.google.com
+menu_item : reader : Google (full) : nickel_browser : https://www.google.com
+menu_item : reader : Maps (popup) : nickel_browser : modal: https://www.google.com/maps/
+menu_item : reader : Maps (full) : nickel_browser : https://www.google.com/maps/
+menu_item : reader : Wikipedia (popup) : nickel_browser : modal : https://www.wikipedia.org/
+menu_item : reader : Wikipedia (full): nickel_browser : https://www.wikipedia.org/
+
+menu_item :main    :> Portrait          :nickel_orientation :portrait
+menu_item :main    :> Landscape         :nickel_orientation :landscape
+menu_item :main    :> Reverse Portrait  :nickel_orientation :inverted_portrait
+menu_item :main    :> Reverse Landscape :nickel_orientation :inverted_landscape
+
+menu_item :main    :> Example Plugin    :nm_gui_plugin      :/usr/local/Kobo/plugins/example/libnmexampleplugin.so
