@@ -5,12 +5,16 @@ PLUGIN_DIR = src/plugins
 override PKGCONF  += Qt5Widgets
 override LIBRARY  := src/libnm.so
 override SOURCES  += src/action.c src/action_c.c src/action_cc.cc src/config.c src/generator.c src/generator_c.c src/kfmon.c src/nickelmenu.cc src/util.c
-override MOCS     += $(PLUGIN_DIR)/MNGuiInterface.h
+override MOCS     += $(PLUGIN_DIR)/NMGuiInterface.h
 override CFLAGS   += -Wall -Wextra -Werror -fvisibility=hidden
 override CXXFLAGS += -Wall -Wextra -Werror -Wno-missing-field-initializers -isystemlib -fvisibility=hidden -fvisibility-inlines-hidden
 
-# Find menu configs
-override KOBOROOT += $(foreach config,$(shell find res -type f),$(config):$(NM_CONFIG_DIR)/$(config))
+# Find menu plugin configs
+PLUGIN_CONFIGS = $(foreach config,$(shell find res/*_plugin -not -path '*/.*' -type f | sed -e 's,^res/,,'),res/$(config):$(NM_CONFIG_DIR)/$(config))
+ifeq ($(PLUGIN_CONFIGS),)
+override PLUGIN_CONFIGS = $(foreach config,$(shell find res -not -path '*/.*' -type f | sed -e 's,^res/,,'),res/$(config):$(NM_CONFIG_DIR)/$(config))
+endif
+override KOBOROOT += $(PLUGIN_CONFIGS)
 
 override SKIPCONFIGURE += strip
 strip:

@@ -22,6 +22,10 @@ NickelMenu is designed to be compiled with [NickelTC](https://github.com/pgaskin
 
 ### Building plugins with Docker
 
+To build plugins added to `src/plugins` with the NickelTC Docker image:
+
 ```bash
 docker run -u $(id -u):$(id -g) --volume="$PWD:$PWD" --entrypoint=make --workdir="$PWD" --env=HOME --rm -it ghcr.io/pgaskin/nickeltc:1 clean plugin all koboroot
 ```
+
+See the [NickelMenuExamplePlugin](https://github.com/flibbertigibbet/NickelMenuExamplePlugin) template repo for an example plugin build.
