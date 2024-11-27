@@ -190,14 +190,27 @@
 #     Unknown options are ignored. If there are multiple declarations of an
 #     option, only the first one takes effect.
 #
-#     <key>  the option name, one of:
-#              menu_main_15505_enabled     - controls enablement of the NickelMenu button on 4.23.15505+
-#              menu_main_15505_label       - sets the label used for the NickelMenu button on 4.23.15505+
-#              menu_main_15505_icon        - sets the icon used for the NickelMenu button on 4.23.15505+
-#              menu_main_15505_icon_active - sets the active icon used for the NickelMenu button on 4.23.15505+
+#     <key>  the option name:
+#              main_menu_15505_<main menu option>      - controls the added NickelMenu button
+#              main_menu_15505_<n>_<main_menu_option>  - controls the main menu button at position n (indexed from 0)
+#                                                        note that there may be already-hidden buttons in the list:
+#                                                        on a Kobo Libra Colour running 4.41.23145, the button list is:
+#                                                            0 - Home
+#                                                            1 - My Books
+#                                                            2 - Activity [hidden]
+#                                                            3 - My Notebooks
+#                                                            4 - Discover
+#                                                            5 - More
+#
+#              <main menu option>    one of:
+#                  enabled          - controls enablement of the NickelMenu button on 4.23.15505+
+#                  label            - sets the label used for the NickelMenu button on 4.23.15505+
+#                  icon             - sets the icon used for the NickelMenu button on 4.23.15505+
+#                  icon_active      - sets the active icon used for the NickelMenu button on 4.23.15505+
+#
 #     <val>  the option value:
 #              menu_main_15505_enabled     - 0 or 1
-#              menu_main_15505_label       - the label to use instead of "NickelMenu"
+#              menu_main_15505_label       - the label to use instead of the default value
 #              menu_main_15505_icon        - the path passed to QPixmap
 #              menu_main_15505_icon_active - the path passed to QPixmap
 #
