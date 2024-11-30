@@ -5,7 +5,7 @@ PLUGIN_DIR = src/plugins
 override PKGCONF  += Qt5Widgets
 override LIBRARY  := src/libnm.so
 override SOURCES  += src/action.c src/action_c.c src/action_cc.cc src/config.c src/generator.c src/generator_c.c src/kfmon.c src/nickelmenu.cc src/util.c
-override MOCS     += $(PLUGIN_DIR)/NMGuiInterface.h
+override MOCS     += $(PLUGIN_DIR)/NPGuiInterface.h
 override CFLAGS   += -Wall -Wextra -Werror -fvisibility=hidden
 override CXXFLAGS += -Wall -Wextra -Werror -Wno-missing-field-initializers -isystemlib -fvisibility=hidden -fvisibility-inlines-hidden
 
