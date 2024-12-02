@@ -124,6 +124,9 @@
 #                                          library:shelves           - Collections
 #                                          library:pocket            - Articles
 #                                          library:dropbox           - Dropbox (4.18.13737+)
+#                                          library:gdrive            - GoogleDrive (4.18.13737+) Also modify the '.kobo/Kobo/Kobo eReader.conf' with:
+#                                                                          googledrive_link_account_start=https://authorize.kobo.com/{region}/{language}/linkcloudstorage/provider/google_drive
+#                                                                          kobo_googledrive_link_account_enabled=True
 #                                          reading_life:reading_life - Activity (with last tab)
 #                                          reading_life:stats        - Activity
 #                                          reading_life:awards       - Awards
