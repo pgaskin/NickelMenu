@@ -124,6 +124,7 @@
 #                                          library:shelves           - Collections
 #                                          library:pocket            - Articles
 #                                          library:dropbox           - Dropbox (4.18.13737+)
+#                                          library:gdrive            - GoogleDrive (4.18.13737+)
 #                                          reading_life:reading_life - Activity (with last tab)
 #                                          reading_life:stats        - Activity
 #                                          reading_life:awards       - Awards
