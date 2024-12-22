@@ -191,8 +191,8 @@
 #     option, only the first one takes effect.
 #
 #     <key>  the option name:
-#              main_menu_15505_<main menu option>      - controls the added NickelMenu button
-#              main_menu_15505_<n>_<main_menu_option>  - controls the main menu button at position n (indexed from 0)
+#              menu_main_15505_<main menu option>      - controls the added NickelMenu button
+#              menu_main_15505_<n>_<main_menu_option>  - controls the main menu button at position n (indexed from 0)
 #                                                        note that there may be already-hidden buttons in the list:
 #                                                        on a Kobo Libra Colour running 4.41.23145, the button list is:
 #                                                            0 - Home
