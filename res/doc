@@ -197,7 +197,7 @@
 #                                                        on a Kobo Libra Colour running 4.41.23145, the button list is:
 #                                                            0 - Home
 #                                                            1 - My Books
-#                                                            2 - Activity [hidden]
+#                                                            2 - Activity [hidden by default]
 #                                                            3 - My Notebooks
 #                                                            4 - Discover
 #                                                            5 - More
@@ -209,10 +209,10 @@
 #                  icon_active      - sets the active icon used for the NickelMenu button on 4.23.15505+
 #
 #     <val>  the option value:
-#              menu_main_15505_enabled     - 0 or 1
-#              menu_main_15505_label       - the label to use instead of the default value
-#              menu_main_15505_icon        - the path passed to QPixmap
-#              menu_main_15505_icon_active - the path passed to QPixmap
+#              (..)_enabled     -> 0 or 1
+#              (..)_label       -> the label to use instead of the default value
+#              (..)_icon        -> the path passed to QPixmap
+#              (..)_icon_active -> the path passed to QPixmap
 #
 # For example, you might have a configuration file named "mystuff" like:
 #
