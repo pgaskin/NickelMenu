@@ -3,6 +3,7 @@
 #include <QFile>
 #include <QLayout>
 #include <QMenu>
+#include <QMetaProperty>
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QString>
@@ -263,11 +264,50 @@ QString nm_menu_pixmap(const char *custom, const char *custom_temp_out, const ch
     return QString(custom_temp_out);
 }
 
+static const char *nm_main_menu_config(int index, const char *option) {
+    char buf[strlen("menu_main_15505_9_icon_active") + 1];
+    if (snprintf(buf, sizeof(buf), "menu_main_15505_%d_%s", index, option) >= static_cast<ssize_t>(sizeof(buf))) {
+        NM_LOG("Failed to create main menu config key for index %d, option %s", index, option);
+        return nullptr;
+    }
+    return nm_global_config_experimental(buf);
+}
+
+static void main_nav_button_configure(MainNavButton *btn, const char *label, const char *icon, const char *icon_fallback, const char *icon_active, const char *icon_active_fallback) {
+    if (label) {
+        MainNavButton_setText(btn, label);
+    }
+
+    if (icon || icon_fallback) {
+        QString pixmap = nm_menu_pixmap(
+            icon,
+            "/tmp/nm_menu.png",
+            icon_fallback
+        );
+        if (!pixmap.isEmpty()) {
+            MainNavButton_setPixmap(btn, pixmap);
+        }
+    }
+
+    if (icon_active || icon_active_fallback) {
+        QString pixmap = nm_menu_pixmap(
+            icon_active,
+            "/tmp/nm_menu.png",
+            icon_active_fallback
+        );
+        if (!pixmap.isEmpty()) {
+            MainNavButton_setActivePixmap(btn, pixmap);
+        }
+    }
+
+    if (icon || icon_fallback || icon_active || icon_active_fallback) {
+        QFile::remove("/tmp/nm_menu.png");
+    }
+}
+
 extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavView *_this, QWidget *parent) {
     NM_LOG("MainNavView::MainNavView(%p, %p)", _this, parent);
     MainNavView_MainNavView(_this, parent);
-
-    NM_LOG("Adding main menu button in tab bar for firmware 4.23.15505+.");
 
     if (!MainNavButton_MainNavButton || !MainNavButton_setPixmap || !MainNavButton_setActivePixmap || !MainNavButton_setText || !MainNavButton_setText) {
         NM_LOG("Could not find required MainNavButton symbols, cannot add tab button for NickelMenu main menu.");
@@ -280,6 +320,41 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
         return;
     }
 
+    NM_LOG("Default main menu has %d buttons", bl->count());
+    for (int i = 0; i < bl->count(); ++i) {
+        QWidget *widget = bl->itemAt(i)->widget();
+        NM_LOG("Main menu button %d = %s", i, widget ->objectName().toUtf8().constData());
+
+        MainNavButton *btn = qobject_cast<MainNavButton*>(widget);
+        if (!btn) {
+            NM_LOG("qobject_cast<MainNavButton*> failed on button %d", i);
+            continue;
+        }
+
+        const char *label = nm_main_menu_config(i, "label");
+        const char *icon = nm_main_menu_config(i, "icon");
+        const char *icon_active = nm_main_menu_config(i, "icon_active");
+
+        const char *enabled = nm_main_menu_config(i, "enabled");
+        main_nav_button_configure(btn, label, icon, nullptr, icon_active, nullptr);
+        if (enabled) {
+            if (strcmp("0", enabled) == 0) {
+                NM_LOG("Main menu button %d disabled", i);
+                widget->hide();
+            } else if (strcmp("1", enabled) == 0) {
+                NM_LOG("Main menu button %d explicitly enabled", i);
+                widget->show();
+            }
+        }
+    }
+
+    const char *enabled = nm_global_config_experimental("menu_main_15505_enabled");
+    if (enabled && strcmp("0", enabled) == 0) {
+        NM_LOG("Main menu NickelMenu button disabled");
+        return;
+    }
+
+    NM_LOG("Adding main menu button in tab bar for firmware 4.23.15505+.");
     MainNavButton *btn = reinterpret_cast<MainNavButton*>(calloc(1, 256));
     if (!btn) { // way larger than a MainNavButton, but better to be safe
         NM_LOG("Failed to allocate memory for MainNavButton, cannot add tab button for NickelMenu main menu.");
@@ -287,19 +362,13 @@ extern "C" __attribute__((visibility("default"))) void _nm_menu_hook2(MainNavVie
     }
 
     MainNavButton_MainNavButton(btn, parent);
-    MainNavButton_setPixmap(btn, nm_menu_pixmap(
+    main_nav_button_configure(btn,
+        nm_global_config_experimental("menu_main_15505_label") ?: "NickelMenu",
         nm_global_config_experimental("menu_main_15505_icon"),
-        "/tmp/nm_menu.png",
-        ":/images/home/main_nav_more.png"
-    ));
-    MainNavButton_setActivePixmap(btn, nm_menu_pixmap(
-        nm_global_config_experimental("menu_main_15505_icon_active")
-            ?: nm_global_config_experimental("menu_main_15505_icon"),
-        "/tmp/nm_menu.png",
+        ":/images/home/main_nav_more.png",
+        nm_global_config_experimental("menu_main_15505_icon_active"),
         ":/images/home/main_nav_more_active.png"
-    ));
-    QFile::remove("/tmp/nm_menu.png");
-    MainNavButton_setText(btn, nm_global_config_experimental("menu_main_15505_label") ?: "NickelMenu");
+    );
     btn->setObjectName("nmButton");
 
     QPushButton *sh = new QPushButton(_this); // HACK: we use a QPushButton as an adaptor so we can connect an old-style signal with the new-style connect without needing a custom QObject
