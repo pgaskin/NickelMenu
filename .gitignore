@@ -18,3 +18,4 @@ compile_commands.json
 /src/util.o
 /src/action_cc.o
 /src/nickelmenu.o
+test.syms
