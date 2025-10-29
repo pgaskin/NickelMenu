@@ -125,7 +125,7 @@ NM_ACTION_(nickel_open) {
         else if (!strcmp(arg2, "authors"))  sym_f = "_ZN15LibraryNavMixin11showAuthorsEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showAuthorsEv
         else if (!strcmp(arg2, "series"))   sym_f = "_ZN15LibraryNavMixin10showSeriesEv";              //libnickel 4.20.14601 * _ZN15LibraryNavMixin10showSeriesEv
         else if (!strcmp(arg2, "shelves"))  sym_f = "_ZN15LibraryNavMixin11showShelvesEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showShelvesEv
-        else if (!strcmp(arg2, "pocket"))   sym_f = "_ZN15LibraryNavMixin17showPocketLibraryEv";       //libnickel 4.6 * _ZN15LibraryNavMixin17showPocketLibraryEv
+        else if (!strcmp(arg2, "instapaper")) sym_f = "_ZN15LibraryNavMixin21showInstapaperLibraryEv"; //libnickel 4.6 * _ZN15LibraryNavMixin17showPocketLibraryEv
         else if (!strcmp(arg2, "dropbox"))  sym_f = "_ZN15LibraryNavMixin11showDropboxEv";             //libnickel 4.18.13737 4.22.15268 _ZN15LibraryNavMixin11showDropboxEv
     } else if (!strcmp(arg1, "reading_life")) {
         sym_c = "_ZN19ReadingLifeNavMixinC1Ev"; //libnickel 4.6 * _ZN19ReadingLifeNavMixinC1Ev
