@@ -8,6 +8,7 @@
 #include <QUrl>
 #include <QVariant>
 #include <QWidget>
+#include <QKeyEvent>
 
 #include <initializer_list>
 
@@ -963,6 +964,41 @@ NM_ACTION_(nickel_bluetooth) {
             return nm_action_result_toast("Bluetooth scan initiated.");
         default:
             NM_ERR_RET(nullptr, "unknown nickel_bluetooth action '%s'", arg);
+            break;
+    }
+}
+
+NM_ACTION_(nickel_screenshot) {
+    enum SCREENSHOT_ACTION {
+        CAPTURE = 0b00001,
+    };
+
+    int action = 0;
+    if (!strcmp(arg, "capture")) action |= CAPTURE;
+    else
+        NM_ERR_RET(nullptr, "unknown nickel_screenshot action '%s'", arg);
+
+    QObject* app = nullptr;
+    QKeyEvent* press = nullptr;
+    QKeyEvent* release = nullptr;
+
+    switch (action) {
+        case CAPTURE:
+            // Get Nickel::Application->notify()
+            int (*AppNotify)(void* app, void* receiver, void* event);
+            NM_ACT_XSYM(AppNotify, "_ZN18Nickel3Application6notifyEP7QObjectP6QEvent", "could not dlsym Nickel::Application->notify()");
+
+            app = QApplication::instance();
+
+            // Send ESC KeyEvent
+            press = new QKeyEvent(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+            release = new QKeyEvent(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+            AppNotify(app, nullptr, press);
+            AppNotify(app, nullptr, release);
+
+            return nm_action_result_silent();
+        default:
+            NM_ERR_RET(nullptr, "unknown nickel_screenshot action '%s'", arg);
             break;
     }
 }
