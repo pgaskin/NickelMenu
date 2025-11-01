@@ -1002,6 +1002,34 @@ NM_ACTION_(nickel_screenshot) {
     QKeyEvent* press = nullptr;
     QKeyEvent* release = nullptr;
 
+    #define vtable_ptr(x) *reinterpret_cast<void**&>(x)
+    #define vtable_target(x) reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(x)+8)
+
+    // Prepare Settings symbols
+    SettingsSymbols settings_syms = prepare_Settings_symbols();
+    auto Settings_Settings = settings_syms.Settings_Settings;
+    auto Settings_SettingsLegacy = settings_syms.Settings_SettingsLegacy;
+    auto Settings_SettingsD = settings_syms.Settings_SettingsD;
+    auto Settings_getSetting = settings_syms.Settings_getSetting;
+    auto Settings_saveSetting = settings_syms.Settings_saveSetting;
+
+    Device *dev = get_Device_getCurrentDevice();
+    Settings *settings = alloca(128); // way larger than it is, but better to be safe
+    if (Settings_Settings)
+        Settings_Settings(settings, dev, false);
+    else if (Settings_SettingsLegacy)
+        Settings_SettingsLegacy(settings, dev);
+
+    QVariant v1;
+
+    //libnickel 4.6 * _ZTV15FeatureSettings
+    void *FeatureSettings_vtable = dlsym(RTLD_DEFAULT, "_ZTV15FeatureSettings");
+    NM_CHECK(nullptr, FeatureSettings_vtable, "could not dlsym the vtable for FeatureSettings");
+    vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+
+    QString screenshot_key = QStringLiteral("Screenshots");
+    bool org_screenshot_enabled = false;
+
     switch (action) {
         case CAPTURE:
             // Get Nickel::Application->notify()
@@ -1010,11 +1038,31 @@ NM_ACTION_(nickel_screenshot) {
 
             app = QApplication::instance();
 
+            // Get the original state of the "Screenshots" setting
+            v1 = Settings_getSetting(settings, screenshot_key, QVariant(false));
+            vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+            org_screenshot_enabled = v1.toBool();
+
+            // If it's not enabled => temporary set it to True
+            if (!org_screenshot_enabled) {
+                Settings_saveSetting(settings, screenshot_key, QVariant(true), false);
+                vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+            }
+
             // Send ESC KeyEvent
             press = new QKeyEvent(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
             release = new QKeyEvent(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
             AppNotify(app, nullptr, press);
             AppNotify(app, nullptr, release);
+
+            // Restore "Screenshots" setting if it was previously disabled
+            if (!org_screenshot_enabled) {
+                Settings_saveSetting(settings, screenshot_key, QVariant(false), false);
+                vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
+            }
+
+            // Deconstruct Settings
+            Settings_SettingsD(settings);
 
             return nm_action_result_silent();
         default:
