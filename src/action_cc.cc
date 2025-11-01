@@ -1032,6 +1032,11 @@ NM_ACTION_(nickel_screenshot) {
 
     switch (action) {
         case CAPTURE:
+            // Pressing the Power button on Kobo is the same as pressing the Escape key on keyboard
+            // So to take screenshot, we just need to:
+            // 1. Enable the "Screenshots" feature
+            // 2. Send an "Escape" KeyEvent to the QApplication instance
+
             // Get Nickel::Application->notify()
             int (*AppNotify)(void* app, void* receiver, void* event);
             NM_ACT_XSYM(AppNotify, "_ZN18Nickel3Application6notifyEP7QObjectP6QEvent", "could not dlsym Nickel::Application->notify()");
@@ -1049,7 +1054,7 @@ NM_ACTION_(nickel_screenshot) {
                 vtable_ptr(settings) = vtable_target(FeatureSettings_vtable);
             }
 
-            // Send ESC KeyEvent
+            // Send the "Escape" KeyEvent
             press = new QKeyEvent(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
             release = new QKeyEvent(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
             AppNotify(app, nullptr, press);
