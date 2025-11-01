@@ -68,13 +68,15 @@ typedef void BluetoothManager;
 
 
 struct SettingsSymbols {
-    Settings* instance;
+    //libnickel 4.6 * _ZN8SettingsC2ERK6Deviceb _ZN8SettingsC2ERK6Device
+    void *(*Settings_Settings)(Settings*, Device*, bool);
+    void *(*Settings_SettingsLegacy)(Settings*, Device*);
     //libnickel 4.6 * _ZN8SettingsD2Ev
-    void* (*SettingsD)(Settings*);
+    void *(*Settings_SettingsD)(Settings*);
     //libnickel 4.6 * _ZN8Settings10getSettingERK7QStringRK8QVariant
-    QVariant (*getSetting)(Settings*, QString const&, QVariant const&);
+    QVariant (*Settings_getSetting)(Settings*, QString const&, QVariant const&);
     //libnickel 4.6 * _ZN8Settings11saveSettingERK7QStringRK8QVariantb
-    void* (*saveSetting)(Settings*, QString const&, QVariant const&, bool);
+    void *(*Settings_saveSetting)(Settings*, QString const&, QVariant const&, bool);
 };
 
 
@@ -91,34 +93,25 @@ Device* get_Device_getCurrentDevice() {
 
 SettingsSymbols prepare_Settings_symbols() {
     SettingsSymbols symbols{};
-    Device *dev = get_Device_getCurrentDevice();
 
     //libnickel 4.6 * _ZN8SettingsC2ERK6Deviceb _ZN8SettingsC2ERK6Device
-    void *(*Settings_Settings)(Settings*, Device*, bool);
-    void *(*Settings_SettingsLegacy)(Settings*, Device*);
-    NM_ACT_SYM(Settings_Settings, "_ZN8SettingsC2ERK6Deviceb");
-    NM_ACT_SYM(Settings_SettingsLegacy, "_ZN8SettingsC2ERK6Device");
-    NM_CHECK(SettingsSymbols{}, Settings_Settings || Settings_SettingsLegacy, "could not dlsym Settings constructor (new and/or old)");
+    NM_ACT_SYM(symbols.Settings_Settings, "_ZN8SettingsC2ERK6Deviceb");
+    NM_ACT_SYM(symbols.Settings_SettingsLegacy, "_ZN8SettingsC2ERK6Device");
+    NM_CHECK(SettingsSymbols{}, symbols.Settings_Settings || symbols.Settings_SettingsLegacy, "could not dlsym Settings constructor (new and/or old)");
 
     //libnickel 4.6 * _ZN8SettingsD2Ev
-    NM_ACT_SYM(symbols.SettingsD, "_ZN8SettingsD2Ev");
-    NM_CHECK(SettingsSymbols{}, symbols.SettingsD, "could not dlsym Settings destructor");
+    NM_ACT_SYM(symbols.Settings_SettingsD, "_ZN8SettingsD2Ev");
+    NM_CHECK(SettingsSymbols{}, symbols.Settings_SettingsD, "could not dlsym Settings destructor");
 
     // some settings don't have symbols in a usable form, and some are inlined, so we may need to set them directly
     //libnickel 4.6 * _ZN8Settings10getSettingERK7QStringRK8QVariant
-    NM_ACT_SYM(symbols.getSetting, "_ZN8Settings10getSettingERK7QStringRK8QVariant");
-    NM_CHECK(SettingsSymbols{}, symbols.getSetting, "could not dlsym Settings::getSetting");
+    NM_ACT_SYM(symbols.Settings_getSetting, "_ZN8Settings10getSettingERK7QStringRK8QVariant");
+    NM_CHECK(SettingsSymbols{}, symbols.Settings_getSetting, "could not dlsym Settings::getSetting");
 
     // ditto
     //libnickel 4.6 * _ZN8Settings11saveSettingERK7QStringRK8QVariantb
-    NM_ACT_SYM(symbols.saveSetting, "_ZN8Settings11saveSettingERK7QStringRK8QVariantb");
-    NM_CHECK(SettingsSymbols{}, symbols.saveSetting, "could not dlsym Settings::saveSetting");
-
-    symbols.instance = alloca(128); // way larger than it is, but better to be safe
-    if (Settings_Settings)
-        Settings_Settings(symbols.instance, dev, false);
-    else if (Settings_SettingsLegacy)
-        Settings_SettingsLegacy(symbols.instance, dev);
+    NM_ACT_SYM(symbols.Settings_saveSetting, "_ZN8Settings11saveSettingERK7QStringRK8QVariantb");
+    NM_CHECK(SettingsSymbols{}, symbols.Settings_saveSetting, "could not dlsym Settings::saveSetting");
 
     return symbols;
 }
@@ -266,10 +259,18 @@ NM_ACTION_(nickel_setting) {
         NM_ERR_RET(nullptr, "unknown action '%s' for nickel_setting: expected 'toggle', 'enable', or 'disable'", arg1);
 
     SettingsSymbols settings_syms = prepare_Settings_symbols();
-    Settings* settings = settings_syms.instance;
-    auto Settings_SettingsD = settings_syms.SettingsD;
-    auto Settings_getSetting = settings_syms.getSetting;
-    auto Settings_saveSetting = settings_syms.saveSetting;
+    auto Settings_Settings = settings_syms.Settings_Settings;
+    auto Settings_SettingsLegacy = settings_syms.Settings_SettingsLegacy;
+    auto Settings_SettingsD = settings_syms.Settings_SettingsD;
+    auto Settings_getSetting = settings_syms.Settings_getSetting;
+    auto Settings_saveSetting = settings_syms.Settings_saveSetting;
+
+    Device *dev = get_Device_getCurrentDevice();
+    Settings *settings = alloca(128); // way larger than it is, but better to be safe
+    if (Settings_Settings)
+        Settings_Settings(settings, dev, false);
+    else if (Settings_SettingsLegacy)
+        Settings_SettingsLegacy(settings, dev);
 
     // to cast the generic Settings into its subclass FeatureSettings, the
     // vtable pointer at the beginning needs to be replaced with the target
@@ -718,8 +719,15 @@ NM_ACTION_(nickel_orientation) {
     Device *dev = get_Device_getCurrentDevice();
 
     SettingsSymbols settings_syms = prepare_Settings_symbols();
-    Settings* settings = settings_syms.instance;
-    auto Settings_SettingsD = settings_syms.SettingsD;
+    auto Settings_Settings = settings_syms.Settings_Settings;
+    auto Settings_SettingsLegacy = settings_syms.Settings_SettingsLegacy;
+    auto Settings_SettingsD = settings_syms.Settings_SettingsD;
+
+    Settings *settings = alloca(128); // way larger than it is, but better to be safe
+    if (Settings_Settings)
+        Settings_Settings(settings, dev, false);
+    else if (Settings_SettingsLegacy)
+        Settings_SettingsLegacy(settings, dev);
 
     #define vtable_ptr(x) *reinterpret_cast<void**&>(x)
     #define vtable_target(x) reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(x)+8)
