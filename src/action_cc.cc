@@ -1038,6 +1038,7 @@ NM_ACTION_(nickel_screenshot) {
             // 2. Send an "Escape" KeyEvent to the QApplication instance
 
             // Get Nickel::Application->notify()
+            //libnickel 4.6 * _ZN18Nickel3Application6notifyEP7QObjectP6QEvent
             int (*AppNotify)(void* app, void* receiver, void* event);
             NM_ACT_XSYM(AppNotify, "_ZN18Nickel3Application6notifyEP7QObjectP6QEvent", "could not dlsym Nickel::Application->notify()");
 
