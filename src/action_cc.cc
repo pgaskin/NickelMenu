@@ -993,10 +993,16 @@ NM_ACTION_(nickel_screenshot) {
         CAPTURE = 0b00001,
     };
 
+    char *tmp = strdupa(arg); // strsep and strtrim will modify it
+    char *arg1 = strtrim(strsep(&tmp, ":"));
+    char *arg2 = tmp ? strtrim(tmp) : NULL;
+
+    bool quiet = arg2 && strcmp(arg2, "quiet") == 0;
+
     int action = 0;
-    if (!strcmp(arg, "capture")) action |= CAPTURE;
+    if (!strcmp(arg1, "capture")) action |= CAPTURE;
     else
-        NM_ERR_RET(nullptr, "unknown nickel_screenshot action '%s'", arg);
+        NM_ERR_RET(nullptr, "unknown nickel_screenshot action '%s'", arg1);
 
     QObject* app = nullptr;
     QKeyEvent* press = nullptr;
@@ -1070,7 +1076,12 @@ NM_ACTION_(nickel_screenshot) {
             // Deconstruct Settings
             Settings_SettingsD(settings);
 
-            return nm_action_result_silent();
+            if (quiet) {
+                // Don't show toast in Quiet mode
+                return nm_action_result_silent();
+            }
+
+            return nm_action_result_toast("Screenshot captured");
         default:
             NM_ERR_RET(nullptr, "unknown nickel_screenshot action '%s'", arg);
             break;
