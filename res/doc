@@ -157,7 +157,6 @@
 #                                          scan     (4.34.20097+)
 #                   nickel_screenshot  - one of:
 #                                          capture               - Capture screenshot directly
-#                                          capture:quiet         - Capture screenshot directly, without toast notification
 #
 #   chain_success:<action>:<arg>
 #   chain_failure:<action>:<arg>
