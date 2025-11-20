@@ -925,9 +925,12 @@ NM_ACTION_(nickel_bluetooth) {
     uint (*BluetoothManager_up)(BluetoothManager *);
     NM_ACT_XSYM(BluetoothManager_up, "_ZNK16BluetoothManager2upEv", "could not dlsym BluetoothManager::up");
 
-    //libnickel 4.34.20097 * _ZN16BluetoothManager2onEv
+    //libnickel 4.34.20097 * _ZN16BluetoothManager13requestTurnOnEv _ZN16BluetoothManager2onEv
     void (*BluetoothManager_on)(BluetoothManager *);
-    NM_ACT_XSYM(BluetoothManager_on, "_ZN16BluetoothManager2onEv", "could not dlsym BluetoothManager::on");
+    void (*BluetoothManager_onLegacy)(BluetoothManager *);
+    NM_ACT_SYM(BluetoothManager_on, "_ZN16BluetoothManager13requestTurnOnEv");
+    NM_ACT_SYM(BluetoothManager_onLegacy, "_ZN16BluetoothManager2onEv");
+    NM_CHECK(nullptr, BluetoothManager_on || BluetoothManager_onLegacy, "could not dlsym BluetoothManager::requestTurnOn");
 
     //libnickel 4.34.20097 * _ZN16BluetoothManager4scanEv
     void (*BluetoothManager_scan)(BluetoothManager *);
@@ -952,7 +955,11 @@ NM_ACTION_(nickel_bluetooth) {
         case CHECK:
             return nm_action_result_toast("Bluetooth is %s.", isUp ? "on" : "off");
         case ENABLE:
-            BluetoothManager_on(btm);
+            if (BluetoothManager_on) {
+                BluetoothManager_on(btm);
+            } else if (BluetoothManager_onLegacy) {
+                BluetoothManager_onLegacy(btm);
+            }
             BluetoothManager_scan(btm);
             return nm_action_result_toast("Bluetooth turned on.");
         case DISABLE:
