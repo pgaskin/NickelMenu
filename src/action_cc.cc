@@ -924,11 +924,10 @@ NM_ACTION_(nickel_bluetooth) {
     uint (*BluetoothManager_up)(BluetoothManager *);
     NM_ACT_XSYM(BluetoothManager_up, "_ZNK16BluetoothManager2upEv", "could not dlsym BluetoothManager::up");
 
-    //libnickel 4.44.23552 * _ZN16BluetoothManager13requestTurnOnEv
+    //libnickel 4.34.20097 * _ZN16BluetoothManager13requestTurnOnEv _ZN16BluetoothManager2onEv
     void (*BluetoothManager_on)(BluetoothManager *);
-    NM_ACT_SYM(BluetoothManager_on, "_ZN16BluetoothManager13requestTurnOnEv");
-    //libnickel 4.34.20097 * _ZN16BluetoothManager2onEv
     void (*BluetoothManager_onLegacy)(BluetoothManager *);
+    NM_ACT_SYM(BluetoothManager_on, "_ZN16BluetoothManager13requestTurnOnEv");
     NM_ACT_SYM(BluetoothManager_onLegacy, "_ZN16BluetoothManager2onEv");
     NM_CHECK(nullptr, BluetoothManager_on || BluetoothManager_onLegacy, "could not dlsym BluetoothManager::requestTurnOn");
 
