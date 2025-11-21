@@ -1,4 +1,6 @@
 #include <QApplication>
+#include <QMap>
+#include <QPluginLoader>
 #include <QProcess>
 #include <QScreen>
 #include <QShowEvent>
@@ -22,6 +24,8 @@
 
 #include "action.h"
 #include "util.h"
+
+#include "plugins/NPGuiInterface.h"
 
 // A note about Nickel dlsyms:
 //
@@ -973,4 +977,35 @@ NM_ACTION_(nickel_bluetooth) {
             NM_ERR_RET(nullptr, "unknown nickel_bluetooth action '%s'", arg);
             break;
     }
+}
+
+NM_ACTION_(nm_gui_plugin) {
+    NM_LOG("Attempting to load plugin: %s", arg);
+    QString plugin_file(arg);
+    if (plugin_file.isEmpty()) {
+        NM_ERR_RET(nullptr, "Plugin name or path not set");
+    }
+    QPluginLoader loader;
+    loader.setFileName(plugin_file);
+    if (loader.fileName().isEmpty()) {
+        NM_ERR_RET(nullptr, "Plugin Loader: could not set plugin filename");
+    }
+    if (!loader.isLoaded()) {
+        NM_LOG("Plugin Loader: loading plugin");
+        if (!loader.load()) {
+            NM_ERR_RET(nullptr, "Plugin Loader: loading plugin failed");
+        }
+    }
+    NM_LOG("Plugin Loader: plugin loaded");
+    QObject *inst = loader.instance();
+    if (!inst) {
+        loader.unload();
+        NM_ERR_RET(nullptr, "Plugin Loader: unable to get plugin instance");
+    }
+    NPGuiInterface *gi = qobject_cast<NPGuiInterface*>(inst);
+    if (!gi) {
+        NM_ERR_RET(nullptr, "Plugin does not implement 'NPGuiInterface'");
+    }
+    gi->showUi();
+    return nm_action_result_silent();
 }

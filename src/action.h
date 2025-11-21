@@ -44,6 +44,7 @@ void nm_action_result_free(nm_action_result_t *res);
     X(dbg_toast)          \
     X(kfmon)              \
     X(kfmon_id)           \
+    X(nm_gui_plugin)      \
     X(nickel_setting)     \
     X(nickel_extras)      \
     X(nickel_browser)     \
