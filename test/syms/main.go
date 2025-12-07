@@ -19,6 +19,8 @@ import (
 	"github.com/xi2/xz"
 )
 
+var githubActions, _ = strconv.ParseBool(os.Getenv("GITHUB_ACTIONS")) // for https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands
+
 func main() {
 	sc, err := FindSymChecks(".")
 	if err != nil {
@@ -75,6 +77,9 @@ func main() {
 	var errs []error
 	gherrs := map[string][]string{}
 	for _, version := range checkVersions {
+		if githubActions {
+			fmt.Printf("::group::%s\n", version)
+		}
 		var checkLibs []string
 		for lib := range checks[version] {
 			checkLibs = append(checkLibs, lib)
@@ -124,6 +129,10 @@ func main() {
 				}
 			}
 		}
+
+		if githubActions {
+			fmt.Printf("::endgroup::\n")
+		}
 	}
 	if len(errs) == 0 {
 		os.Exit(0)
@@ -133,7 +142,7 @@ func main() {
 	for _, err := range errs {
 		fmt.Printf("        %v\n", err)
 	}
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
+	if githubActions {
 		var ghfs []string
 		for ghf := range gherrs {
 			ghfs = append(ghfs, ghf)
