@@ -1,20 +1,26 @@
 name: Build
-on: [push, pull_request, workflow_dispatch]
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
     name: NickelMenu
     runs-on: ubuntu-latest
-    container: ghcr.io/pgaskin/nickeltc:1.0
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         submodules: true
     - name: Build
-      run: make all koboroot
+      uses: docker://ghcr.io/pgaskin/nickeltc:1.0
+      with:
+        entrypoint: make
+        args: all koboroot
     - name: Upload
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: NickelMenu
         path: KoboRoot.tgz

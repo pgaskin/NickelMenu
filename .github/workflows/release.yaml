@@ -1,5 +1,14 @@
 name: Release
-on: {push: {tags: [v*]}}
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'new/existing tag name'
+        required: true
+      target_commitish:
+        description: 'target if new tag'
+        default: master
 
 jobs:
   build:
@@ -8,28 +17,37 @@ jobs:
     container: ghcr.io/pgaskin/nickeltc:1.0
     steps:
     - name: Checkout
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         submodules: true
     - name: Build
-      run: make all koboroot
-    - name: Release
-      id: release
-      uses: actions/create-release@latest
-      env:
-        GITHUB_TOKEN: ${{secrets.GHTOKEN}}
+      uses: docker://ghcr.io/pgaskin/nickeltc:1.0
       with:
-        tag_name: ${{github.ref}}
-        release_name: NickelMenu ${{github.ref}}
-        body: '<!-- replace this with the release notes -->'
-        draft: true
-        prerelease: false
-    - name: Upload
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{secrets.GHTOKEN}}
+        entrypoint: make
+        args: all koboroot
+    - name: Create draft release
+      uses: actions/github-script@v8
+      id: draft_release
       with:
-        upload_url: ${{steps.release.outputs.upload_url}}
-        asset_path: ./KoboRoot.tgz
-        asset_name: KoboRoot.tgz
-        asset_content_type: application/gzip
+        script: |
+          const {data: {id: id}} = await github.rest.repos.createRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: context.payload.inputs.tag_name,
+            target_commitish: context.payload.inputs.target_commitish,
+            name: `NickelMenu ${context.payload.inputs.tag_name}`,
+            draft: true,
+          })
+          core.setOutput('id', id)
+    - name: Upload release asset
+      uses: actions/github-script@v8
+      with:
+        retries: 3 # note: this applies to individual github.rest calls, not the entire script
+        script: |
+          await github.rest.repos.uploadReleaseAsset({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: '${{steps.draft_release.outputs.id}}',
+            name: 'KoboRoot.tgz',
+            data: await readFile(`KoboRoot.tgz`),
+          })
