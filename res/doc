@@ -66,6 +66,7 @@
 #                   nickel_open        - opens a view
 #                   nickel_wifi        - controls wifi (note: it doesn't wait for it to connect or disconnect, neither does it check for success)
 #                   nickel_bluetooth   - controls bluetooth
+#                   nickel_screenshot  - take screenshot (without having to turn on the "nickel_setting:screenshots" setting)
 #                   nickel_orientation - controls screen orientation
 #                                        (devices without an orientation sensor may need to use the kobopatch patch "Allow rotation on all devices" or set [DeveloperSettings] ForceAllowLandscape=true)
 #                                        (devices with an orientation sensor don't need to do anything, but can set the config setting to make this work on all views)
@@ -156,6 +157,8 @@
 #                                          toggle   (4.34.20097+)
 #                                          check    (4.34.20097+)
 #                                          scan     (4.34.20097+)
+#                   nickel_screenshot  - one of:
+#                                          capture               - Capture screenshot directly
 #
 #   chain_success:<action>:<arg>
 #   chain_failure:<action>:<arg>
