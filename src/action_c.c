@@ -1,4 +1,10 @@
+#include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "action.h"
 #include "kfmon.h"
@@ -48,4 +54,28 @@ NM_ACTION_(kfmon) {
         status = KFMON_IPC_ERR_INVALID_NAME;
 
     return nm_kfmon_return_handler(status);
+}
+
+NM_ACTION_(uninstall) {
+    (void) arg;
+    if (remove("/usr/local/Kobo/imageformats/libnm.so")) { // TODO: don't hardcode this
+        NM_LOG("uninstall: failed to remove library: %s", strerror(errno));
+        NM_LOG("uninstall: falling back to uninstall flag");
+        if (mkdir("/mnt/onboard/.adds", 0755) && errno != EEXIST) // TODO: don't hardcode this
+            return nm_action_result_msg("failed to create uninstall flag: mkdir .adds: %s", strerror(errno));
+        if (mkdir(NM_CONFIG_DIR, 0755) && errno != EEXIST)
+            return nm_action_result_msg("failed to create uninstall flag: mkdir %s: %s", NM_CONFIG_DIR, strerror(errno));
+        int fd = open(NM_CONFIG_DIR "/uninstall", O_CREAT|O_WRONLY, 0644);
+        if (fd == -1) {
+            return nm_action_result_msg("failed to create uninstall flag: open %s/uninstall: %s", NM_CONFIG_DIR, strerror(errno));
+        }
+        NM_LOG("uninstall: created uninstall flag");
+        close(fd);
+    } else {
+        NM_LOG("uninstall: removed lib");
+        if (!remove(NM_CONFIG_DIR "/uninstall")) // so if the user created it already, it won't uninstall the next time it gets installed
+            NM_LOG("uninstall: removed old uninstall flag");
+    }
+    NM_LOG("uninstall: rebooting");
+    return nm_action_power("reboot");
 }

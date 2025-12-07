@@ -65,6 +65,7 @@
 #                   nickel_misc        - other stuff which isn't significant enough for its own category
 #                   nickel_open        - opens a view
 #                   nickel_wifi        - controls wifi (note: it doesn't wait for it to connect or disconnect, neither does it check for success)
+#                   nickel_bluetooth   - controls bluetooth
 #                   nickel_orientation - controls screen orientation
 #                                        (devices without an orientation sensor may need to use the kobopatch patch "Allow rotation on all devices" or set [DeveloperSettings] ForceAllowLandscape=true)
 #                                        (devices with an orientation sensor don't need to do anything, but can set the config setting to make this work on all views)
@@ -122,7 +123,9 @@
 #                                          library:series            - Series (4.20.14601+)
 #                                          library:shelves           - Collections
 #                                          library:pocket            - Articles
+#                                          library:instapaper        - Instapaper
 #                                          library:dropbox           - Dropbox (4.18.13737+)
+#                                          library:gdrive            - GoogleDrive (4.36.21095+)
 #                                          reading_life:reading_life - Activity (with last tab)
 #                                          reading_life:stats        - Activity
 #                                          reading_life:awards       - Awards
@@ -147,6 +150,12 @@
 #                                          reboot   (4.13.12638+)
 #                                          sleep    (4.13.12638+)
 #                   skip               - the number of actions to skip, or -1 to skip all remaining ones (i.e. end the chain)
+#                   nickel_bluetooth   - one of:
+#                                          enable   (4.34.20097+)
+#                                          disable  (4.34.20097+)
+#                                          toggle   (4.34.20097+)
+#                                          check    (4.34.20097+)
+#                                          scan     (4.34.20097+)
 #
 #   chain_success:<action>:<arg>
 #   chain_failure:<action>:<arg>
@@ -183,14 +192,29 @@
 #     Unknown options are ignored. If there are multiple declarations of an
 #     option, only the first one takes effect.
 #
-#     <key>  the option name, one of:
-#              menu_main_15505_label       - sets the label used for the NickelMenu button on 4.23.15505+
-#              menu_main_15505_icon        - sets the icon used for the NickelMenu button on 4.23.15505+
-#              menu_main_15505_icon_active - sets the active icon used for the NickelMenu button on 4.23.15505+
+#     <key>  the option name:
+#              menu_main_15505_<main menu option>      - controls the added NickelMenu button
+#              menu_main_15505_<n>_<main_menu_option>  - controls the main menu button at position n (indexed from 0)
+#                                                        note that there may be already-hidden buttons in the list:
+#                                                        on a Kobo Libra Colour running 4.41.23145, the button list is:
+#                                                            0 - Home
+#                                                            1 - My Books
+#                                                            2 - Activity [hidden by default]
+#                                                            3 - My Notebooks
+#                                                            4 - Discover
+#                                                            5 - More
+#
+#              <main menu option>    one of:
+#                  enabled          - controls enablement of the NickelMenu button on 4.23.15505+
+#                  label            - sets the label used for the NickelMenu button on 4.23.15505+
+#                  icon             - sets the icon used for the NickelMenu button on 4.23.15505+
+#                  icon_active      - sets the active icon used for the NickelMenu button on 4.23.15505+
+#
 #     <val>  the option value:
-#              menu_main_15505_label       - the label to use instead of "NickelMenu"
-#              menu_main_15505_icon        - the path passed to QPixmap
-#              menu_main_15505_icon_active - the path passed to QPixmap
+#              (..)_enabled     -> 0 or 1
+#              (..)_label       -> the label to use instead of the default value
+#              (..)_icon        -> the path passed to QPixmap
+#              (..)_icon_active -> the path passed to QPixmap
 #
 # For example, you might have a configuration file named "mystuff" like:
 #

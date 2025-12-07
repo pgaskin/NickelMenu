@@ -57,6 +57,7 @@ typedef void WirelessWorkflowManager;
 typedef void StatusBarView;
 typedef void MoreController;
 typedef void MainWindowController;
+typedef void BluetoothManager;
 
 #define NM_ACT_SYM(var, sym) reinterpret_cast<void*&>(var) = dlsym(RTLD_DEFAULT, sym)
 #define NM_ACT_XSYM(var, symb, err) do { \
@@ -74,14 +75,20 @@ NM_ACTION_(nickel_open) {
     if (dlsym(RTLD_DEFAULT, "_ZN11MainNavViewC1EP7QWidget")) {
         NM_LOG("nickel_open: detected firmware >15505 (new nav tab bar), checking special cases");
 
-        if (!strcmp(arg1, "library") && !strcmp(arg2, "dropbox")) {
+        if (!strcmp(arg1, "library") && (!strcmp(arg2, "dropbox") || !strcmp(arg2, "gdrive"))) {
             //libnickel 4.23.15505 * _ZN14MoreControllerC1Ev
             MoreController *(*MoreController__MoreController)(MoreController* _this);
             NM_ACT_XSYM(MoreController__MoreController, "_ZN14MoreControllerC1Ev", "could not dlsym MoreController::MoreController");
 
-            //libnickel 4.23.15505 * _ZN14MoreController7dropboxEv
-            void (*MoreController_dropbox)(MoreController* _this);
-            NM_ACT_XSYM(MoreController_dropbox, "_ZN14MoreController7dropboxEv", "could not dlsym MoreController::dropbox");
+            void (*MoreController_cloud)(MoreController* _this);
+
+            if (!strcmp(arg2, "dropbox")) {
+                //libnickel 4.23.15505 * _ZN14MoreController7dropboxEv
+                NM_ACT_XSYM(MoreController_cloud, "_ZN14MoreController7dropboxEv", "could not dlsym MoreController::dropbox");
+            } else {
+                //libnickel 4.36.21095 * _ZN14MoreController11googleDriveEv
+                NM_ACT_XSYM(MoreController_cloud, "_ZN14MoreController11googleDriveEv", "could not dlsym MoreController::gdrive");
+            }
 
             //libnickel 4.23.15505 * _ZN14MoreControllerD0Ev
             MoreController *(*MoreController__deMoreController)(MoreController* _this);
@@ -94,7 +101,7 @@ NM_ACTION_(nickel_open) {
             mc = MoreController__MoreController(mc);
             NM_CHECK(nullptr, mc, "MoreController::MoreController returned null pointer");
 
-            MoreController_dropbox(mc);
+            MoreController_cloud(mc);
 
             // Clean up after ourselves
             MoreController__deMoreController(mc);
@@ -124,7 +131,9 @@ NM_ACTION_(nickel_open) {
         else if (!strcmp(arg2, "authors"))  sym_f = "_ZN15LibraryNavMixin11showAuthorsEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showAuthorsEv
         else if (!strcmp(arg2, "series"))   sym_f = "_ZN15LibraryNavMixin10showSeriesEv";              //libnickel 4.20.14601 * _ZN15LibraryNavMixin10showSeriesEv
         else if (!strcmp(arg2, "shelves"))  sym_f = "_ZN15LibraryNavMixin11showShelvesEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showShelvesEv
-        else if (!strcmp(arg2, "pocket"))   sym_f = "_ZN15LibraryNavMixin17showPocketLibraryEv";       //libnickel 4.6 * _ZN15LibraryNavMixin17showPocketLibraryEv
+        else if (!strcmp(arg2, "pocket"))   sym_f = "_ZN15LibraryNavMixin17showPocketLibraryEv";       //libnickel 4.6 4.38.23171 _ZN15LibraryNavMixin17showPocketLibraryEv
+                                                                                                              //libnickel 4.39 4.38.23429 _ZN15LibraryNavMixin17showPocketLibraryEv
+        else if (!strcmp(arg2, "instapaper")) sym_f = "_ZN15LibraryNavMixin21showInstapaperLibraryEv"; //libnickel 4.43.23418 * _ZN15LibraryNavMixin21showInstapaperLibraryEv
         else if (!strcmp(arg2, "dropbox"))  sym_f = "_ZN15LibraryNavMixin11showDropboxEv";             //libnickel 4.18.13737 4.22.15268 _ZN15LibraryNavMixin11showDropboxEv
     } else if (!strcmp(arg1, "reading_life")) {
         sym_c = "_ZN19ReadingLifeNavMixinC1Ev"; //libnickel 4.6 * _ZN19ReadingLifeNavMixinC1Ev
@@ -132,7 +141,7 @@ NM_ACTION_(nickel_open) {
 
         if      (!strcmp(arg2, "reading_life")) sym_f = "_ZN19ReadingLifeNavMixin14chooseActivityEv"; //libnickel 4.6 * _ZN19ReadingLifeNavMixin14chooseActivityEv
         else if (!strcmp(arg2, "stats"))        sym_f = "_ZN19ReadingLifeNavMixin5statsEv";           //libnickel 4.6 * _ZN19ReadingLifeNavMixin5statsEv
-        else if (!strcmp(arg2, "awards"))       sym_f = "_ZN19ReadingLifeNavMixin6awardsEv";          //libnickel 4.6 * _ZN19ReadingLifeNavMixin6awardsEv
+        else if (!strcmp(arg2, "awards"))       sym_f = "_ZN19ReadingLifeNavMixin6awardsEv";          //libnickel 4.6 4.38.21908 _ZN19ReadingLifeNavMixin6awardsEv
         else if (!strcmp(arg2, "words"))        sym_f = "_ZN19ReadingLifeNavMixin7myWordsEv";         //libnickel 4.6 * _ZN19ReadingLifeNavMixin7myWordsEv
     } else if (!strcmp(arg1, "store")) {
         sym_c = "_ZN13StoreNavMixinC1Ev"; //libnickel 4.6 * _ZN13StoreNavMixinC1Ev
@@ -895,4 +904,80 @@ NM_ACTION_(cmd_output) {
     return quiet
         ? nm_action_result_silent()
         : nm_action_result_msg("%s", qPrintable(Qt::convertFromPlainText(out, Qt::WhiteSpacePre)));
+}
+
+NM_ACTION_(nickel_bluetooth) {
+    enum BLUETOOTH_ACTION {
+        ENABLE  = 0b00001,
+        DISABLE = 0b00010,
+        TOGGLE  = 0b00100,
+        CHECK   = 0b01000,
+        SCAN    = 0b10000
+    };
+
+    int action = 0;
+    if (!strcmp(arg, "enable"))       action |= ENABLE;
+    else if (!strcmp(arg, "disable")) action |= DISABLE;
+    else if (!strcmp(arg, "toggle"))  action |= TOGGLE;
+    else if (!strcmp(arg, "check"))   action |= CHECK;
+    else if (!strcmp(arg, "scan"))    action |= SCAN;
+    else
+        NM_ERR_RET(nullptr, "unknown nickel_bluetooth action '%s'", arg);
+
+    //libnickel 4.34.20097 * _ZN16BluetoothManager14sharedInstanceEv
+    BluetoothManager *(*BluetoothManager_sharedInstance)();
+    NM_ACT_XSYM(BluetoothManager_sharedInstance, "_ZN16BluetoothManager14sharedInstanceEv", "could not dlsym BluetoothManager::sharedInstance");
+
+    //libnickel 4.34.20097 * _ZNK16BluetoothManager2upEv
+    uint (*BluetoothManager_up)(BluetoothManager *);
+    NM_ACT_XSYM(BluetoothManager_up, "_ZNK16BluetoothManager2upEv", "could not dlsym BluetoothManager::up");
+
+    //libnickel 4.34.20097 * _ZN16BluetoothManager13requestTurnOnEv _ZN16BluetoothManager2onEv
+    void (*BluetoothManager_on)(BluetoothManager *);
+    void (*BluetoothManager_onLegacy)(BluetoothManager *);
+    NM_ACT_SYM(BluetoothManager_on, "_ZN16BluetoothManager13requestTurnOnEv");
+    NM_ACT_SYM(BluetoothManager_onLegacy, "_ZN16BluetoothManager2onEv");
+    NM_CHECK(nullptr, BluetoothManager_on || BluetoothManager_onLegacy, "could not dlsym BluetoothManager::requestTurnOn");
+
+    //libnickel 4.34.20097 * _ZN16BluetoothManager4scanEv
+    void (*BluetoothManager_scan)(BluetoothManager *);
+    NM_ACT_XSYM(BluetoothManager_scan, "_ZN16BluetoothManager4scanEv", "could not dlsym BluetoothManager::BluetoothManager::scanEv");
+
+    //libnickel 4.34.20097 * _ZN16BluetoothManager8stopScanEv
+    void (*BluetoothManager_stopScan)(BluetoothManager *);
+    NM_ACT_XSYM(BluetoothManager_stopScan, "_ZN16BluetoothManager8stopScanEv", "could not dlsym BluetoothManager::stopScan");
+
+    //libnickel 4.34.20097 * _ZN16BluetoothManager3offEv
+    void (*BluetoothManager_off)(BluetoothManager *);
+    NM_ACT_XSYM(BluetoothManager_off, "_ZN16BluetoothManager3offEv", "could not dlsym BluetoothManager::off");
+
+    BluetoothManager *btm = BluetoothManager_sharedInstance();
+    NM_CHECK(nullptr, btm, "could not get shared bluetooth manager pointer");
+
+    uint isUp = BluetoothManager_up(btm);
+    if (action & TOGGLE)
+        action = (action & ~TOGGLE) | (isUp ? DISABLE : ENABLE);
+
+     switch (action) {
+        case CHECK:
+            return nm_action_result_toast("Bluetooth is %s.", isUp ? "on" : "off");
+        case ENABLE:
+            if (BluetoothManager_on) {
+                BluetoothManager_on(btm);
+            } else if (BluetoothManager_onLegacy) {
+                BluetoothManager_onLegacy(btm);
+            }
+            BluetoothManager_scan(btm);
+            return nm_action_result_toast("Bluetooth turned on.");
+        case DISABLE:
+            BluetoothManager_stopScan(btm);
+            BluetoothManager_off(btm);
+            return nm_action_result_toast("Bluetooth turned off.");
+        case SCAN:
+            BluetoothManager_scan(btm);
+            return nm_action_result_toast("Bluetooth scan initiated.");
+        default:
+            NM_ERR_RET(nullptr, "unknown nickel_bluetooth action '%s'", arg);
+            break;
+    }
 }
