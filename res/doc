@@ -123,8 +123,8 @@
 #                                          library:authors           - Authors
 #                                          library:series            - Series (4.20.14601+)
 #                                          library:shelves           - Collections
-#                                          library:pocket            - Articles
-#                                          library:instapaper        - Instapaper
+#                                          library:pocket            - Articles (until 4.38.23171/4.42.23296)
+#                                          library:instapaper        - Instapaper (4.43.23418+)
 #                                          library:dropbox           - Dropbox (4.18.13737+)
 #                                          library:gdrive            - GoogleDrive (4.36.21095+)
 #                                          reading_life:reading_life - Activity (with last tab)
