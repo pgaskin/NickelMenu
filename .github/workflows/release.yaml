@@ -10,6 +10,11 @@ on:
         description: 'target if new tag'
         default: master
 
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
 jobs:
   build:
     name: NickelMenu
@@ -49,6 +54,7 @@ jobs:
       with:
         retries: 3 # note: this applies to individual github.rest calls, not the entire script
         script: |
+          const {readFile} = require('fs').promises
           await github.rest.repos.uploadReleaseAsset({
             owner: context.repo.owner,
             repo: context.repo.repo,
