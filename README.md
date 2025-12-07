@@ -4,6 +4,8 @@ The easiest way to launch custom scripts, change hidden settings, and run action
 
 See the [website](https://pgaskin.net/NickelMenu) and [thread on MobileRead](https://mobileread.com/forums/showthread.php?t=329525) for screenshots and more details.
 
+Firmware 5.x is not supported yet.
+
 ## Installation
 You can download pre-built packages of the latest stable release from the [releases](https://github.com/pgaskin/NickelMenu/releases) page, or you can find bleeding-edge builds of each commit from [here](https://github.com/pgaskin/NickelMenu/actions).
 
