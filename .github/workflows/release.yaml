@@ -25,6 +25,11 @@ jobs:
       with:
         entrypoint: make
         args: all koboroot
+    - name: Attest
+      uses: actions/attest-build-provenance@v3
+      with:
+        subject-path: |
+          KoboRoot.tgz
     - name: Create draft release
       uses: actions/github-script@v8
       id: draft_release
