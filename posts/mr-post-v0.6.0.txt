@@ -1,0 +1,14 @@
+[B][SIZE=5]NickelMenu v0.6.0[/SIZE][/B]
+
+[LIST]
+[*] Fix issue with loading 3+ NickelHook mods (thanks @redphx and @busybox11).
+[*] Experimental menu_main_15505_<n>_<enabled|label|icon|icon_active> options have been added to customize the main menu buttons (thanks @jmgao).
+[*] New nickel_bluetooth:<enable|disable|toggle|check|scan> action (thanks @onatbas and @redphx).
+[*] Silence nickel_setting:dark_mode.
+[*] Support menu_item:selection when parental controls are enabled (thanks @danners).
+[*] New nickel_open:gdrive option (thanks @tomtastic).
+[*] New nickel_open:instapaper option (thanks @kohai-io).
+[*] New nickel_screenshot:capture action (thanks @redphx).
+[/LIST]
+
+See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.6.0"]release[/URL] on GitHub for more details.
