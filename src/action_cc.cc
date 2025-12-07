@@ -131,7 +131,9 @@ NM_ACTION_(nickel_open) {
         else if (!strcmp(arg2, "authors"))  sym_f = "_ZN15LibraryNavMixin11showAuthorsEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showAuthorsEv
         else if (!strcmp(arg2, "series"))   sym_f = "_ZN15LibraryNavMixin10showSeriesEv";              //libnickel 4.20.14601 * _ZN15LibraryNavMixin10showSeriesEv
         else if (!strcmp(arg2, "shelves"))  sym_f = "_ZN15LibraryNavMixin11showShelvesEv";             //libnickel 4.6 * _ZN15LibraryNavMixin11showShelvesEv
-        else if (!strcmp(arg2, "pocket"))   sym_f = "_ZN15LibraryNavMixin17showPocketLibraryEv";       //libnickel 4.6 * _ZN15LibraryNavMixin17showPocketLibraryEv
+        else if (!strcmp(arg2, "pocket"))   sym_f = "_ZN15LibraryNavMixin17showPocketLibraryEv";       //libnickel 4.6 4.38.23171 _ZN15LibraryNavMixin17showPocketLibraryEv
+                                                                                                              //libnickel 4.39 4.38.23429 _ZN15LibraryNavMixin17showPocketLibraryEv
+        else if (!strcmp(arg2, "instapaper")) sym_f = "_ZN15LibraryNavMixin21showInstapaperLibraryEv"; //libnickel 4.43.23418 * _ZN15LibraryNavMixin21showInstapaperLibraryEv
         else if (!strcmp(arg2, "dropbox"))  sym_f = "_ZN15LibraryNavMixin11showDropboxEv";             //libnickel 4.18.13737 4.22.15268 _ZN15LibraryNavMixin11showDropboxEv
     } else if (!strcmp(arg1, "reading_life")) {
         sym_c = "_ZN19ReadingLifeNavMixinC1Ev"; //libnickel 4.6 * _ZN19ReadingLifeNavMixinC1Ev
@@ -139,7 +141,7 @@ NM_ACTION_(nickel_open) {
 
         if      (!strcmp(arg2, "reading_life")) sym_f = "_ZN19ReadingLifeNavMixin14chooseActivityEv"; //libnickel 4.6 * _ZN19ReadingLifeNavMixin14chooseActivityEv
         else if (!strcmp(arg2, "stats"))        sym_f = "_ZN19ReadingLifeNavMixin5statsEv";           //libnickel 4.6 * _ZN19ReadingLifeNavMixin5statsEv
-        else if (!strcmp(arg2, "awards"))       sym_f = "_ZN19ReadingLifeNavMixin6awardsEv";          //libnickel 4.6 * _ZN19ReadingLifeNavMixin6awardsEv
+        else if (!strcmp(arg2, "awards"))       sym_f = "_ZN19ReadingLifeNavMixin6awardsEv";          //libnickel 4.6 4.38.21908 _ZN19ReadingLifeNavMixin6awardsEv
         else if (!strcmp(arg2, "words"))        sym_f = "_ZN19ReadingLifeNavMixin7myWordsEv";         //libnickel 4.6 * _ZN19ReadingLifeNavMixin7myWordsEv
     } else if (!strcmp(arg1, "store")) {
         sym_c = "_ZN13StoreNavMixinC1Ev"; //libnickel 4.6 * _ZN13StoreNavMixinC1Ev
@@ -930,9 +932,12 @@ NM_ACTION_(nickel_bluetooth) {
     uint (*BluetoothManager_up)(BluetoothManager *);
     NM_ACT_XSYM(BluetoothManager_up, "_ZNK16BluetoothManager2upEv", "could not dlsym BluetoothManager::up");
 
-    //libnickel 4.34.20097 * _ZN16BluetoothManager2onEv
+    //libnickel 4.34.20097 * _ZN16BluetoothManager13requestTurnOnEv _ZN16BluetoothManager2onEv
     void (*BluetoothManager_on)(BluetoothManager *);
-    NM_ACT_XSYM(BluetoothManager_on, "_ZN16BluetoothManager2onEv", "could not dlsym BluetoothManager::on");
+    void (*BluetoothManager_onLegacy)(BluetoothManager *);
+    NM_ACT_SYM(BluetoothManager_on, "_ZN16BluetoothManager13requestTurnOnEv");
+    NM_ACT_SYM(BluetoothManager_onLegacy, "_ZN16BluetoothManager2onEv");
+    NM_CHECK(nullptr, BluetoothManager_on || BluetoothManager_onLegacy, "could not dlsym BluetoothManager::requestTurnOn");
 
     //libnickel 4.34.20097 * _ZN16BluetoothManager4scanEv
     void (*BluetoothManager_scan)(BluetoothManager *);
@@ -957,7 +962,11 @@ NM_ACTION_(nickel_bluetooth) {
         case CHECK:
             return nm_action_result_toast("Bluetooth is %s.", isUp ? "on" : "off");
         case ENABLE:
-            BluetoothManager_on(btm);
+            if (BluetoothManager_on) {
+                BluetoothManager_on(btm);
+            } else if (BluetoothManager_onLegacy) {
+                BluetoothManager_onLegacy(btm);
+            }
             BluetoothManager_scan(btm);
             return nm_action_result_toast("Bluetooth turned on.");
         case DISABLE:

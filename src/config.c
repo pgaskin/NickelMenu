@@ -892,7 +892,7 @@ static void nm_global_config_replace(nm_config_t *cfg, const char *err) {
     }
 
     if (err) {
-        nm_global_menu_config_n        = 1;
+        nm_global_menu_config_n        = 2;
         nm_global_menu_config_items    = calloc(nm_global_menu_config_n, sizeof(nm_menu_item_t*));
         nm_global_menu_config_items[0] = calloc(1, sizeof(nm_menu_item_t));
         nm_global_menu_config_items[0]->loc = NM_MENU_LOCATION(main);
@@ -902,6 +902,14 @@ static void nm_global_config_replace(nm_config_t *cfg, const char *err) {
         nm_global_menu_config_items[0]->action->act = NM_ACTION(dbg_msg);
         nm_global_menu_config_items[0]->action->on_failure = true;
         nm_global_menu_config_items[0]->action->on_success = true;
+        nm_global_menu_config_items[1] = calloc(1, sizeof(nm_menu_item_t));
+        nm_global_menu_config_items[1]->loc = NM_MENU_LOCATION(main);
+        nm_global_menu_config_items[1]->lbl = strdup("Uninstall");
+        nm_global_menu_config_items[1]->action = calloc(1, sizeof(nm_menu_action_t));
+        nm_global_menu_config_items[1]->action->arg = strdup(err);
+        nm_global_menu_config_items[1]->action->act = NM_ACTION(uninstall);
+        nm_global_menu_config_items[1]->action->on_failure = true;
+        nm_global_menu_config_items[1]->action->on_success = true;
         return;
     }
 

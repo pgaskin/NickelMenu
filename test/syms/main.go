@@ -6,10 +6,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,6 +18,8 @@ import (
 	"github.com/pgaskin/kobopatch/patchlib"
 	"github.com/xi2/xz"
 )
+
+var githubActions, _ = strconv.ParseBool(os.Getenv("GITHUB_ACTIONS")) // for https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands
 
 func main() {
 	sc, err := FindSymChecks(".")
@@ -38,7 +41,9 @@ func main() {
 		"4.28.17925", "4.28.18220", "4.29.18730", "4.30.18838", "4.31.19086",
 		"4.32.19501", "4.33.19608", "4.33.19611", "4.33.19759", "4.34.20097",
 		"4.35.20400", "4.36.21095", "4.37.21533", "4.37.21582", "4.37.21586",
-		"4.38.21908",
+		"4.38.21908", "4.39.22801", "4.39.22861", "4.38.23038", "4.39.23027",
+		"4.40.23081", "4.41.23145", "4.38.23171", "4.42.23296", "4.38.23429",
+		"4.43.23418", "4.38.23552", "4.44.23552",
 	}
 
 	checks := map[string]map[string][]SymCheck{}
@@ -66,17 +71,15 @@ func main() {
 		}
 	}
 
-	var checkVersions []string
-	for version := range checks {
-		checkVersions = append(checkVersions, version)
-	}
-	sort.Slice(checkVersions, func(i, j int) bool {
-		return versioncmp(checkVersions[i], checkVersions[j]) == -1
-	})
+	checkVersions := slices.SortedFunc(maps.Keys(checks), versioncmp)
+	fmt.Printf("[INF] sorted versions: %s\n", checkVersions)
 
 	var errs []error
 	gherrs := map[string][]string{}
 	for _, version := range checkVersions {
+		if githubActions {
+			fmt.Printf("::group::%s\n", version)
+		}
 		var checkLibs []string
 		for lib := range checks[version] {
 			checkLibs = append(checkLibs, lib)
@@ -126,6 +129,10 @@ func main() {
 				}
 			}
 		}
+
+		if githubActions {
+			fmt.Printf("::endgroup::\n")
+		}
 	}
 	if len(errs) == 0 {
 		os.Exit(0)
@@ -135,7 +142,7 @@ func main() {
 	for _, err := range errs {
 		fmt.Printf("        %v\n", err)
 	}
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
+	if githubActions {
 		var ghfs []string
 		for ghf := range gherrs {
 			ghfs = append(ghfs, ghf)
@@ -180,7 +187,7 @@ func GetPatcher(version, lib string) (*patchlib.Patcher, error) {
 		}
 	}
 
-	buf, err := ioutil.ReadAll(tr)
+	buf, err := io.ReadAll(tr)
 	if err != nil {
 		return nil, fmt.Errorf("read kobopatch testdata: %w", err)
 	}
@@ -253,6 +260,19 @@ func versioncmp(a, b string) int {
 		return 0
 	}
 	aspl, bspl := splint(a), splint(b)
+	if false { // I think it might be less confusing to just explicitly list both if required, as they are branches and not all changes are in each
+		if len(aspl) == 3 && len(bspl) == 3 && aspl[0] == 4 && bspl[0] == 4 && aspl[1] >= 38 && bspl[1] >= 38 {
+			// if 4.38/4.39+ branching, sort by only the build number
+			switch {
+			case aspl[2] < bspl[2]:
+				return -1
+			case aspl[2] > bspl[2]:
+				return 1
+			case aspl[2] == bspl[2] && aspl[1] == bspl[1]: // fall back to normal compare if not entirely equal
+				return 0
+			}
+		}
+	}
 	mlen := len(aspl)
 	if len(bspl) > mlen {
 		mlen = len(bspl)

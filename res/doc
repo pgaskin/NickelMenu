@@ -123,6 +123,7 @@
 #                                          library:series            - Series (4.20.14601+)
 #                                          library:shelves           - Collections
 #                                          library:pocket            - Articles
+#                                          library:instapaper        - Instapaper
 #                                          library:dropbox           - Dropbox (4.18.13737+)
 #                                          library:gdrive            - GoogleDrive (4.36.21095+)
 #                                          reading_life:reading_life - Activity (with last tab)
