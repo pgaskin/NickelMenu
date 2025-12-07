@@ -9,6 +9,7 @@
 [*] New nickel_open:gdrive option (thanks @tomtastic).
 [*] New nickel_open:instapaper option (thanks @kohai-io).
 [*] New nickel_screenshot:capture action (thanks @redphx).
+[*] Add uninstall action when the config is invalid or missing.
 [/LIST]
 
 See the [URL="https://github.com/pgaskin/NickelMenu/releases/v0.6.0"]release[/URL] on GitHub for more details.
