@@ -240,12 +240,13 @@ static int send_packet(int data_fd, const char *restrict payload, size_t len) {
 // Send the requested IPC command:arg pair (or command alone if arg is NULL)
 static int send_ipc_command(int data_fd, const char *restrict ipc_cmd, const char *restrict ipc_arg) {
     char buf[256] = { 0 };
-    int packet_len = 0;
-    // Somme commands don't require an arg
-    if (ipc_arg) {
-        packet_len = snprintf(buf, sizeof(buf), "%s:%s", ipc_cmd, ipc_arg);
-    } else {
-        packet_len = snprintf(buf, sizeof(buf), "%s", ipc_cmd);
+    // snprintf returns the number of bytes it *would* have written, not the number actually written.
+    // We must check for truncation before using packet_len as the send length.
+    int packet_len = ipc_arg
+        ? snprintf(buf, sizeof(buf), "%s:%s", ipc_cmd, ipc_arg)
+        : snprintf(buf, sizeof(buf), "%s", ipc_cmd);
+    if (packet_len < 0 || (size_t) packet_len >= sizeof(buf)) {
+        return KFMON_IPC_SEND_FAILURE;
     }
     // Send it (w/ a NUL)
     return send_packet(data_fd, buf, (size_t) (packet_len + 1));
