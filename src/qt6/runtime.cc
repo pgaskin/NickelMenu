@@ -77,7 +77,7 @@ void start(const Spec &spec, const Paths &paths) {
     errno = 0;
     const bool absent = lstat(paths.disabled, &st) != 0 && errno == ENOENT;
     if (!absent || rename(paths.active, paths.disabled) != 0) {
-        log("REFUSED: self-disable failed; NO hook installed. Remove probe before retesting.\n");
+        log("REFUSED: self-disable failed; NO hook installed. Remove the backend before retesting.\n");
         if (self) dlclose(self);
         return;
     }
@@ -88,7 +88,7 @@ void start(const Spec &spec, const Paths &paths) {
         return;
     }
     dlclose(self); // RTLD_NODELETE keeps its mappings until process termination
-    if (!log("SELF-DISABLED on disk and synced; probe pinned until process exit.\n")) return;
+    if (!log("SELF-DISABLED on disk and synced; backend pinned until process exit.\n")) return;
     char executable[512];
     const ssize_t n = readlink("/proc/self/exe", executable, sizeof(executable) - 1);
     if (n < 0 || static_cast<size_t>(n) == sizeof(executable) - 1) {

@@ -1,4 +1,3 @@
-#include "NickelHook.h"
 #include <cstdarg>
 #include <cstdio>
 #include <fcntl.h>

@@ -1,0 +1,50 @@
+# Separate, build-pinned experimental Qt 6 backend. Qt 5 Makefile is unchanged.
+CC = arm-linux-gnueabihf-gcc
+CXX = arm-linux-gnueabihf-g++
+MOC = /usr/lib/qt6/libexec/moc
+QT_INCLUDE = /usr/include/arm-linux-gnueabihf/qt6
+OUT = build/qt6
+NM_CONFIG_DIR = /mnt/onboard/.adds/nm
+CPPFLAGS += -DNM_QT6 -DQT_NO_DEBUG -D_FILE_OFFSET_BITS=64 -Isrc/qt6 -Isrc \
+ -I$(QT_INCLUDE) -I$(QT_INCLUDE)/QtCore -I$(QT_INCLUDE)/QtGui -I$(QT_INCLUDE)/QtWidgets \
+ -DNM_CONFIG_DIR='"$(NM_CONFIG_DIR)"' -DNM_CONFIG_DIR_DISP='"$(NM_CONFIG_DIR)"'
+COMMON = -O2 -mthumb -fPIC -fvisibility=hidden -Wall -Wextra -Werror
+CFLAGS += $(COMMON) -std=gnu11
+CXXFLAGS += $(COMMON) -std=c++17
+HARDEN = -Wl,--no-undefined,-z,relro,-z,now
+LDLIBS = -lQt6Widgets -lQt6Gui -lQt6Core -ldl -pthread
+C_SOURCES = src/action.c src/action_c.c src/config.c src/generator.c src/generator_c.c src/util.c
+CXX_SOURCES = src/action_cc.cc src/qt6/capabilities.cc src/qt6/executor.cc src/qt6/launcher.cc src/qt6/log.cc
+OBJECTS = $(patsubst src/%.c,$(OUT)/%.o,$(C_SOURCES)) $(patsubst src/%.cc,$(OUT)/%.o,$(CXX_SOURCES))
+LOADER = src/qt6/hook.cc src/qt6/runtime.cc src/qt6/navigation.cc src/qt6/plugin.cc
+
+all: $(OUT)/libnmqt6.so
+$(OUT)/%.o: src/%.c Makefile.qt6
+	mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@
+$(OUT)/%.o: src/%.cc Makefile.qt6
+	mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP -c $< -o $@
+$(OUT)/moc_plugin.cc: src/qt6/plugin.h src/qt6/plugin.json
+	mkdir -p $(dir $@)
+	$(MOC) $(CPPFLAGS) $< -o $@
+$(OUT)/libnmqt6.so: $(OBJECTS) $(LOADER) src/qt6/runtime.h src/qt6/navigation.h src/qt6/hook.h $(OUT)/moc_plugin.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -Isrc/qt6 -shared $(LOADER) $(OUT)/moc_plugin.cc $(OBJECTS) $(HARDEN) $(LDLIBS) -o $@
+$(OUT)/core-test: test/qt6/core.cc $(OBJECTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fPIC -pie $^ $(HARDEN) $(LDLIBS) -o $@
+tests: $(OUT)/core-test
+fixtures: $(OUT)/fixture-plugin.so $(OUT)/fixture-runner $(OUT)/qt-smoke
+$(OUT)/moc_fixture.cc: test/qt6/fixture/target.h
+	mkdir -p $(dir $@)
+	$(MOC) $(CPPFLAGS) $< -o $@
+$(OUT)/libfixture.so: test/qt6/fixture/target.cc test/qt6/fixture/caller.cc test/qt6/fixture/target.h $(OUT)/moc_fixture.cc
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -Itest/qt6/fixture -fvisibility=default -fsemantic-interposition -shared test/qt6/fixture/target.cc test/qt6/fixture/caller.cc $(OUT)/moc_fixture.cc $(HARDEN) -Wl,--build-id=0x1122334455667788990011223344556677889900 $(LDLIBS) -o $@
+$(OUT)/fixture-plugin.so: test/qt6/plugin.cc $(filter-out src/qt6/plugin.cc,$(LOADER)) $(OBJECTS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -shared $^ $(HARDEN) $(LDLIBS) -o $@
+$(OUT)/fixture-runner: test/qt6/runner.cc $(OUT)/libfixture.so
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -Itest/qt6/fixture -fPIC -pie $< -L$(OUT) -lfixture -Wl,-rpath,'$$ORIGIN' $(HARDEN) $(LDLIBS) -o $@
+$(OUT)/qt-smoke: test/qt6/smoke.cc
+	mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fPIC -pie $< $(HARDEN) $(LDLIBS) -o $@
+-include $(OBJECTS:.o=.d)
+.PHONY: all tests fixtures

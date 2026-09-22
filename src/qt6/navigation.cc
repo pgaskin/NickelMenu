@@ -47,26 +47,11 @@ private:
 bool insert_menu(QWidget *view, Logger log) {
     if (!valid_view(view, log)) return false;
     if (view->findChild<QObject *>(QStringLiteral("nmQt6Button"))) {
-        log("REFUSED: diagnostic button already exists.");
+        log("REFUSED: NickelMenu button already exists.");
         return false;
     }
     QHBoxLayout *row = nullptr;
-    int inspected = 0;
     for (auto *candidate : view->findChildren<QHBoxLayout *>()) {
-        if (++inspected > 8) {
-            log("REFUSED: unexpectedly many horizontal layouts; UI unchanged.");
-            return false;
-        }
-        char details[192];
-        snprintf(details, sizeof(details), "ROW candidate=%d count=%d direct_parent=%d",
-                 inspected, candidate->count(), candidate->parentWidget() == view);
-        log(details);
-        for (int i = 0; i < candidate->count() && i < 8; ++i) {
-            const auto *widget = candidate->itemAt(i)->widget();
-            snprintf(details, sizeof(details), "ROW child=%d class=%.100s", i,
-                     widget ? widget->metaObject()->className() : "<not a widget>");
-            log(details);
-        }
         if (candidate->count() != 6 || candidate->parentWidget() != view) continue;
         bool matches = true;
         for (int i = 0; i < candidate->count(); ++i) {

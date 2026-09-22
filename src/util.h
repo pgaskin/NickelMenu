@@ -9,7 +9,17 @@ extern "C" {
 #include <string.h>
 #include <syslog.h>
 
+#ifdef NM_QT6
+#ifdef __cplusplus
+extern "C" {
+#endif
+void nh_log(const char *format, ...) __attribute__((format(printf, 1, 2)));
+#ifdef __cplusplus
+}
+#endif
+#else
 #include <NickelHook.h>
+#endif
 
 // strtrim trims ASCII whitespace in-place (i.e. don't give it a string literal)
 // from the left/right of the string.
