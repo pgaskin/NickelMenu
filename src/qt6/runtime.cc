@@ -40,7 +40,7 @@ void report(const char *message) { log(message); log("\n"); }
 
 // ARM C++ ABI C1 constructors return `this`, unlike the generic Itanium ABI.
 // Preserve that return value and both opaque arguments. Only after successful
-// restoration and original return do we queue public QWidget-based UI work.
+// restoration and original return do we install public QWidget-based UI work.
 // No private fields are accessed; Nickel's exceptions are not caught.
 void *wrapper(void *self, void *parent) {
     __atomic_thread_fence(__ATOMIC_ACQUIRE);
@@ -60,7 +60,7 @@ void *wrapper(void *self, void *parent) {
     void *result = original(self, parent); // exactly once, even if restoration fails
     if (first) {
         log("RETURN MainNavView C1; original constructor returned normally.\n");
-        if (restored && result == self) queue_menu(self, report);
+        if (restored && result == self) monitor_menu(self, report);
         else log("REFUSED: no UI insertion after failed restoration or unexpected return.\n");
     }
     return result;
@@ -115,6 +115,6 @@ void start(const Spec &spec, const Paths &paths) {
     // state: this function runs in the DSO's ELF initialization sequence.
     error = install(hook);
     if (error) report(error);
-    else log("INSTALLED one-shot MainNavView C1 hook; waiting for a real caller.\n");
+    else log("INSTALLED one-shot MainNavView C1 hook; later views use public Qt monitoring.\n");
 }
 }

@@ -1,6 +1,7 @@
 #include "navigation.h"
 #include "launcher.h"
 #include <QApplication>
+#include <QEvent>
 #include <QHBoxLayout>
 #include <QMenu>
 #include <QPushButton>
@@ -22,6 +23,26 @@ bool valid_view(QWidget *view, Logger log) {
     }
     return true;
 }
+
+class NavMonitor final : public QObject {
+public:
+    NavMonitor(QApplication *application, Logger log)
+        : QObject(application), log_(log) {
+        setObjectName(QStringLiteral("nmQt6NavMonitor"));
+        application->installEventFilter(this);
+    }
+
+    bool eventFilter(QObject *watched, QEvent *event) override {
+        if (event->type() == QEvent::Show) {
+            auto *view = qobject_cast<QWidget *>(watched);
+            if (view && view->inherits("MainNavView")) queue_menu(view, log_);
+        }
+        return false;
+    }
+
+private:
+    Logger log_;
+};
 }
 bool insert_menu(QWidget *view, Logger log) {
     if (!valid_view(view, log)) return false;
@@ -75,9 +96,27 @@ bool insert_menu(QWidget *view, Logger log) {
 void queue_menu(void *self, Logger log) {
     auto *view = static_cast<QWidget *>(self);
     if (!valid_view(view, log)) return;
+    if (view->property("nmQt6MenuQueued").toBool() ||
+        view->findChild<QObject *>(QStringLiteral("nmQt6Button"))) return;
+    view->setProperty("nmQt6MenuQueued", true);
     // Avoid adding widgets while Nickel's outer loadView caller is still
     // wiring up the navigation. The context cancels this if the view dies.
-    QTimer::singleShot(0, view, [view, log] { insert_menu(view, log); });
+    QTimer::singleShot(0, view, [view, log] {
+        view->setProperty("nmQt6MenuQueued", false);
+        insert_menu(view, log);
+    });
     log("QUEUED UI insertion for the next event-loop turn.");
+}
+
+void monitor_menu(void *self, Logger log) {
+    auto *view = static_cast<QWidget *>(self);
+    if (!valid_view(view, log)) return;
+    auto *application = qobject_cast<QApplication *>(QCoreApplication::instance());
+    if (!application->findChild<QObject *>(QStringLiteral("nmQt6NavMonitor"),
+                                          Qt::FindDirectChildrenOnly)) {
+        new NavMonitor(application, log);
+        log("MONITOR installed for later MainNavView show events.");
+    }
+    queue_menu(view, log);
 }
 }
