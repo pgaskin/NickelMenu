@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QEvent>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QMenu>
 #include <QPushButton>
 #include <QThread>
@@ -66,15 +67,39 @@ bool insert_menu(QWidget *view, Logger log) {
     if (!row) { log("REFUSED: no six-button MainNavButton row; UI unchanged."); return false; }
     log("LAYOUT validated one six-button navigation row; existing widgets retained.");
 
+    auto *reference = row->itemAt(0)->widget();
+    reference->ensurePolished();
+    QWidget *typography = reference;
+    for (auto *label : reference->findChildren<QLabel *>()) {
+        if (!label->text().isEmpty()) {
+            label->ensurePolished();
+            typography = label;
+            break;
+        }
+    }
     auto *button = new QPushButton(QStringLiteral("NickelMenu"), view);
     button->setObjectName(QStringLiteral("nmQt6Button"));
     button->setFocusPolicy(Qt::NoFocus);
-    button->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    button->setStyleSheet(QStringLiteral("QPushButton { color: black; background: white; border: 2px solid black; padding: 4px; }"));
+    // Use the live Nickel navigation control as the source of truth. Hard-coded
+    // colours, borders and point sizes looked foreign and did not scale with
+    // Nickel's theme/DPI settings. QPushButton cannot reproduce MainNavButton's
+    // private icon painting, but its public typography and palette can match.
+    button->setFont(typography->font());
+    button->setPalette(typography->palette());
+    button->setLayoutDirection(typography->layoutDirection());
+    button->setSizePolicy(reference->sizePolicy());
+    button->setMinimumSize(reference->minimumSize());
+    button->setMaximumSize(reference->maximumSize());
+    button->setFlat(true);
     nm6::attach(button, view);
-    row->addWidget(button);
+    row->addWidget(button, 1);
     button->show();
-    log("ADDED NickelMenu launcher; configuration loads when opened.");
+    char detail[256];
+    snprintf(detail, sizeof(detail),
+             "ADDED NickelMenu launcher; inherited font=%s point=%.1f pixel=%d.",
+             button->font().family().toUtf8().constData(),
+             button->font().pointSizeF(), button->font().pixelSize());
+    log(detail);
     return true;
 }
 

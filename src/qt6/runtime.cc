@@ -29,13 +29,6 @@ bool log(const char *message) {
     close(fd);
     return okay;
 }
-bool sync_dir(const char *path) {
-    int fd = open(path, O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW);
-    if (fd < 0) return false;
-    bool okay = fsync(fd) == 0;
-    close(fd);
-    return okay;
-}
 void report(const char *message) { log(message); log("\n"); }
 
 // ARM C++ ABI C1 constructors return `this`, unlike the generic Itanium ABI.
@@ -69,26 +62,6 @@ void *wrapper(void *self, void *parent) {
 
 void start(const Spec &spec, const Paths &paths) {
     log_path = paths.log;
-    // Pin while its original pathname still exists. NODELETE is necessary even
-    // after restoring the GOT: another thread could already be in our wrapper.
-    // The fixture closes the last explicit handle before calling through it.
-    void *self = dlopen(paths.active, RTLD_NOW | RTLD_NOLOAD | RTLD_NODELETE);
-    struct stat st{};
-    errno = 0;
-    const bool absent = lstat(paths.disabled, &st) != 0 && errno == ENOENT;
-    if (!absent || rename(paths.active, paths.disabled) != 0) {
-        log("REFUSED: self-disable failed; NO hook installed. Remove the backend before retesting.\n");
-        if (self) dlclose(self);
-        return;
-    }
-    const bool persisted = sync_dir(paths.active_dir) && sync_dir(paths.disabled_dir);
-    if (!self || !persisted) {
-        log("REFUSED: residency pin or self-disable directory sync failed; NO hook installed.\n");
-        if (self) dlclose(self);
-        return;
-    }
-    dlclose(self); // RTLD_NODELETE keeps its mappings until process termination
-    if (!log("SELF-DISABLED on disk and synced; backend pinned until process exit.\n")) return;
     char executable[512];
     const ssize_t n = readlink("/proc/self/exe", executable, sizeof(executable) - 1);
     if (n < 0 || static_cast<size_t>(n) == sizeof(executable) - 1) {
@@ -101,15 +74,29 @@ void start(const Spec &spec, const Paths &paths) {
         log("REFUSED: not the expected Nickel process; NO hook installed.\n");
         return;
     }
+    struct stat st{};
     if (lstat(NM_CONFIG_DIR "/uninstall", &st) == 0) {
         log("DISABLED by configuration uninstall flag; NO hook installed.\n");
         return;
     }
+    // The image plugin loader is free to release its explicit handle after
+    // discovery. Keep our restored-hook callback and event filter resident for
+    // the life of this Nickel process while leaving the library active on disk
+    // for subsequent boots.
+    void *self = dlopen(paths.active, RTLD_NOW | RTLD_NOLOAD | RTLD_NODELETE);
+    if (!self) {
+        log("REFUSED: persistent residency pin failed; NO hook installed.\n");
+        return;
+    }
+    dlclose(self); // RTLD_NODELETE retains the mapping until process exit
+    if (!log("PINNED persistent backend for this process; active library retained on disk.\n")) return;
     const char *error = prepare(spec, reinterpret_cast<uintptr_t>(&wrapper), hook);
     if (error) { report(error); return; }
     char details[256];
-    snprintf(details, sizeof(details), "VALIDATED Thumb destination=%p GOT=%p protection=read-only build=%s\n",
-             reinterpret_cast<void *>(hook.original), static_cast<void *>(hook.slot), spec.build_id);
+    snprintf(details, sizeof(details),
+             "VALIDATED Thumb destination=%p symbol-offset=%p GOT=%p slot-offset=%p protection=read-only build=%s\n",
+             reinterpret_cast<void *>(hook.original), reinterpret_cast<void *>(hook.symbol_value),
+             static_cast<void *>(hook.slot), reinterpret_cast<void *>(hook.slot_offset), hook.build_id);
     if (!log(details)) return;
     // Do not add constructors/destructors or dynamic initialization to this
     // state: this function runs in the DSO's ELF initialization sequence.

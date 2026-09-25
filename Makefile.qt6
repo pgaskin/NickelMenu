@@ -1,4 +1,4 @@
-# Separate, build-pinned experimental Qt 6 backend. Qt 5 Makefile is unchanged.
+# Separate experimental Qt 6 backend. Qt 5 Makefile is unchanged.
 CC = arm-linux-gnueabihf-gcc
 CXX = arm-linux-gnueabihf-g++
 MOC = /usr/lib/qt6/libexec/moc

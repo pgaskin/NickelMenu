@@ -5,10 +5,12 @@
 namespace nm {
 struct Spec {
     const char *library;
-    const char *build_id; // exactly 40 lowercase hex digits
+    // Optional firmware pin. Null/empty accepts the runtime build ID only after
+    // all symbol, relocation, mapping, RELRO and destination checks succeed.
+    const char *build_id;
     const char *symbol;
-    uintptr_t symbol_value; // includes the Thumb bit; zero means discover (fixture only)
-    uintptr_t slot_offset; // zero means discover (fixture only)
+    uintptr_t symbol_value; // includes the Thumb bit; zero means discover
+    uintptr_t slot_offset; // zero means discover
 };
 struct Hook {
     uintptr_t *slot;
@@ -17,6 +19,9 @@ struct Hook {
     uintptr_t page;
     size_t page_size;
     int protection;
+    char build_id[41];
+    uintptr_t symbol_value;
+    uintptr_t slot_offset;
 };
 // Returns nullptr on success; otherwise a static diagnostic. Uses a validated
 // RELRO jump slot; no executable code is patched.

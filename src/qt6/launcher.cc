@@ -14,13 +14,6 @@
 
 namespace nm6 {
 namespace {
-QString menu_style() {
-    return QStringLiteral(
-        "QMenu { color: black; background: white; border: 2px solid black; }"
-        "QMenu::item { padding: 12px 20px; }"
-        "QMenu::item:selected { color: white; background: black; }");
-}
-
 void display(QWidget *view, const QString &title, const Result &result) {
     if (result.rich_text.isEmpty()) return;
     auto *box = new QMessageBox(result.success ? QMessageBox::Information
@@ -56,7 +49,11 @@ void run(Item item, QPushButton *button, QWidget *view, QMenu *menu) {
 QMenu *build_menu(QPushButton *button, QWidget *view) {
     auto *menu = new QMenu(button);
     menu->setObjectName(QStringLiteral("nmQt6Menu"));
-    menu->setStyleSheet(menu_style());
+    // Inherit the font and palette copied from Nickel's live MainNavButton.
+    // Leaving QMenu unstyled also lets Nickel's application style provide its
+    // normal selection colours instead of imposing a fixed black/white theme.
+    menu->setFont(button->font());
+    menu->setPalette(button->palette());
     QObject::connect(menu, &QMenu::aboutToHide, menu, [menu] {
         // Kobo's QPA cannot reliably reuse a popup after a modal dialog.
         menu->setObjectName(QString());

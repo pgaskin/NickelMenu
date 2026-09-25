@@ -73,8 +73,7 @@ int find_image(dl_phdr_info *info, size_t, void *data) {
     image.found = true;
     return 1;
 }
-bool build_matches(const Image &image, const char *expected) {
-    if (strlen(expected) != 40) return false;
+bool read_build_id(const Image &image, char output[41]) {
     for (size_t i = 0; i < image.count; ++i) {
         const auto &p = image.phdr[i];
         if (p.p_type != PT_NOTE || !image.contains(image.base + p.p_vaddr, p.p_memsz)) continue;
@@ -92,9 +91,10 @@ bool build_matches(const Image &image, const char *expected) {
             if (desc > p.p_memsz - offset - names) break;
             if (note.n_type == NT_GNU_BUILD_ID && note.n_namesz == 4 && note.n_descsz == 20 &&
                 memcmp(bytes + offset, "GNU\0", 4) == 0) {
-                char hex[41];
-                for (size_t j = 0; j < 20; ++j) snprintf(hex + 2*j, 3, "%02x", bytes[offset + names + j]);
-                return strcmp(hex, expected) == 0;
+                for (size_t j = 0; j < 20; ++j)
+                    snprintf(output + 2*j, 3, "%02x", bytes[offset + names + j]);
+                output[40] = 0;
+                return true;
             }
             offset += names + desc;
         }
@@ -136,7 +136,11 @@ const char *prepare(const Spec &spec, uintptr_t replacement, Hook &out) {
     if (dlinfo(handle, RTLD_DI_LINKMAP, &map) != 0 || !map) return "REFUSED: no link map";
     Image image{static_cast<uintptr_t>(map->l_addr), nullptr, 0, false};
     dl_iterate_phdr(find_image, &image);
-    if (!image.found || !build_matches(image, spec.build_id)) return "REFUSED: runtime build ID mismatch";
+    char build_id[41]{};
+    if (!image.found || !read_build_id(image, build_id)) return "REFUSED: missing runtime build ID";
+    if (spec.build_id && spec.build_id[0] &&
+        (strlen(spec.build_id) != 40 || strcmp(build_id, spec.build_id) != 0))
+        return "REFUSED: runtime build ID mismatch";
     const uintptr_t destination = reinterpret_cast<uintptr_t>(dlsym(handle, spec.symbol));
     if (!(destination & 1) || !image.contains(destination & ~uintptr_t(1), 2, PT_LOAD, PF_R | PF_X) ||
         (spec.symbol_value && destination != image.base + spec.symbol_value))
@@ -204,8 +208,15 @@ const char *prepare(const Spec &spec, uintptr_t replacement, Hook &out) {
     void *pinned = dlopen(spec.library, RTLD_NOW | RTLD_NOLOAD | RTLD_NODELETE);
     if (!pinned) return "REFUSED: could not pin original function's library";
     dlclose(pinned);
-    out = {reinterpret_cast<uintptr_t *>(slot), destination, replacement, page,
-           static_cast<size_t>(size), prot};
+    out.slot = reinterpret_cast<uintptr_t *>(slot);
+    out.original = destination;
+    out.replacement = replacement;
+    out.page = page;
+    out.page_size = static_cast<size_t>(size);
+    out.protection = prot;
+    memcpy(out.build_id, build_id, sizeof(out.build_id));
+    out.symbol_value = destination - image.base;
+    out.slot_offset = slot - image.base;
     return nullptr;
 }
 const char *install(Hook &hook) { return exchange(hook, hook.original, hook.replacement); }

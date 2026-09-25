@@ -3,9 +3,6 @@
 namespace nm {
 struct Paths {
     const char *active;
-    const char *disabled;
-    const char *active_dir;
-    const char *disabled_dir;
     const char *log;
     const char *process;
 };

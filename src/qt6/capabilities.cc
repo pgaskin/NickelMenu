@@ -41,7 +41,7 @@ NM_ACTION_(nickel_misc) {
 
 NM_ACTION_(uninstall) {
     (void)arg;
-    return nm_action_result_msg("This test build already disabled itself on disk. "
-        "Restart to stop it; use its matching removal update.tar to remove the disabled library. "
+    return nm_action_result_msg("This persistent test build cannot safely reboot Nickel from this action. "
+        "Use its matching removal update.tar, or create .adds/nm/uninstall and restart to disable loading. "
         "Your configuration will be retained.");
 }
