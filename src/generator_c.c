@@ -112,11 +112,15 @@ NM_GENERATOR_(kfmon) {
     int status = nm_kfmon_list_request(kfmon_cmd, &list);
 
     // If there was an error, handle it now.
-    if (nm_kfmon_error_handler(status))
+    if (nm_kfmon_error_handler(status)) {
+        kfmon_teardown_list(&list);
         return NULL; // the error will be passed on
+    }
 
     // Handle an empty listing safely
     if (list.count == 0) {
+        kfmon_teardown_list(&list);
+        *time_in_out = sb.st_mtim;
         *sz_out = 0;
         nm_err_set(NULL);
         return NULL;

@@ -48,6 +48,8 @@
 // greatest number of errors, and so we are the most cross-Nickel-version
 // compatible as possible.
 
+#ifndef NM_QT6
+// The Qt 6 private ABI is isolated in qt6/nickel.* and qt6/capabilities.cc.
 typedef void Device;
 typedef void Settings;
 typedef void PlugWorkflowManager;
@@ -839,8 +841,11 @@ NM_ACTION_(nickel_orientation) {
     return nm_action_result_silent();
 }
 
+#endif // !NM_QT6
+
 NM_ACTION_(cmd_spawn) {
     char *tmp = strdup(arg); // strsep and strtrim will modify it
+    NM_CHECK(nullptr, tmp, "could not allocate command buffer");
     char *tmp1 = tmp; // so we can still free tmp later
     char *tmp2 = strtrim(strsep(&tmp1, ":")); // get the part before the : into tmp2, if any
 
@@ -872,14 +877,23 @@ NM_ACTION_(cmd_spawn) {
 NM_ACTION_(cmd_output) {
     // split the timeout into timeout, put the command into cmd
     char *tmp = strdup(arg);
+    NM_CHECK(nullptr, tmp, "could not allocate command buffer");
     char *cmd = tmp;
     char *tmp1 = strtrim(strsep(&cmd, ":")), *tmp2;
     long timeout = strtol(tmp1, &tmp2, 10);
     cmd = strtrim(cmd);
-    NM_CHECK(nullptr, *tmp1 && !*tmp2 && timeout > 0 && timeout < 10000, "invalid timeout '%s'", tmp1);
+    if (!*tmp1 || *tmp2 || timeout <= 0 || timeout >= 10000 || !cmd) {
+        NM_ERR_SET("invalid cmd_output argument: expected timeout (1-9999), colon, command");
+        free(tmp);
+        return nullptr;
+    }
 
     // parse the quiet option and update cmd if it's specified
     char *tmp3 = strdup(cmd);
+    if (!tmp3) {
+        free(tmp);
+        NM_ERR_RET(nullptr, "could not allocate command buffer");
+    }
     char *tmp4 = tmp3;
     char *tmp5 = strtrim(strsep(&tmp4, ":"));
     bool quiet = tmp4 && !strcmp(tmp5, "quiet");
@@ -927,6 +941,7 @@ NM_ACTION_(cmd_output) {
         : nm_action_result_msg("%s", qPrintable(Qt::convertFromPlainText(out, Qt::WhiteSpacePre)));
 }
 
+#ifndef NM_QT6
 NM_ACTION_(nickel_bluetooth) {
     enum BLUETOOTH_ACTION {
         ENABLE  = 0b00001,
@@ -1091,3 +1106,4 @@ NM_ACTION_(nickel_screenshot) {
             break;
     }
 }
+#endif // !NM_QT6

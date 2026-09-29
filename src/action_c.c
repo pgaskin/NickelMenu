@@ -56,6 +56,7 @@ NM_ACTION_(kfmon) {
     return nm_kfmon_return_handler(status);
 }
 
+#ifndef NM_QT6
 NM_ACTION_(uninstall) {
     (void) arg;
     if (remove("/usr/local/Kobo/imageformats/libnm.so")) { // TODO: don't hardcode this
@@ -79,3 +80,4 @@ NM_ACTION_(uninstall) {
     NM_LOG("uninstall: rebooting");
     return nm_action_power("reboot");
 }
+#endif // !NM_QT6

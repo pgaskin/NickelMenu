@@ -4,7 +4,10 @@ The easiest way to launch custom scripts, change hidden settings, and run action
 
 See the [website](https://pgaskin.net/NickelMenu) and [thread on MobileRead](https://mobileread.com/forums/showthread.php?t=329525) for screenshots and more details.
 
-Firmware 5.x is not supported yet.
+The stable release does not support Kobo's Qt 6 firmware. This checkout includes
+a [limited experimental Qt 6 backend](tools/qt6-port/README.md) for Clara Colour
+N367, validated against 5.18.270971 and 6.0.274403. It is not a complete port.
+Its installation instructions differ from the stable Qt 5 instructions below.
 
 ## Installation
 You can download pre-built packages of the latest stable release from the [releases](https://github.com/pgaskin/NickelMenu/releases) page, or you can find bleeding-edge builds of each commit from [here](https://github.com/pgaskin/NickelMenu/actions).

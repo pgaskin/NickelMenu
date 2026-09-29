@@ -1,0 +1,28 @@
+name: Qt 6 proof of concept
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  build:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build SDK
+        run: docker build -t nm6-port-sdk -f tools/qt6-port/Dockerfile tools/qt6-port
+      - name: Build ARM backend and fixtures
+        run: docker run --rm --network none --ulimit core=0 -v "$PWD:/src" nm6-port-sdk make -f Makefile.qt6 -j4 all tests fixtures
+      - name: Native Qt 6 tests and changed Qt 5 source checks
+        run: docker run --rm --network none --ulimit core=0 -v "$PWD:/src" nm6-port-sdk sh tools/qt6-port/test-native.sh
+      # Firmware runtime fixtures require a local extracted Kobo image. Do not
+      # publish an install package solely on the strength of these CI checks.
+      - uses: actions/upload-artifact@v5
+        with:
+          name: NickelMenu-Qt6-experimental-library
+          path: |
+            build/qt6/libnmqt6.so
+            res/qt6-example.config
+            tools/qt6-port/README.md
