@@ -13,8 +13,8 @@ CFLAGS += $(COMMON) -std=gnu11
 CXXFLAGS += $(COMMON) -std=c++17
 HARDEN = -Wl,--no-undefined,-z,relro,-z,now
 LDLIBS = -lQt6Widgets -lQt6Gui -lQt6Core -ldl -pthread
-C_SOURCES = src/action.c src/action_c.c src/config.c src/generator.c src/generator_c.c src/util.c
-CXX_SOURCES = src/action_cc.cc src/qt6/capabilities.cc src/qt6/executor.cc src/qt6/launcher.cc src/qt6/log.cc
+C_SOURCES = src/action.c src/action_c.c src/config.c src/generator.c src/generator_c.c src/kfmon.c src/util.c
+CXX_SOURCES = src/action_cc.cc src/qt6/capabilities.cc src/qt6/nickel.cc src/qt6/native_ui.cc src/qt6/executor.cc src/qt6/launcher.cc src/qt6/log.cc
 OBJECTS = $(patsubst src/%.c,$(OUT)/%.o,$(C_SOURCES)) $(patsubst src/%.cc,$(OUT)/%.o,$(CXX_SOURCES))
 LOADER = src/qt6/hook.cc src/qt6/runtime.cc src/qt6/navigation.cc src/qt6/plugin.cc
 
@@ -30,10 +30,21 @@ $(OUT)/moc_plugin.cc: src/qt6/plugin.h src/qt6/plugin.json
 	$(MOC) $(CPPFLAGS) $< -o $@
 $(OUT)/libnmqt6.so: $(OBJECTS) $(LOADER) src/qt6/runtime.h src/qt6/navigation.h src/qt6/hook.h $(OUT)/moc_plugin.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -Isrc/qt6 -shared $(LOADER) $(OUT)/moc_plugin.cc $(OBJECTS) $(HARDEN) $(LDLIBS) -o $@
-$(OUT)/core-test: test/qt6/core.cc $(OBJECTS)
+$(OUT)/core-test: test/qt6/core.cc test/qt6/kfmon.cc $(OBJECTS)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -fPIC -pie $^ $(HARDEN) $(LDLIBS) -o $@
 tests: $(OUT)/core-test
-fixtures: $(OUT)/fixture-plugin.so $(OUT)/fixture-runner $(OUT)/qt-smoke
+fixtures: $(OUT)/fixture-plugin.so $(OUT)/fixture-runner $(OUT)/qt-smoke $(OUT)/capabilities-test $(OUT)/action-fixture-unknown/libnickel.so.1.0.0
+$(OUT)/moc_nickel.cc: test/qt6/fixture/nickel.h
+	mkdir -p $(dir $@)
+	$(MOC) $(CPPFLAGS) $< -o $@
+$(OUT)/action-fixture/libnickel.so.1.0.0: test/qt6/fixture/nickel.cc test/qt6/fixture/nickel.h $(OUT)/moc_nickel.cc
+	mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -Itest/qt6/fixture -fvisibility=default -shared test/qt6/fixture/nickel.cc $(OUT)/moc_nickel.cc $(HARDEN) -Wl,-soname,libnickel.so.1.0.0,--build-id=0xeaa30496411474df4019643cf7ba21efbdc25b52 $(LDLIBS) -o $@
+$(OUT)/action-fixture-unknown/libnickel.so.1.0.0: test/qt6/fixture/nickel.cc test/qt6/fixture/nickel.h $(OUT)/moc_nickel.cc
+	mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -Itest/qt6/fixture -fvisibility=default -shared test/qt6/fixture/nickel.cc $(OUT)/moc_nickel.cc $(HARDEN) -Wl,-soname,libnickel.so.1.0.0,--build-id=0x1122334455667788990011223344556677889900 $(LDLIBS) -o $@
+$(OUT)/capabilities-test: test/qt6/capabilities.cc test/qt6/native_ui.cc src/qt6/navigation.cc $(OBJECTS) $(OUT)/action-fixture/libnickel.so.1.0.0
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -Itest/qt6 -fPIC -pie test/qt6/capabilities.cc test/qt6/native_ui.cc src/qt6/navigation.cc $(OBJECTS) -L$(OUT)/action-fixture -l:libnickel.so.1.0.0 -Wl,-rpath,'$$ORIGIN/action-fixture' $(HARDEN) $(LDLIBS) -o $@
 $(OUT)/moc_fixture.cc: test/qt6/fixture/target.h
 	mkdir -p $(dir $@)
 	$(MOC) $(CPPFLAGS) $< -o $@

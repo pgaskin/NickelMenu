@@ -49,8 +49,7 @@
 // compatible as possible.
 
 #ifndef NM_QT6
-// Private Nickel interfaces remain on the Qt 5 backend until individually
-// validated for 5.x. The Qt 6 backend provides explicit capability errors.
+// The Qt 6 private ABI is isolated in qt6/nickel.* and qt6/capabilities.cc.
 typedef void Device;
 typedef void Settings;
 typedef void PlugWorkflowManager;

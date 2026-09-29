@@ -39,7 +39,6 @@ NM_ACTION_(skip) {
     return res;
 }
 
-#ifndef NM_QT6
 NM_ACTION_(kfmon_id) {
     // Start by watch ID (simpler, but IDs may not be stable across a single power cycle, given severe KFMon config shuffling)
     int status = nm_kfmon_simple_request("start", arg);
@@ -57,6 +56,7 @@ NM_ACTION_(kfmon) {
     return nm_kfmon_return_handler(status);
 }
 
+#ifndef NM_QT6
 NM_ACTION_(uninstall) {
     (void) arg;
     if (remove("/usr/local/Kobo/imageformats/libnm.so")) { // TODO: don't hardcode this

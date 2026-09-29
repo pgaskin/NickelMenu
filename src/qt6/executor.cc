@@ -1,4 +1,5 @@
 #include "executor.h"
+#include "capabilities.h"
 #include "util.h"
 #include <QCoreApplication>
 #include <QThread>
@@ -24,10 +25,12 @@ struct AsyncState {
     std::function<void(Result)> completion;
 };
 
-StepResult run_action(const Action &action) {
+StepResult run_action(const Action &action, std::function<void(bool)> rescan_completion = {}) {
     StepResult step;
     nm_err_set(nullptr);
-    auto *result = action.function(action.argument.constData());
+    auto *result = rescan_completion
+        ? rescan_books_full(std::move(rescan_completion))
+        : action.function(action.argument.constData());
     const char *error = nm_err();
     if (error || !result) {
         step.error = error ? QString::fromUtf8(error)
@@ -91,6 +94,21 @@ void advance(const std::shared_ptr<AsyncState> &state) {
         }
         if (!(state->result.success ? action.success : action.failure)) continue;
 
+        if (action.function == nm_action_nickel_misc &&
+            action.argument == QByteArrayLiteral("rescan_books_full")) {
+            auto step = std::make_shared<StepResult>();
+            *step = run_action(action, [state, step](bool completed) {
+                if (!completed) step->error = QStringLiteral("Nickel's rescan workflow was destroyed before unplugging");
+                apply_step(*step, state->result, state->last_error, state->skip);
+                advance(state);
+            });
+            if (step->error.isEmpty()) return;
+            // Launch failed before scheduling a callback; continue failure
+            // chains immediately, as for any other action error.
+            apply_step(*step, state->result, state->last_error, state->skip);
+            continue;
+        }
+
         if (runs_on_worker(action)) {
             auto step = std::make_shared<StepResult>();
             auto *worker = QThread::create([action, step] {
@@ -107,7 +125,7 @@ void advance(const std::shared_ptr<AsyncState> &state) {
             return;
         }
 
-        // Private Nickel QObject calls will be enabled only on this GUI path.
+        // Private Nickel calls require this GUI path.
         apply_step(run_action(action), state->result, state->last_error,
                    state->skip);
     }

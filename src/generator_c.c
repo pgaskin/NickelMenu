@@ -88,12 +88,6 @@ NM_GENERATOR_(_test_time) {
 }
 
 NM_GENERATOR_(kfmon) {
-#ifdef NM_QT6
-    (void)arg;
-    (void)time_in_out;
-    (void)sz_out;
-    NM_ERR_RET(NULL, "KFMon generator unavailable in the experimental Qt 6 backend");
-#else
     struct stat sb;
     if (stat(KFMON_IPC_SOCKET, &sb))
         NM_ERR_RET(NULL, "error checking '%s': stat: %m", KFMON_IPC_SOCKET);
@@ -118,11 +112,15 @@ NM_GENERATOR_(kfmon) {
     int status = nm_kfmon_list_request(kfmon_cmd, &list);
 
     // If there was an error, handle it now.
-    if (nm_kfmon_error_handler(status))
+    if (nm_kfmon_error_handler(status)) {
+        kfmon_teardown_list(&list);
         return NULL; // the error will be passed on
+    }
 
     // Handle an empty listing safely
     if (list.count == 0) {
+        kfmon_teardown_list(&list);
+        *time_in_out = sb.st_mtim;
         *sz_out = 0;
         nm_err_set(NULL);
         return NULL;
@@ -151,5 +149,4 @@ NM_GENERATOR_(kfmon) {
     *time_in_out = sb.st_mtim;
     nm_err_set(NULL);
     return items;
-#endif
 }

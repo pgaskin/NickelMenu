@@ -1,5 +1,7 @@
 #include "navigation.h"
 #include "launcher.h"
+#include "native_ui.h"
+#include "util.h"
 #include <QApplication>
 #include <QEvent>
 #include <QHBoxLayout>
@@ -77,26 +79,36 @@ bool insert_menu(QWidget *view, Logger log) {
             break;
         }
     }
-    auto *button = new QPushButton(QStringLiteral("NickelMenu"), view);
+    nm6::NativeUi native;
+    auto *button = native.button(view, QStringLiteral("NickelMenu"));
+    if (!button) {
+        log("NATIVE UI unavailable; using standard Qt fallback.");
+        nm_err_set(nullptr);
+        auto *fallback = new QPushButton(QStringLiteral("NickelMenu"), view);
+        fallback->setFont(typography->font());
+        fallback->setPalette(typography->palette());
+        fallback->setFlat(true);
+        button = fallback;
+    }
     button->setObjectName(QStringLiteral("nmQt6Button"));
     button->setFocusPolicy(Qt::NoFocus);
-    // Use the live Nickel navigation control as the source of truth. Hard-coded
-    // colours, borders and point sizes looked foreign and did not scale with
-    // Nickel's theme/DPI settings. QPushButton cannot reproduce MainNavButton's
-    // private icon painting, but its public typography and palette can match.
-    button->setFont(typography->font());
-    button->setPalette(typography->palette());
+    // Native constructors load Kobo's stylesheets for their own child labels
+    // and icons. Overriding the container font would not reproduce that theme.
     button->setLayoutDirection(typography->layoutDirection());
     button->setSizePolicy(reference->sizePolicy());
     button->setMinimumSize(reference->minimumSize());
     button->setMaximumSize(reference->maximumSize());
-    button->setFlat(true);
-    nm6::attach(button, view);
+    if (!nm6::attach(button, view)) {
+        delete button;
+        log("REFUSED: launcher tap signal could not be connected; UI unchanged.");
+        return false;
+    }
     row->addWidget(button, 1);
     button->show();
     char detail[256];
     snprintf(detail, sizeof(detail),
-             "ADDED NickelMenu launcher; inherited font=%s point=%.1f pixel=%d.",
+             "ADDED NickelMenu launcher (%s); font=%s point=%.1f pixel=%d.",
+             button->metaObject()->className(),
              button->font().family().toUtf8().constData(),
              button->font().pointSizeF(), button->font().pixelSize());
     log(detail);
